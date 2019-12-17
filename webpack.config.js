@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    entry: "./source/code/frontend/topicMap.ts",
+    entry: "./source/code/frontend/app.ts",
     devtool: 'inline-source-map',
     mode: 'development',
     module: {
@@ -22,6 +22,10 @@ module.exports = {
             {
                 test: /\.css$/,
                 use: ['style-loader', 'css-loader']
+            },
+            {
+                test: /\.(glsl|vert|frag)$/,
+                use: { loader: 'webpack-glsl-loader' },
             },
         ],
     },

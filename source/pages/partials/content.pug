@@ -1,0 +1,12 @@
+.content.container
+    .row
+        .col
+            .embed-responsive.embed-responsive-16by9
+                canvas#webgl-canvas.embed-responsive-item
+script.
+    window.addEventListener("load",function(event) {
+        const canvasId = 'webgl-canvas';
+        const canvas = document.getElementById(canvasId);
+        const app = new TopicMapApp();
+        app.initialize(canvas);
+    });
