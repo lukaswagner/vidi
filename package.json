@@ -34,6 +34,7 @@
   },
   "scripts": {
     "build": "webpack",
+    "watch": "webpack --watch",
     "debug": "webpack-dev-server --open",
     "start": "node source/code/server/server.js"
   }

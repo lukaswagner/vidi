@@ -326,6 +326,10 @@ export class TopicMapRenderer extends Renderer {
         }
         this.draw = 0;
         this._push = true;
+
+        if (this.initialized) {
+            this.invalidate(true);
+        }
     }
 
     set draw(index: number) {

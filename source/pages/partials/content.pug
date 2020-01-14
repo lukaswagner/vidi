@@ -1,8 +1,6 @@
 .content.container
-    .row
-        .col
-            .embed-responsive.embed-responsive-16by9
-                canvas#webgl-canvas.embed-responsive-item
+    include canvas.pug
+    include controls.pug
 script.
     window.addEventListener("load",function(event) {
         const canvasId = 'webgl-canvas';

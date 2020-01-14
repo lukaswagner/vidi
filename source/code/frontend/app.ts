@@ -24,15 +24,31 @@ export class TopicMapApp extends Initializable {
         this._renderer = new TopicMapRenderer();
         this._canvas.renderer = this._renderer;
 
+        const select =
+            document.getElementById('input-file') as HTMLSelectElement;
 
-        const input = document.getElementById('input-file')! as HTMLInputElement;
-        // const label = document.getElementById('label-file')! as HTMLLabelElement;
-        input.addEventListener('change', () => {
-            const progress = document.getElementById('progress-file')! as HTMLProgressElement;
-            importPointsFromCSV(input.files!, progress).then(result => this._renderer.data = result);
+        fetch('/ls').then((res) => {
+            res.json().then((j) => {
+                j.forEach((s: string) => {
+                    const o = document.createElement('option');
+                    o.value = s;
+                    o.text = s;
+                    select.options.add(o);
+                });
+                this.load(select.value);
+            });
+        });
+
+        select.addEventListener('change', () => {
+            this.load(select.value);
         });
 
         return true;
+    }
+
+    load(path: string): void {
+        importPointsFromCSV(['data/' + path])
+            .then(result => this._renderer.data = result);
     }
 
     uninitialize(): void {

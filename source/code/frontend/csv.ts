@@ -11,67 +11,67 @@
  * });
  * ```
  */
-export function importPointsFromCSV(list: FileList, progress?: HTMLProgressElement): Promise<Array<Float32Array>> {
-    const files = new Array<[string, File]>(list.length);
+export function importPointsFromCSV(list: Array<string>, progress?: HTMLProgressElement): Promise<Array<Float32Array>> {
     if (progress) {
-        progress.max = files.length;
+        progress.max = list.length;
         progress.classList.remove('active');
         progress.value = 0;
     }
 
-    for (let i = 0; i < list.length; ++i) {
-        files[i] = [list.item(i)!.name, list.item(i)!];
-    }
-    files.sort();
-
-    const coordinates = new Array<Float32Array>(files.length);
+    const coordinates = new Array<Float32Array>(list.length);
 
     const response = new Promise<Array<Float32Array>>((resolve, reject) => {
 
-        let waiting = files.length;
+        let waiting = list.length;
         for (let i = 0; i < list.length; ++i) {
+            fetch(list[i]).then((r) => {
+                r.text().then((t) => {
+                    let lines = t.split(/\r\n|\n/);
 
-            const reader = new FileReader();
-            reader.readAsText(files[i][1]);
+                    // remove empty lines
+                    lines = lines.filter(
+                        (value: string) => value.trim() !== '');
 
-            reader.onload = (event) => {
-                let lines = (event.target!.result as string).split(/\r\n|\n/);
+                    // look for x, y, z columns in first line / header
+                    const columnIdentifier = lines[0].split(',');
+                    const columnIndices = [
+                        columnIdentifier.findIndex(
+                            (identifier: string) => identifier === 'x'),
+                        columnIdentifier.findIndex(
+                            (identifier: string) => identifier === 'y'),
+                        columnIdentifier.findIndex(
+                            (identifier: string) => identifier === 'z')];
 
-                // remove empty lines
-                lines = lines.filter((value: string) => value.trim() !== '');
+                    lines.shift();
+                    const numCoordinates = lines.length;
 
-                // look for x, y, z columns in first line / header
-                const columnIdentifier = lines[0].split(',');
-                const columnIndices = [
-                    columnIdentifier.findIndex((identifier: string) => identifier === 'x'),
-                    columnIdentifier.findIndex((identifier: string) => identifier === 'y'),
-                    columnIdentifier.findIndex((identifier: string) => identifier === 'z')];
+                    coordinates[i] = new Float32Array(numCoordinates * 3);
+                    for (let j = 0; j < numCoordinates; ++j) {
+                        const values = lines[j].split(',');
+                        coordinates[i][j * 3 + 0] =
+                            Number.parseFloat(values[columnIndices[0]]);
+                        coordinates[i][j * 3 + 1] =
+                            Number.parseFloat(values[columnIndices[1]]);
+                        coordinates[i][j * 3 + 2] =
+                            Number.parseFloat(values[columnIndices[2]]);
+                    }
 
-                lines.shift();
-                const numCoordinates = lines.length;
+                    /* Resolve the promise when all coordinates have been loaded. */
+                    waiting = waiting - 1;
 
-                coordinates[i] = new Float32Array(numCoordinates * 3);
-                for (let j = 0; j < numCoordinates; ++j) {
-                    const values = lines[j].split(',');
-                    coordinates[i][j * 3 + 0] = Number.parseFloat(values[columnIndices[0]]);
-                    coordinates[i][j * 3 + 1] = Number.parseFloat(values[columnIndices[1]]);
-                    coordinates[i][j * 3 + 2] = Number.parseFloat(values[columnIndices[2]]);
-                }
+                    if (progress) {
+                        ++progress.value;
+                        progress.style.width =
+                            `${progress.value / progress.max * 100.0}%`;
+                    }
 
-                /* Resolve the promise when all coordinates have been loaded. */
-                waiting = waiting - 1;
-
-                if (progress) {
-                    ++progress.value;
-                    progress.style.width = `${progress.value / progress.max * 100.0}%`;
-                }
-
-                if (waiting === 0) {
-                    resolve(coordinates);
-                }
-            };
-
-            reader.onerror = (event) => reject(`importing '${files[i][1]} failed`);
+                    if (waiting === 0) {
+                        resolve(coordinates);
+                    }
+                }).catch((e) => {
+                    reject(`importing '${list[i]} failed`);
+                })
+            });
         }
     });
 
