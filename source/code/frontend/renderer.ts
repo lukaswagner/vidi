@@ -134,7 +134,7 @@ export class TopicMapRenderer extends Renderer {
         this._camera.eye = vec3.fromValues(0.0, 0.0, 5.0);
 
         this._camera.near = 0.1;
-        this._camera.far = 5.0 + Math.sqrt(32.0); // 1² + 1² -> range in that particles are generated ...
+        this._camera.far = 64.0;
 
         gl.uniform2f(this._program.uniform('u_nearFar'), this._camera.near, this._camera.far);
 

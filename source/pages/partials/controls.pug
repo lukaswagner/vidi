@@ -1,4 +1,16 @@
-.row
-    .col
-        div.mt-4
-            select#input-file
+.row.mt-4
+    form.col-12
+        .form-row#controls
+            .col-4.mb-3
+                label(for='data-select') Dataset
+                select#data-select.form-control
+            .col-4.mb-3
+                label(for='point-size-input') Point size
+                .row.m-0
+                    input#point-size-input.col-3.form-control
+                    input#point-size-range.col.ml-2.slider(type='range')
+            .col-4.mb-3
+                label(for='scale-input') Scale
+                .row.m-0
+                    input#scale-input.col-3.form-control
+                    input#scale-range.col.ml-2.slider(type='range')

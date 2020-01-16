@@ -9,3 +9,41 @@ footer {
 footer {
     padding-bottom: 2rem;
 }
+
+input.slider {
+    --slider-size: 38px;
+    --slider-handle-size: calc(var(--slider-size) - 2px);
+    --slider-handle-pos: calc(var(--slider-handle-size) / 2);
+    --slider-handle-offset: calc(var(--slider-handle-pos) * -1);
+    width: 100%;
+    -webkit-appearance: none;
+    height: var(--slider-size);
+    margin: 0;
+    padding: 0;
+}
+
+input.slider:focus {
+  outline: none;
+}
+
+input.slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: var(--slider-size);
+    cursor: pointer;
+    background: #fff;
+    border-radius: 0px;
+    border: 1px solid #ced4da;
+}
+
+input.slider::-webkit-slider-thumb {
+    width: var(--slider-handle-size);
+    height: var(--slider-handle-size);
+    position: relative;
+    left: var(--slider-handle-pos);
+    top: var(--slider-handle-pos);
+    transform: translate(var(--slider-handle-offset), var(--slider-handle-offset));
+    border-radius: 0px;
+    background: var(--primary);
+    cursor: pointer;
+    -webkit-appearance: none;
+}
