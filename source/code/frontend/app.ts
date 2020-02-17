@@ -24,6 +24,12 @@ export class TopicMapApp extends Initializable {
         this._renderer = new TopicMapRenderer();
         this._canvas.renderer = this._renderer;
 
+        this.initControls();
+
+        return true;
+    }
+
+    initControls(): void {
         const dataSelect =
             document.getElementById('data-select') as HTMLSelectElement;
         dataSelect.addEventListener('change', () => {
@@ -95,8 +101,6 @@ export class TopicMapApp extends Initializable {
         scaleRange.min = scaleMin;
         scaleRange.max = scaleMax;
         scaleRange.step = scaleStep;
-
-        return true;
     }
 
     load(path: string): void {
