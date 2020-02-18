@@ -3,12 +3,12 @@
     "tasks": [
         {
             "type": "npm",
-            "script": "debug",
+            "script": "build",
             "problemMatcher": []
         },
         {
             "type": "npm",
-            "script": "build",
+            "script": "watch",
             "problemMatcher": []
         },
         {

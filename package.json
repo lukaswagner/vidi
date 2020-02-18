@@ -26,7 +26,6 @@
     "webgl-operate": "^0.5.2",
     "webpack": "^4.41.3",
     "webpack-cli": "^3.3.10",
-    "webpack-dev-server": "^3.9.0",
     "webpack-glsl-loader": "^1.0.1"
   },
   "dependencies": {
@@ -35,7 +34,6 @@
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
-    "debug": "webpack-dev-server --open",
     "start": "node source/code/server/server.js"
   }
 }
