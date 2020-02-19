@@ -29,9 +29,9 @@ export class InputSlider extends UiBase {
 
     public setOptions(value: number, min: number, max: number, step: number) {
         this.element.value = value.toString();
-        this._sliderElement.value = value.toString();
         this._sliderElement.min = min.toString();
         this._sliderElement.max = max.toString();
         this._sliderElement.step = step.toString();
+        this._sliderElement.value = value.toString();
     }
 }

@@ -18,7 +18,6 @@ uniform float u_pointSize;
 
 void main()
 {
-    vec4 p  = u_model * vec4(a_position, 1.0);
-    gl_Position = u_viewProjection * p;
-    gl_PointSize = u_frameSize * 0.25 * u_pointSize;
+    gl_Position = u_viewProjection * u_model * vec4(a_position, 1.0);
+    gl_PointSize = u_frameSize * u_pointSize / gl_Position.z;
 }

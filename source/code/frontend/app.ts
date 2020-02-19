@@ -41,9 +41,9 @@ export class TopicMapApp extends Initializable {
             this._renderer.pointSize = v;
         };
 
-        const pointSizeDefault = 0.02;
-        const pointSizeMin = 0.01;
-        const pointSizeMax = 0.5;
+        const pointSizeDefault = 0.01;
+        const pointSizeMin = 0.001;
+        const pointSizeMax = 0.05;
         const pointSizeStep = 0.001;
 
         this._renderer.pointSize = Number(pointSizeDefault);
