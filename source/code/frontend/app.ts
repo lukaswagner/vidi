@@ -3,22 +3,16 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 
 import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4 } from "webgl-operate";
 import { TopicMapRenderer } from "./renderer";
-import { importPointsFromCSV } from "./csv";
+import { Data } from './data';
 
 export class TopicMapApp extends Initializable {
 
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
+    private _data: Data;
 
     initialize(element: HTMLCanvasElement | string): boolean {
-
-        const aa = auxiliaries.GETparameter('antialias');
-
-        this._canvas = new Canvas(element, {
-            antialias: aa === undefined ? true : JSON.parse(aa!),
-        });
-        this._canvas.controller.multiFrameNumber = 1;
-        this._canvas.framePrecision = Wizard.Precision.byte;
+        this._canvas = new Canvas(element,);
         this._canvas.frameScale = [1.0, 1.0];
 
         this._renderer = new TopicMapRenderer();
@@ -104,8 +98,19 @@ export class TopicMapApp extends Initializable {
     }
 
     load(path: string): void {
-        importPointsFromCSV(['data/' + path])
-            .then(result => this._renderer.data = result);
+        fetch('data/' + path).then((r) => {
+            r.text().then((csv) => {
+                this.prepareData(csv);
+            });
+        });
+    }
+
+    prepareData(csv: string): void {
+        this._data = new Data(csv);
+        const columnNames = this._data.columnNames;
+        const positions = this._data.getCoordinates(
+            columnNames[0], columnNames[1], { min: -1, max: 1 });
+        this._renderer.positions = positions;
     }
 
     uninitialize(): void {
