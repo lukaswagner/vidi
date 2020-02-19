@@ -4,11 +4,13 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4 } from "webgl-operate";
 import { TopicMapRenderer } from "./renderer";
 import { Data } from './data';
+import { Controls } from './controls';
 
 export class TopicMapApp extends Initializable {
 
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
+    private _controls: Controls;
     private _data: Data;
 
     initialize(element: HTMLCanvasElement | string): boolean {
@@ -19,85 +21,66 @@ export class TopicMapApp extends Initializable {
         this._canvas.renderer = this._renderer;
 
         this.initControls();
+        this.fetchAvailable();
 
         return true;
     }
 
     initControls(): void {
-        const dataSelect =
-            document.getElementById('data-select') as HTMLSelectElement;
-        dataSelect.addEventListener('change', () => {
-            this.load(dataSelect.value);
-        })
+        this._controls = new Controls();
 
-        fetch('/ls').then((res) => {
-            res.json().then((j) => {
-                j.forEach((s: string) => {
-                    const o = document.createElement('option');
-                    o.value = s;
-                    o.text = s;
-                    dataSelect.options.add(o);
-                });
-                this.load(dataSelect.value);
-            });
-        });
+        // data
+        this._controls.data.handler = this.load.bind(this);
 
-        const pointSizeInput =
-            document.getElementById('point-size-input') as HTMLInputElement;
-        const pointSizeRange =
-            document.getElementById('point-size-range') as HTMLInputElement;
-        pointSizeInput.addEventListener('input', () => {
-            pointSizeRange.value = pointSizeInput.value;
-            this._renderer.pointSize = Number(pointSizeInput.value);
-        });
-        pointSizeRange.addEventListener('input', () => {
-            pointSizeInput.value = pointSizeRange.value;
-            this._renderer.pointSize = Number(pointSizeRange.value);
-        });
+        // point size
+        this._controls.pointSize.handler = (v: number) => {
+            this._renderer.pointSize = v;
+        };
 
-        const pointSizeDefault = '0.02';
-        const pointSizeMin = '0.01';
-        const pointSizeMax = '0.5';
-        const pointSizeStep = '0.001';
+        const pointSizeDefault = 0.02;
+        const pointSizeMin = 0.01;
+        const pointSizeMax = 0.5;
+        const pointSizeStep = 0.001;
+
         this._renderer.pointSize = Number(pointSizeDefault);
-        pointSizeInput.value = pointSizeDefault;
-        pointSizeRange.value = pointSizeDefault;
-        pointSizeRange.min = pointSizeMin;
-        pointSizeRange.max = pointSizeMax;
-        pointSizeRange.step = pointSizeStep;
+        this._controls.pointSize.setOptions(
+            pointSizeDefault, pointSizeMin, pointSizeMax, pointSizeStep);
 
-        const applyScale = (scaleString: string) => {
-            const scale = Number(scaleString);
+        // scale
+        const applyScale = (scale: number) => {
             this._renderer.model =
                 mat4.fromScaling(mat4.create(), [scale, scale, scale]);
         };
 
-        const scaleInput =
-            document.getElementById('scale-input') as HTMLInputElement;
-        const scaleRange =
-            document.getElementById('scale-range') as HTMLInputElement;
-        scaleInput.addEventListener('input', () => {
-            scaleRange.value = scaleInput.value;
-            applyScale(scaleInput.value);
-        });
-        scaleRange.addEventListener('input', () => {
-            scaleInput.value = scaleRange.value;
-            applyScale(scaleRange.value);
-        });
+        this._controls.scale.handler = applyScale.bind(this);
 
-        const scaleDefault = '1.0';
-        const scaleMin = '0.1';
-        const scaleMax = '4.0';
-        const scaleStep = '0.1';
+        const scaleDefault = 1.0;
+        const scaleMin = 0.1;
+        const scaleMax = 4.0;
+        const scaleStep = 0.1;
+
         applyScale(scaleDefault);
-        scaleInput.value = scaleDefault;
-        scaleRange.value = scaleDefault;
-        scaleRange.min = scaleMin;
-        scaleRange.max = scaleMax;
-        scaleRange.step = scaleStep;
+        this._controls.scale.setOptions(
+            scaleDefault, scaleMin, scaleMax, scaleStep);
+
+        // x axis
+        this._controls.xAxis.handler = this.updatePositions.bind(this);
+
+        // y axis
+        this._controls.yAxis.handler = this.updatePositions.bind(this);
+    }
+
+    fetchAvailable(): void {
+        fetch('/ls').then((res) => {
+            res.json().then((j) => {
+                this._controls.data.setOptions(j as string[]);
+                this.load(this._controls.data.value);
+            });
+        });
     }
 
     load(path: string): void {
+        console.log('loading', path);
         fetch('data/' + path).then((r) => {
             r.text().then((csv) => {
                 this.prepareData(csv);
@@ -108,8 +91,17 @@ export class TopicMapApp extends Initializable {
     prepareData(csv: string): void {
         this._data = new Data(csv);
         const columnNames = this._data.columnNames;
+        this._controls.xAxis.setOptions(columnNames);
+        this._controls.yAxis.setOptions(columnNames);
+        this._controls.yAxis.element.selectedIndex = 1;
+        this.updatePositions();
+    }
+
+    updatePositions() {
         const positions = this._data.getCoordinates(
-            columnNames[0], columnNames[1], { min: -1, max: 1 });
+            this._controls.xAxis.value,
+            this._controls.yAxis.value,
+            { min: -1, max: 1 });
         this._renderer.positions = positions;
     }
 
@@ -117,7 +109,6 @@ export class TopicMapApp extends Initializable {
         this._canvas.dispose();
         (this._renderer as Renderer).uninitialize();
     }
-
 
     get canvas(): Canvas {
         return this._canvas;

@@ -39,7 +39,6 @@ export class PointCloudGeometry extends Geometry {
      * given, pre-defined index.
      */
     protected bindBuffers(/*indices: Array<GLuint>*/): void {
-
         this._buffers[0].attribEnable(
             this._vertexLocation, 3, this._gl.FLOAT,
             false, 0, 0, true, false);
@@ -81,7 +80,7 @@ export class PointCloudGeometry extends Geometry {
      */
     draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.POINTS, 0, 1, this._vertices.length);
+            this._gl.POINTS, 0, 1, this._vertices.length / 3);
     }
 
     /**
