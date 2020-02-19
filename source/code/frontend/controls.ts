@@ -7,6 +7,7 @@ export class Controls {
     public scale: InputSlider;
     public xAxis: Select;
     public yAxis: Select;
+    public zAxis: Select;
 
     constructor() {
         this.data = new Select('data-select');
@@ -14,5 +15,6 @@ export class Controls {
         this.scale = new InputSlider('scale');
         this.xAxis = new Select('x-axis');
         this.yAxis = new Select('y-axis');
+        this.zAxis = new Select('z-axis');
     }
 }

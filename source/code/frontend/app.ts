@@ -63,11 +63,10 @@ export class TopicMapApp extends Initializable {
         this._controls.scale.setOptions(
             scaleDefault, scaleMin, scaleMax, scaleStep);
 
-        // x axis
+        // axes
         this._controls.xAxis.handler = this.updatePositions.bind(this);
-
-        // y axis
         this._controls.yAxis.handler = this.updatePositions.bind(this);
+        this._controls.zAxis.handler = this.updatePositions.bind(this);
     }
 
     fetchAvailable(): void {
@@ -91,9 +90,14 @@ export class TopicMapApp extends Initializable {
     prepareData(csv: string): void {
         this._data = new Data(csv);
         const columnNames = this._data.columnNames;
-        this._controls.xAxis.setOptions(columnNames);
-        this._controls.yAxis.setOptions(columnNames);
-        this._controls.yAxis.element.selectedIndex = 1;
+        const ids = ['__NOCOLUMN__'].concat(columnNames);
+        const labels = ['None'].concat(columnNames);
+        this._controls.xAxis.setOptions(ids, labels);
+        this._controls.yAxis.setOptions(ids, labels);
+        this._controls.zAxis.setOptions(ids, labels);
+        this._controls.xAxis.element.selectedIndex = 1;
+        this._controls.yAxis.element.selectedIndex = 2;
+        this._controls.zAxis.element.selectedIndex = 0;
         this.updatePositions();
     }
 
@@ -101,6 +105,7 @@ export class TopicMapApp extends Initializable {
         const positions = this._data.getCoordinates(
             this._controls.xAxis.value,
             this._controls.yAxis.value,
+            this._controls.zAxis.value,
             { min: -1, max: 1 });
         this._renderer.positions = positions;
     }

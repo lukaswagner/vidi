@@ -53,45 +53,53 @@ export class Data {
     }
 
     public getCoordinates(
-        columnAName: string, columnBName: string, range?: {min: number, max: number}
+        xAxis: string, yAxis: string, zAxis: string,
+        range?: {min: number, max: number}
     ): Float32Array {
-        let map: (a: number, b: number) => { a: number, b: number };
+        let map: (x: number, y: number, z: number) => {
+            x: number,
+            y: number,
+            z: number
+        };
+
         if(range === undefined) {
-            map = (a: number, b: number) => {
-                return { a, b };
+            map = (x: number, y: number, z: number) => {
+                return { x, y, z };
             };
         } else {
-            const ae = this.extrema(columnAName);
-            const be = this.extrema(columnBName);
+            const nc = '__NOCOLUMN__';
+            const nce = { min: -1, max: 1 };
+            const xe = xAxis !== nc ? this.extrema(xAxis) : nce;
+            const ye = yAxis !== nc ? this.extrema(yAxis) : nce;
+            const ze = zAxis !== nc ? this.extrema(zAxis) : nce;
             const oDiff = range.max - range.min;
-            const aDiffInv = 1 / (ae.max - ae.min);
-            const bDiffInv = 1 / (be.max - be.min);
-            map = (a: number, b: number) => {
+            const xDiffInv = 1 / (xe.max - xe.min);
+            const yDiffInv = 1 / (ye.max - ye.min);
+            const zDiffInv = 1 / (ze.max - ze.min);
+            map = (x: number, y: number, z: number) => {
                 return {
-                    a: range.min + (oDiff * aDiffInv * (a - ae.min)),
-                    b: range.min + (oDiff * bDiffInv * (b - be.min))
+                    x: range.min + (oDiff * xDiffInv * (x - xe.min)),
+                    y: range.min + (oDiff * yDiffInv * (y - ye.min)),
+                    z: range.min + (oDiff * zDiffInv * (z - ze.min))
                 };
             };
         }
 
-        const columnA =
-            this._columns.find((c) => c.name === columnAName)?.data;
-        const columnB =
-            this._columns.find((c) => c.name === columnBName)?.data;
+        const dataX = this._columns.find((c) => c.name === xAxis)?.data;
+        const dataY = this._columns.find((c) => c.name === yAxis)?.data;
+        const dataZ = this._columns.find((c) => c.name === zAxis)?.data;
 
-        // output as array of vec3 -> y stays 0
         const result = new Float32Array(this._rowCount * 3);
 
-        if(columnA === undefined || columnB === undefined) {
-            return result;
-        }
+        const getX = dataX === undefined ? () => 0 : (i: number) => dataX[i];
+        const getY = dataY === undefined ? () => 0 : (i: number) => dataY[i];
+        const getZ = dataZ === undefined ? () => 0 : (i: number) => dataZ[i];
 
         for(let i = 0; i < this._rowCount; i++) {
-            const a = columnA[i];
-            const b = columnB[i];
-            const mapped = map(a, b);
-            result[i * 3] = mapped.a;
-            result[i * 3 + 2] = mapped.b;
+            const mapped = map(getX(i), getY(i), getZ(i));
+            result[i * 3] = mapped.x;
+            result[i * 3 + 1] = mapped.z;
+            result[i * 3 + 2] = mapped.y;
         }
 
         return result;
