@@ -1,7 +1,7 @@
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4 } from "webgl-operate";
+import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4, viewer } from "webgl-operate";
 import { TopicMapRenderer } from "./renderer";
 import { Data } from './data';
 import { Controls } from './controls';
@@ -19,6 +19,10 @@ export class TopicMapApp extends Initializable {
 
         this._renderer = new TopicMapRenderer();
         this._canvas.renderer = this._renderer;
+
+        this._canvas.element.addEventListener('dblclick', () => {
+            viewer.Fullscreen.toggle(this._canvas.element);
+        });
 
         this.initControls();
         this.fetchAvailable();
