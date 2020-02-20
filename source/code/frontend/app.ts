@@ -14,7 +14,12 @@ export class TopicMapApp extends Initializable {
     private _data: Data;
 
     initialize(element: HTMLCanvasElement | string): boolean {
-        this._canvas = new Canvas(element,);
+        this._canvas = new Canvas(element, {
+            antialias: true,
+            alpha: true,
+        });
+        this._canvas.controller.multiFrameNumber = 1;
+        this._canvas.framePrecision = Wizard.Precision.byte;
         this._canvas.frameScale = [1.0, 1.0];
 
         this._renderer = new TopicMapRenderer();
@@ -60,7 +65,7 @@ export class TopicMapApp extends Initializable {
 
         const scaleDefault = 1.0;
         const scaleMin = 0.1;
-        const scaleMax = 4.0;
+        const scaleMax = 10.0;
         const scaleStep = 0.1;
 
         applyScale(scaleDefault);

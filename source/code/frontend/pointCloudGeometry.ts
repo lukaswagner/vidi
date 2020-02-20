@@ -9,9 +9,11 @@ import { GL2Facade } from 'webgl-operate/lib/gl2facade';
  * Geometry of a half edge model with vertex normals.
  */
 export class PointCloudGeometry extends Geometry {
-    protected _vertices = new Float32Array([]);
+    protected _localPositions = new Float32Array([0, 0, 0]);
+    protected _globalPositions = new Float32Array([]);
 
-    protected _vertexLocation: GLuint = 0;
+    protected _localPosLocation: GLuint = 0;
+    protected _globalPosLocation: GLuint = 1;
 
     protected _gl: WebGLRenderingContext;
     protected _gl2facade: GL2Facade;
@@ -28,9 +30,11 @@ export class PointCloudGeometry extends Geometry {
         this._gl = context.gl as WebGLRenderingContext;
         this._gl2facade = context.gl2facade;
 
-        /* Generate vertex buffer. */
-        const vertexVBO = new Buffer(context);
-        this._buffers.push(vertexVBO);
+        const localPos = new Buffer(context);
+        this._buffers.push(localPos);
+
+        const globalPos = new Buffer(context);
+        this._buffers.push(globalPos);
     }
 
 
@@ -40,37 +44,48 @@ export class PointCloudGeometry extends Geometry {
      */
     protected bindBuffers(/*indices: Array<GLuint>*/): void {
         this._buffers[0].attribEnable(
-            this._vertexLocation, 3, this._gl.FLOAT,
+            this._localPosLocation, 3, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._vertexLocation, 1);
+        this._gl2facade.vertexAttribDivisor(this._localPosLocation, 0);
+
+        this._buffers[1].attribEnable(
+            this._globalPosLocation, 3, this._gl.FLOAT,
+            false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(this._globalPosLocation, 1);
     }
 
     /**
      * Unbinds the vertex buffer object (VBO) and disables the binding point.
      */
     protected unbindBuffers(): void {
-        this._buffers[0].attribDisable(this._vertexLocation, true, true);
+        this._buffers[0].attribDisable(this._localPosLocation, true, true);
+        this._buffers[1].attribDisable(this._globalPosLocation, true, true);
     }
 
     /**
      * Creates the vertex buffer object (VBO) and creates and initializes the
      * buffer's data store.
-     * @param vertexLocation - Attribute binding point for vertices.
+     * @param globalPosLocation - Attribute binding point for vertices.
      * @param normalLocation - Attribute binding point for vertex normal.
      */
     initialize(
-        vertexLocation: GLuint = 0,
+        localPosLocation: GLuint = 0,
+        globalPosLocation: GLuint = 1,
     ) : boolean {
-        this._vertexLocation = vertexLocation;
+        this._localPosLocation = localPosLocation;
+        this._globalPosLocation = globalPosLocation;
 
         const valid = super.initialize(
                 [
+                    this._gl.ARRAY_BUFFER,
                     this._gl.ARRAY_BUFFER
                 ], [
-                    vertexLocation
+                    localPosLocation,
+                    globalPosLocation
                 ]);
 
-        this._buffers[0].data(this._vertices, this._gl.STATIC_DRAW);
+        this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
+        this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
 
         return valid;
     }
@@ -80,18 +95,18 @@ export class PointCloudGeometry extends Geometry {
      */
     draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.POINTS, 0, 1, this._vertices.length / 3);
+            this._gl.POINTS, 0, 1, this._globalPositions.length / 3);
     }
 
     /**
      * Attribute location to which this geometry's vertices are bound to.
      */
-    get vertexLocation(): GLuint {
-        return this._vertexLocation;
+    get positionLocation(): GLuint {
+        return this._globalPosLocation;
     }
 
     set positions(positions: Float32Array) {
-        this._vertices = positions;
-        this._buffers[0].data(this._vertices, this._gl.STATIC_DRAW);
+        this._globalPositions = positions;
+        this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
     }
 }

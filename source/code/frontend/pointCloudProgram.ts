@@ -19,6 +19,7 @@ export class PointCloudProgram {
     protected _uLight: WebGLUniformLocation;
     protected _uFrameSize: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
+    protected _uUseDiscard: WebGLUniformLocation;
 
     public constructor(context: Context) {
         this._gl = context.gl as WebGLRenderingContext;
@@ -41,6 +42,7 @@ export class PointCloudProgram {
         this._uLight = this._program.uniform('u_light');
         this._uFrameSize = this._program.uniform('u_pointSize');
         this._uPointSize = this._program.uniform('u_frameSize');
+        this._uUseDiscard = this._program.uniform('u_useDiscard');
     }
 
     uninitialize(): void {
@@ -69,5 +71,9 @@ export class PointCloudProgram {
 
     set pointSize(size: number) {
         this._gl.uniform1f(this._uPointSize, size);
+    }
+
+    set useDiscard(enable: boolean) {
+        this._gl.uniform1i(this._uUseDiscard, Number(enable));
     }
 }

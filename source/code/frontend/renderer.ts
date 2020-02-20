@@ -11,6 +11,7 @@ import {
     Program,
     Renderer,
     Shader,
+    viewer,
 } from 'webgl-operate';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { PointCloudProgram } from './pointCloudProgram';
@@ -37,7 +38,7 @@ export class TopicMapRenderer extends Renderer {
         mouseEventProvider: MouseEventProvider,
         /* keyEventProvider: KeyEventProvider, */
         /* touchEventProvider: TouchEventProvider */): boolean {
-        const gl = context.gl;
+        const gl = context.gl as WebGLRenderingContext;
 
         context.enable(['ANGLE_instanced_arrays']);
 
@@ -73,6 +74,14 @@ export class TopicMapRenderer extends Renderer {
         gl.enable(gl.CULL_FACE);
         gl.cullFace(gl.BACK);
         gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.SAMPLE_ALPHA_TO_COVERAGE);
+
+        const uud = this.updateUseDiscard.bind(this);
+        document.addEventListener('fullscreenchange', uud);
+        document.addEventListener('mozfullscreenchange', uud);
+        document.addEventListener('webkitfullscreenchange', uud);
+        document.addEventListener('msfullscreenchange', uud);
+        this._program.useDiscard = true;
 
         return true;
     }
@@ -166,5 +175,9 @@ export class TopicMapRenderer extends Renderer {
 
     get pointSize(): number {
         return this._program.pointSize
+    }
+
+    updateUseDiscard() {
+        this._program.useDiscard = !viewer.Fullscreen.active();
     }
 }
