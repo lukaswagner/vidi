@@ -1,7 +1,7 @@
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4, viewer } from "webgl-operate";
+import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4, viewer, Color } from "webgl-operate";
 import { TopicMapRenderer } from "./renderer";
 import { Data } from './data';
 import { Controls } from './controls';
@@ -21,6 +21,16 @@ export class TopicMapApp extends Initializable {
         this._canvas.controller.multiFrameNumber = 1;
         this._canvas.framePrecision = Wizard.Precision.byte;
         this._canvas.frameScale = [1.0, 1.0];
+
+        const bgColor = window.getComputedStyle(document.body).backgroundColor;
+        var bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
+        console.log(bgComponents);
+        this._canvas.clearColor = new Color([
+            Number(bgComponents[1]) / 255,
+            Number(bgComponents[2]) / 255,
+            Number(bgComponents[3]) / 255,
+            1.0
+        ]);
 
         this._renderer = new TopicMapRenderer();
         this._canvas.renderer = this._renderer;
