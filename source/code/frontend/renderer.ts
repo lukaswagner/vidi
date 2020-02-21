@@ -13,15 +13,21 @@ import {
     Shader,
     viewer,
 } from 'webgl-operate';
-import { PointCloudGeometry } from './pointCloudGeometry';
-import { PointCloudProgram } from './pointCloudProgram';
+import { PointCloudGeometry } from './points/pointCloudGeometry';
+import { PointCloudProgram } from './points/pointCloudProgram';
+import { GridGeometry } from './grid/gridGeometry';
+import { GridProgram } from './grid/gridProgram';
 
 export class TopicMapRenderer extends Renderer {
 
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
 
-    protected _geometry: PointCloudGeometry;
-    protected _program: PointCloudProgram;
+    protected _pcGeometry: PointCloudGeometry;
+    protected _pcProgram: PointCloudProgram;
+
+    protected _gridGeometry: GridGeometry;
+    protected _gridProgram: GridProgram;
+
     protected _camera: Camera;
     protected _navigation: Navigation;
 
@@ -46,9 +52,13 @@ export class TopicMapRenderer extends Renderer {
         this._defaultFBO.initialize();
         this._defaultFBO.bind();
 
-        this._geometry = new PointCloudGeometry(context);
-        this._geometry.initialize();
-        this._program = new PointCloudProgram(context);
+        this._pcGeometry = new PointCloudGeometry(context);
+        this._pcGeometry.initialize();
+        this._pcProgram = new PointCloudProgram(context);
+
+        this._gridGeometry = new GridGeometry(context);
+        this._gridGeometry.initialize();
+        this._gridProgram = new GridProgram(context);
 
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
@@ -61,13 +71,17 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, mouseEventProvider);
         this._navigation.camera = this._camera;
 
-        this._program.model = mat4.fromRotationTranslationScale(
+        const model = mat4.fromRotationTranslationScale(
             mat4.create(), quat.create(), [0.0, 0.0, 0.0], [2.0, 2.0, 2.0]);
+
+        this._pcProgram.model(model);
+        this._gridProgram.model(model);
 
         // prepare draw binding
 
         this._defaultFBO.bind();
-        this._defaultFBO.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, true, false);
+        this._defaultFBO.clear(
+            gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, true, false);
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
@@ -81,7 +95,7 @@ export class TopicMapRenderer extends Renderer {
         document.addEventListener('mozfullscreenchange', uud);
         document.addEventListener('webkitfullscreenchange', uud);
         document.addEventListener('msfullscreenchange', uud);
-        this._program.useDiscard = true;
+        this._pcProgram.useDiscard(true);
 
         return true;
     }
@@ -91,8 +105,10 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onUninitialize(): void {
         super.uninitialize();
-        this._geometry.uninitialize();
-        this._program.uninitialize();
+        this._pcGeometry.uninitialize();
+        this._pcProgram.uninitialize();
+        this._gridGeometry.uninitialize();
+        this._gridProgram.uninitialize();
         this._defaultFBO.uninitialize();
     }
 
@@ -113,13 +129,11 @@ export class TopicMapRenderer extends Renderer {
      * camera-updates.
      */
     protected onPrepare(): void {
-        const gl = this._context.gl;
-
         if (this._altered.canvasSize) {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
             this._camera.viewport = this._canvasSize;
 
-            this._program.frameSize = this._frameSize[0];
+            this._pcProgram.frameSize(this._frameSize[0]);
         }
 
         if (this._altered.clearColor) {
@@ -138,46 +152,53 @@ export class TopicMapRenderer extends Renderer {
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
-        this._program.view = this._camera.view;
-        this._program.viewProjection = this._camera.viewProjection;
+        this._pcProgram.viewProjection(
+            this._camera.viewProjection, true, false);
 
-        const light = vec4.fromValues(-2.0, 2.0, 4.0, 0.0);
-        vec4.normalize(
-            light, vec4.transformMat4(light, light, this._camera.view));
-        this._program.lightDir =
-            vec3.fromValues(light[0], light[1], light[2]);
+        this._pcGeometry.bind();
+        this._pcGeometry.draw();
+        this._pcGeometry.unbind();
 
-        this._geometry.bind();
-        this._geometry.draw();
-        this._geometry.unbind();
+        this._pcProgram.unbind();
+
+        this._gridProgram.viewProjection(
+            this._camera.viewProjection, true, false);
+
+        this._gridGeometry.bind();
+        this._gridGeometry.draw();
+        this._gridGeometry.unbind();
+
+        this._gridProgram.unbind();
     }
 
     protected onSwap(): void {
     }
 
     set positions(positions: Float32Array) {
-        this._geometry.positions = positions;
+        this._pcGeometry.positions = positions;
 
         if (this.initialized) {
-            this.invalidate(true);
+            this.invalidate();
         }
     }
 
-    set model(mat: mat4) {
-        this._program.model = mat;
-        this.invalidate(true);
-    }
-
-    set pointSize(size: number) {
-        this._program.pointSize = size;
+    set grid(gridInfo: { min: number, max: number, steps: number }[]) {
+        this._gridGeometry.buildGrid(gridInfo);
         this.invalidate();
     }
 
-    get pointSize(): number {
-        return this._program.pointSize
+    set model(mat: mat4) {
+        this._pcProgram.model(mat);
+        this._gridProgram.model(mat);
+        this.invalidate();
+    }
+
+    set pointSize(size: number) {
+        this._pcProgram.pointSize(size);
+        this.invalidate();
     }
 
     updateUseDiscard() {
-        this._program.useDiscard = !viewer.Fullscreen.active();
+        this._pcProgram.useDiscard(!viewer.Fullscreen.active());
     }
 }

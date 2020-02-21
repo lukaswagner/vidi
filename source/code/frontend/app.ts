@@ -24,7 +24,6 @@ export class TopicMapApp extends Initializable {
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
         var bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
-        console.log(bgComponents);
         this._canvas.clearColor = new Color([
             Number(bgComponents[1]) / 255,
             Number(bgComponents[2]) / 255,
@@ -41,6 +40,11 @@ export class TopicMapApp extends Initializable {
 
         this.initControls();
         this.fetchAvailable();
+
+        this._renderer.grid = [
+            { min: -1, max: 1, steps: 10 },
+            { min: -1, max: 1, steps: 10 }
+        ];
 
         return true;
     }
@@ -67,8 +71,8 @@ export class TopicMapApp extends Initializable {
 
         // scale
         const applyScale = (scale: number) => {
-            this._renderer.model =
-                mat4.fromScaling(mat4.create(), [scale, scale, scale]);
+            const mat = mat4.fromScaling(mat4.create(), [scale, scale, scale]);
+            this._renderer.model = mat;
         };
 
         this._controls.scale.handler = applyScale.bind(this);

@@ -5,9 +5,6 @@ import {
 } from 'webgl-operate';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
-/**
- * Geometry of a half edge model with vertex normals.
- */
 export class PointCloudGeometry extends Geometry {
     protected _localPositions = new Float32Array([0, 0, 0]);
     protected _globalPositions = new Float32Array([]);
@@ -75,14 +72,13 @@ export class PointCloudGeometry extends Geometry {
         this._localPosLocation = localPosLocation;
         this._globalPosLocation = globalPosLocation;
 
-        const valid = super.initialize(
-                [
-                    this._gl.ARRAY_BUFFER,
-                    this._gl.ARRAY_BUFFER
-                ], [
-                    localPosLocation,
-                    globalPosLocation
-                ]);
+        const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER
+        ], [
+            localPosLocation,
+            globalPosLocation
+        ]);
 
         this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
         this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
@@ -96,13 +92,6 @@ export class PointCloudGeometry extends Geometry {
     draw(): void {
         this._gl2facade.drawArraysInstanced(
             this._gl.POINTS, 0, 1, this._globalPositions.length / 3);
-    }
-
-    /**
-     * Attribute location to which this geometry's vertices are bound to.
-     */
-    get positionLocation(): GLuint {
-        return this._globalPosLocation;
     }
 
     set positions(positions: Float32Array) {

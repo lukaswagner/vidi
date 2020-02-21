@@ -8,15 +8,10 @@ export class PointCloudProgram {
 
     protected _model: mat4;
 
-    protected readonly _positionLocation: GLuint = 0;
-    protected readonly _colorLocation: GLuint = 1;
-
     protected _pointSize: GLfloat = PointCloudProgram.DEFAULT_POINT_SIZE;
 
     protected _uModel: WebGLUniformLocation;
-    protected _uView: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
-    protected _uLight: WebGLUniformLocation;
     protected _uFrameSize: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
@@ -29,51 +24,68 @@ export class PointCloudProgram {
         const frag = new Shader(context, this._gl.FRAGMENT_SHADER);
         frag.initialize(require('./particle.frag'));
 
-        this._program = new Program(context, 'ParticleProgram');
+        this._program = new Program(context);
         this._program.initialize([vert, frag], false);
 
-        this._program.attribute('a_position', this._positionLocation);
         this._program.link();
         this._program.bind();
 
         this._uModel = this._program.uniform('u_model');
-        this._uView = this._program.uniform('u_view');
         this._uViewProjection = this._program.uniform('u_viewProjection');
-        this._uLight = this._program.uniform('u_light');
         this._uFrameSize = this._program.uniform('u_pointSize');
         this._uPointSize = this._program.uniform('u_frameSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
+
+        this._program.unbind();
     }
 
     uninitialize(): void {
         this._program.uninitialize();
     }
 
-    set model(mat: mat4) {
+    bind(): void {
+        this._program.bind();
+    }
+
+    unbind(): void {
+        this._program.unbind();
+    }
+
+    model(mat: mat4, bind: boolean = true, unbind: boolean = true): void {
+        if(bind) this._program.bind();
         this._gl.uniformMatrix4fv(this._uModel, false, mat);
+        if(unbind) this._program.bind();
     }
 
-    set view(mat: mat4) {
-        this._gl.uniformMatrix4fv(this._uView, false, mat);
-    }
-
-    set viewProjection(mat: mat4) {
+    viewProjection(
+        mat: mat4, bind: boolean = true, unbind: boolean = true
+    ): void {
+        if(bind) this._program.bind();
         this._gl.uniformMatrix4fv(this._uViewProjection, false, mat);
+        if(unbind) this._program.bind();
     }
 
-    set lightDir(dir: vec3) {
-        this._gl.uniform3fv(this._uLight, dir);
-    }
-
-    set frameSize(size: number) {
+    frameSize(
+        size: number, bind: boolean = true, unbind: boolean = true
+    ): void {
+        if(bind) this._program.bind();
         this._gl.uniform1f(this._uFrameSize, size);
+        if(unbind) this._program.bind();
     }
 
-    set pointSize(size: number) {
+    pointSize(
+        size: number, bind: boolean = true, unbind: boolean = true
+    ): void {
+        if(bind) this._program.bind();
         this._gl.uniform1f(this._uPointSize, size);
+        if(unbind) this._program.bind();
     }
 
-    set useDiscard(enable: boolean) {
+    useDiscard(
+        enable: boolean, bind: boolean = true, unbind: boolean = true
+    ): void {
+        if(bind) this._program.bind();
         this._gl.uniform1i(this._uUseDiscard, Number(enable));
+        if(unbind) this._program.bind();
     }
 }

@@ -1,4 +1,3 @@
-
 precision lowp float;
 precision lowp int;
 
@@ -10,7 +9,6 @@ precision lowp int;
     layout(location = 0) out vec4 fragColor;
 #endif
 
-uniform vec3 u_lightDir;
 uniform bool u_useDiscard;
 
 varying vec3 v_pos;
