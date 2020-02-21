@@ -63,7 +63,7 @@ export class TopicMapRenderer extends Renderer {
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
         this._camera.up = vec3.fromValues(0.0, 1.0, 0.0);
-        this._camera.eye = vec3.fromValues(0.0, 0.0, 5.0);
+        this._camera.eye = vec3.fromValues(3.0, 3.0, 5.0);
 
         this._camera.near = 0.1;
         this._camera.far = 64.0;
@@ -129,11 +129,14 @@ export class TopicMapRenderer extends Renderer {
      * camera-updates.
      */
     protected onPrepare(): void {
-        if (this._altered.canvasSize) {
-            this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
-            this._camera.viewport = this._canvasSize;
+        if (this._altered.frameSize) {
+            this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
             this._pcProgram.frameSize(this._frameSize[0]);
+        }
+
+        if(this._altered.canvasSize) {
+            this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
         if (this._altered.clearColor) {

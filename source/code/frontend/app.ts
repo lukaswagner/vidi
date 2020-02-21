@@ -60,7 +60,7 @@ export class TopicMapApp extends Initializable {
             this._renderer.pointSize = v;
         };
 
-        const pointSizeDefault = 0.01;
+        const pointSizeDefault = 0.02;
         const pointSizeMin = 0.001;
         const pointSizeMax = 0.05;
         const pointSizeStep = 0.001;
@@ -77,7 +77,7 @@ export class TopicMapApp extends Initializable {
 
         this._controls.scale.handler = applyScale.bind(this);
 
-        const scaleDefault = 1.0;
+        const scaleDefault = 3.0;
         const scaleMin = 0.1;
         const scaleMax = 10.0;
         const scaleStep = 0.1;

@@ -10,6 +10,10 @@ footer {
     padding-bottom: 2rem;
 }
 
+.embed-responsive-34by9::before {
+    padding-top: 34.61538%;
+}
+
 input.slider {
     --slider-size: 38px;
     --slider-handle-size: calc(var(--slider-size) - 2px);
