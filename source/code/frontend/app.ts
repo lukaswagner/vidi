@@ -14,15 +14,15 @@ export class TopicMapApp extends Initializable {
     private _data: Data;
 
     private static readonly POINT_SIZE_CONTROL = {
-        default: 0.02,
+        default: 0.01,
         min: 0.001,
         max: 0.05,
         step: 0.001
     };
 
     private static readonly SCALE_CONTROL = {
-        default: 3.0,
-        min: 0.1,
+        default: 4.0,
+        min: 0.2,
         max: 10.0,
         step: 0.01
     };
@@ -53,12 +53,12 @@ export class TopicMapApp extends Initializable {
         });
 
         this._canvas.element.addEventListener('wheel', (e) => {
-            const base = 1.25;
+            const base = 1.15;
             const exp = -Math.sign(e.deltaY);
             this._controls.scale.value = Math.max(
                 this._controls.scale.value * (base ** exp),
                 this._controls.scale.step);
-            this.applyScale(this._controls.scale.value);
+            this._renderer.scale = this._controls.scale.value;
             e.preventDefault();
         }, { capture: true });
 
@@ -90,10 +90,12 @@ export class TopicMapApp extends Initializable {
             psc.default, psc.min, psc.max, psc.step);
 
         // scale
-        this._controls.scale.handler = this.applyScale.bind(this);
+        this._controls.scale.handler = (s) => {
+            this._renderer.scale = s;
+        };
 
         const sc = TopicMapApp.SCALE_CONTROL;
-        this.applyScale(sc.default);
+        this._renderer.scale = sc.default;
         this._controls.scale.setOptions(
             sc.default, sc.min, sc.max, sc.step);
 
@@ -102,11 +104,6 @@ export class TopicMapApp extends Initializable {
         this._controls.yAxis.handler = this.updatePositions.bind(this);
         this._controls.zAxis.handler = this.updatePositions.bind(this);
     }
-
-    applyScale(scale: number): void {
-        const mat = mat4.fromScaling(mat4.create(), [scale, scale, scale]);
-        this._renderer.model = mat;
-    };
 
     fetchAvailable(): void {
         fetch('/ls').then((res) => {

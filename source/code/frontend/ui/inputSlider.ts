@@ -2,6 +2,8 @@ import { UiBase } from "./base";
 
 export class InputSlider extends UiBase {
     protected _sliderElement: HTMLInputElement;
+    protected _min: number;
+    protected _max: number;
     protected _step: number;
 
     constructor(id: string) {
@@ -34,10 +36,13 @@ export class InputSlider extends UiBase {
         this._sliderElement.max = max.toString();
         this._sliderElement.step = step.toString();
         this._sliderElement.value = value.toString();
+        this._min = min;
+        this._max = max;
         this._step = step;
     }
 
     set value(v: number) {
+        v = Math.max(Math.min(v, this._max), this._min);
         const remainder = v % this._step;
         const rounded = (remainder > this._step / 2) ?
             v - remainder + this._step:

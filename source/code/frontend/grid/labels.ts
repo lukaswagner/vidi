@@ -42,7 +42,7 @@ export class Labels {
         this._labelInfo.forEach((i) => {
             const l = new Position3DLabel(new Text(i.name), Label.Type.Static);
             l.fontFace = this._fontFace;
-            l.fontSize = 1;
+            l.fontSize = 0.15;
             l.lineAnchor = Label.LineAnchor.Top;
             l.alignment = Label.Alignment.Center;
             l.position = i.pos;

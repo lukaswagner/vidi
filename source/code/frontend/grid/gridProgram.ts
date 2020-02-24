@@ -6,9 +6,6 @@ export class GridProgram {
     protected _gl: WebGLRenderingContext;
     protected _program: Program;
 
-    protected _model: mat4;
-
-    protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
     protected _uColor: WebGLUniformLocation;
 
@@ -26,7 +23,6 @@ export class GridProgram {
         this._program.link();
         this._program.bind();
 
-        this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uColor = this._program.uniform('u_color');
 
@@ -43,12 +39,6 @@ export class GridProgram {
 
     unbind(): void {
         this._program.unbind();
-    }
-
-    model(mat: mat4, bind: boolean = true, unbind: boolean = true): void {
-        if(bind) this._program.bind();
-        this._gl.uniformMatrix4fv(this._uModel, false, mat);
-        if(unbind) this._program.bind();
     }
 
     viewProjection(

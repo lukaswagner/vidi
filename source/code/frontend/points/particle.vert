@@ -11,7 +11,6 @@ precision lowp int;
     layout(location = 1) in vec3 a_globalPos;
 #endif
 
-uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_viewProjection;
 
@@ -23,6 +22,6 @@ varying vec3 v_pos;
 void main()
 {
     v_pos = a_localPos + a_globalPos;
-    gl_Position = u_viewProjection * u_model * vec4(v_pos, 1.0);
+    gl_Position = u_viewProjection * vec4(v_pos, 1.0);
     gl_PointSize = u_frameSize * u_pointSize / gl_Position.z;
 }

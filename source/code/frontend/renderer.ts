@@ -71,12 +71,6 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, mouseEventProvider);
         this._navigation.camera = this._camera;
 
-        const model = mat4.fromRotationTranslationScale(
-            mat4.create(), quat.create(), [0.0, 0.0, 0.0], [2.0, 2.0, 2.0]);
-
-        this._pcProgram.model(model);
-        this._gridProgram.model(model);
-
         this._labels = new Labels(context, this._camera, this._defaultFBO);
 
         // prepare draw binding
@@ -163,6 +157,8 @@ export class TopicMapRenderer extends Renderer {
         gl.disable(gl.CULL_FACE);
         this._labels.frame();
         gl.enable(gl.CULL_FACE);
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.BLEND);
 
         this._pcProgram.viewProjection(
             this._camera.viewProjection, true, false);
@@ -196,25 +192,21 @@ export class TopicMapRenderer extends Renderer {
 
     set grid(gridInfo: { min: number, max: number, steps: number }[]) {
         this._gridGeometry.buildGrid(gridInfo);
+        const x = gridInfo[0];
+        const y = gridInfo[1];
         this._labels.labels = [
             {
                 name: 'x axis',
-                pos: [0, 0, 1],
+                pos: [0, 0, y.max],
                 dir: [1, 0, 0],
                 up: [0, 0, -1],
             }, {
                 name: 'y axis',
-                pos: [-1, 0, 0],
+                pos: [x.min, 0, 0],
                 dir: [0, 0, 1],
                 up: [1, 0, 0],
             }
         ];
-        this.invalidate();
-    }
-
-    set model(mat: mat4) {
-        this._pcProgram.model(mat);
-        this._gridProgram.model(mat);
         this.invalidate();
     }
 
@@ -225,5 +217,13 @@ export class TopicMapRenderer extends Renderer {
 
     updateUseDiscard() {
         this._pcProgram.useDiscard(!viewer.Fullscreen.active());
+    }
+
+    set scale(scale: number) {
+        const temp = vec3.create();
+        vec3.normalize(temp, this._camera.eye);
+        vec3.scale(temp, temp, 10 / scale);
+        this._camera.eye = temp;
+        this.invalidate(true);
     }
 }
