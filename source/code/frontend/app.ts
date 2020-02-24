@@ -55,11 +55,9 @@ export class TopicMapApp extends Initializable {
         this._canvas.element.addEventListener('wheel', (e) => {
             const base = 1.25;
             const exp = -Math.sign(e.deltaY);
-            const oldVal = this._controls.scale.value;
-            const fac = base ** exp;
-            const newVal = oldVal * fac;
-            const step = this._controls.scale.step;
-            this._controls.scale.value = Math.max(newVal, this._controls.scale.step);
+            this._controls.scale.value = Math.max(
+                this._controls.scale.value * (base ** exp),
+                this._controls.scale.step);
             this.applyScale(this._controls.scale.value);
             e.preventDefault();
         }, { capture: true });
