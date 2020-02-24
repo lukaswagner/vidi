@@ -13,6 +13,20 @@ export class TopicMapApp extends Initializable {
     private _controls: Controls;
     private _data: Data;
 
+    private static readonly POINT_SIZE_CONTROL = {
+        default: 0.02,
+        min: 0.001,
+        max: 0.05,
+        step: 0.001
+    };
+
+    private static readonly SCALE_CONTROL = {
+        default: 3.0,
+        min: 0.1,
+        max: 10.0,
+        step: 0.01
+    };
+
     initialize(element: HTMLCanvasElement | string): boolean {
         this._canvas = new Canvas(element, {
             antialias: true,
@@ -38,6 +52,18 @@ export class TopicMapApp extends Initializable {
             viewer.Fullscreen.toggle(this._canvas.element);
         });
 
+        this._canvas.element.addEventListener('wheel', (e) => {
+            const base = 1.25;
+            const exp = -Math.sign(e.deltaY);
+            const oldVal = this._controls.scale.value;
+            const fac = base ** exp;
+            const newVal = oldVal * fac;
+            const step = this._controls.scale.step;
+            this._controls.scale.value = Math.max(newVal, this._controls.scale.step);
+            this.applyScale(this._controls.scale.value);
+            e.preventDefault();
+        }, { capture: true });
+
         this.initControls();
         this.fetchAvailable();
 
@@ -60,37 +86,29 @@ export class TopicMapApp extends Initializable {
             this._renderer.pointSize = v;
         };
 
-        const pointSizeDefault = 0.02;
-        const pointSizeMin = 0.001;
-        const pointSizeMax = 0.05;
-        const pointSizeStep = 0.001;
-
-        this._renderer.pointSize = Number(pointSizeDefault);
+        const psc = TopicMapApp.POINT_SIZE_CONTROL;
+        this._renderer.pointSize = Number(psc.default);
         this._controls.pointSize.setOptions(
-            pointSizeDefault, pointSizeMin, pointSizeMax, pointSizeStep);
+            psc.default, psc.min, psc.max, psc.step);
 
         // scale
-        const applyScale = (scale: number) => {
-            const mat = mat4.fromScaling(mat4.create(), [scale, scale, scale]);
-            this._renderer.model = mat;
-        };
+        this._controls.scale.handler = this.applyScale.bind(this);
 
-        this._controls.scale.handler = applyScale.bind(this);
-
-        const scaleDefault = 3.0;
-        const scaleMin = 0.1;
-        const scaleMax = 10.0;
-        const scaleStep = 0.1;
-
-        applyScale(scaleDefault);
+        const sc = TopicMapApp.SCALE_CONTROL;
+        this.applyScale(sc.default);
         this._controls.scale.setOptions(
-            scaleDefault, scaleMin, scaleMax, scaleStep);
+            sc.default, sc.min, sc.max, sc.step);
 
         // axes
         this._controls.xAxis.handler = this.updatePositions.bind(this);
         this._controls.yAxis.handler = this.updatePositions.bind(this);
         this._controls.zAxis.handler = this.updatePositions.bind(this);
     }
+
+    applyScale(scale: number): void {
+        const mat = mat4.fromScaling(mat4.create(), [scale, scale, scale]);
+        this._renderer.model = mat;
+    };
 
     fetchAvailable(): void {
         fetch('/ls').then((res) => {
