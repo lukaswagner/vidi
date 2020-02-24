@@ -1,22 +1,20 @@
 import { mat4, quat, vec3, vec4 } from 'gl-matrix';
 
 import {
-    Buffer,
     Camera,
     Context,
     DefaultFramebuffer,
     Invalidate,
     MouseEventProvider,
     Navigation,
-    Program,
     Renderer,
-    Shader,
     viewer,
 } from 'webgl-operate';
 import { PointCloudGeometry } from './points/pointCloudGeometry';
 import { PointCloudProgram } from './points/pointCloudProgram';
 import { GridGeometry } from './grid/gridGeometry';
 import { GridProgram } from './grid/gridProgram';
+import { Labels } from './grid/labels';
 
 export class TopicMapRenderer extends Renderer {
 
@@ -30,6 +28,8 @@ export class TopicMapRenderer extends Renderer {
 
     protected _camera: Camera;
     protected _navigation: Navigation;
+
+    protected _labels: Labels;
 
     protected _defaultFBO: DefaultFramebuffer;
 
@@ -63,7 +63,7 @@ export class TopicMapRenderer extends Renderer {
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
         this._camera.up = vec3.fromValues(0.0, 1.0, 0.0);
-        this._camera.eye = vec3.fromValues(3.0, 3.0, 5.0);
+        this._camera.eye = vec3.fromValues(-3.0, 3.0, 5.0);
 
         this._camera.near = 0.1;
         this._camera.far = 64.0;
@@ -76,6 +76,8 @@ export class TopicMapRenderer extends Renderer {
 
         this._pcProgram.model(model);
         this._gridProgram.model(model);
+
+        this._labels = new Labels(context, this._camera, this._defaultFBO);
 
         // prepare draw binding
 
@@ -110,6 +112,7 @@ export class TopicMapRenderer extends Renderer {
         this._gridGeometry.uninitialize();
         this._gridProgram.uninitialize();
         this._defaultFBO.uninitialize();
+        this._labels.uninitialize();
     }
 
     /**
@@ -139,6 +142,8 @@ export class TopicMapRenderer extends Renderer {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
+        this._labels.update();
+
         if (this._altered.clearColor) {
             this._defaultFBO.clearColor(this._clearColor);
         }
@@ -154,6 +159,10 @@ export class TopicMapRenderer extends Renderer {
         this._defaultFBO.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, false, false);
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
+
+        gl.disable(gl.CULL_FACE);
+        this._labels.frame();
+        gl.enable(gl.CULL_FACE);
 
         this._pcProgram.viewProjection(
             this._camera.viewProjection, true, false);
@@ -187,6 +196,19 @@ export class TopicMapRenderer extends Renderer {
 
     set grid(gridInfo: { min: number, max: number, steps: number }[]) {
         this._gridGeometry.buildGrid(gridInfo);
+        this._labels.labels = [
+            {
+                name: 'x axis',
+                pos: [0, 0, 1],
+                dir: [1, 0, 0],
+                up: [0, 0, -1],
+            }, {
+                name: 'y axis',
+                pos: [-1, 0, 0],
+                dir: [0, 0, 1],
+                up: [1, 0, 0],
+            }
+        ];
         this.invalidate();
     }
 
