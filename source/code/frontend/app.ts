@@ -21,7 +21,7 @@ export class TopicMapApp extends Initializable {
     };
 
     private static readonly SCALE_CONTROL = {
-        default: 4.0,
+        default: 2.0,
         min: 0.2,
         max: 10.0,
         step: 0.01

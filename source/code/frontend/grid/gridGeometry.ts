@@ -5,13 +5,40 @@ import {
     mat4,
     vec4,
     vec3,
+    quat,
 } from 'webgl-operate';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
-    protected _positions = new Float32Array([]);
+    protected _quadVertices = new Float32Array([
+        0, 0, 0,
+        1, 0, 0,
+        0, 0, -1,
+        1, 0, -1
+    ]);
+    protected _uvCoordinates = new Float32Array([
+        0, 0,
+        1, 0,
+        0, 1,
+        1, 1
+    ]);
 
-    protected _positionLocation: GLuint;
+    protected _transform = new Float32Array([]);
+
+    /**
+     * gridInfo structure:
+     * vec2 quadLowerBoundsUV
+     * vec2 quadUpperBoundsUV
+     * vec2 dataLowerBoundsUV
+     * vec2 dataUpperBoundsUV
+     * vec2 gridResolutionUV
+     */
+    protected _gridInfo = new Float32Array([]);
+
+    protected _vertexLocation: GLuint = 0;
+    protected _uvLocation: GLuint = 1;
+    protected _transformLocation: GLuint = 2;
+    protected _gridInfoLocation: GLuint = 6;
 
     protected _gl: WebGLRenderingContext;
     protected _gl2facade: GL2Facade;
@@ -28,8 +55,12 @@ export class GridGeometry extends Geometry {
         this._gl = context.gl as WebGLRenderingContext;
         this._gl2facade = context.gl2facade;
 
-        const pos = new Buffer(context);
-        this._buffers.push(pos);
+        this._buffers.push(
+            new Buffer(context),
+            new Buffer(context),
+            new Buffer(context),
+            new Buffer(context)
+        );
     }
 
 
@@ -38,18 +69,61 @@ export class GridGeometry extends Geometry {
      * given, pre-defined index.
      */
     protected bindBuffers(/*indices: Array<GLuint>*/): void {
-        // this._buffers[0].bind();
-        this._buffers[0].attribEnable(
-            this._positionLocation, 3, this._gl.FLOAT,
-            false, 0, 0, true, false);
+        const b = this._buffers;
+        const f = this._gl.FLOAT;
+        const vl = this._vertexLocation;
+        const uvl = this._uvLocation;
+        const tl = this._transformLocation;
+        const gil = this._gridInfoLocation;
+
+        b[0].attribEnable(vl, 3, f, false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(vl, 0);
+
+        b[1].attribEnable(uvl, 2, f, false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(uvl, 0);
+
+        b[2].attribEnable(tl + 0, 4, f, false, 64, 0, true, false);
+        b[2].attribEnable(tl + 1, 4, f, false, 64, 16, false, false);
+        b[2].attribEnable(tl + 2, 4, f, false, 64, 32, false, false);
+        b[2].attribEnable(tl + 3, 4, f, false, 64, 48, false, false);
+        this._gl2facade.vertexAttribDivisor(tl + 0, 1);
+        this._gl2facade.vertexAttribDivisor(tl + 1, 1);
+        this._gl2facade.vertexAttribDivisor(tl + 2, 1);
+        this._gl2facade.vertexAttribDivisor(tl + 3, 1);
+
+        b[3].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
+        b[3].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
+        b[3].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
+        b[3].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
+        b[3].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
+        this._gl2facade.vertexAttribDivisor(gil + 0, 1);
+        this._gl2facade.vertexAttribDivisor(gil + 1, 1);
+        this._gl2facade.vertexAttribDivisor(gil + 2, 1);
+        this._gl2facade.vertexAttribDivisor(gil + 3, 1);
+        this._gl2facade.vertexAttribDivisor(gil + 4, 1);
     }
 
     /**
      * Unbinds the vertex buffer object (VBO) and disables the binding point.
      */
     protected unbindBuffers(): void {
-        // this._buffers[0].unbind();
-        this._buffers[0].attribDisable(this._positionLocation, true, true);
+        const b = this._buffers;
+        const vl = this._vertexLocation;
+        const uvl = this._uvLocation;
+        const tl = this._transformLocation;
+        const gil = this._gridInfoLocation;
+
+        b[0].attribDisable(vl, true, true);
+        b[1].attribDisable(uvl, true, true);
+        b[2].attribDisable(tl + 0, true, false);
+        b[2].attribDisable(tl + 1, false, false);
+        b[2].attribDisable(tl + 2, false, false);
+        b[2].attribDisable(tl + 3, false, true);
+        b[3].attribDisable(gil + 0, true, false);
+        b[3].attribDisable(gil + 1, false, false);
+        b[3].attribDisable(gil + 2, false, false);
+        b[3].attribDisable(gil + 3, false, false);
+        b[3].attribDisable(gil + 4, false, true);
     }
 
     /**
@@ -59,17 +133,32 @@ export class GridGeometry extends Geometry {
      * @param normalLocation - Attribute binding point for vertex normal.
      */
     initialize(
-        positionLocation: GLuint = 0,
+        localPosLocation: GLuint = 0,
+        uvLocation: GLuint = 1,
+        transformLocation: GLuint = 2,
+        gridInfoLocation: GLuint = 6
     ) : boolean {
-        this._positionLocation = positionLocation;
+        this._vertexLocation = localPosLocation;
+        this._uvLocation = uvLocation;
+        this._transformLocation = transformLocation;
+        this._gridInfoLocation = gridInfoLocation;
 
         const valid = super.initialize([
-            this._gl.ARRAY_BUFFER
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
         ], [
-            positionLocation
+            this._vertexLocation,
+            this._uvLocation,
+            this._transformLocation,
+            this._gridInfoLocation,
         ]);
 
-        this._buffers[0].data(this._positions, this._gl.STATIC_DRAW);
+        this._buffers[0].data(this._quadVertices, this._gl.STATIC_DRAW);
+        this._buffers[1].data(this._uvCoordinates, this._gl.STATIC_DRAW);
+        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
 
         return valid;
     }
@@ -78,44 +167,24 @@ export class GridGeometry extends Geometry {
      * Draws the geometry.
      */
     draw(): void {
-        this._gl.drawArrays(this._gl.LINES, 0, this._positions.length / 3);
+        this._gl2facade.drawArraysInstanced(
+            this._gl.TRIANGLE_STRIP, 0, 4, 1);
     }
 
     buildGrid(gridInfo: { min: number, max: number, steps: number }[]): void {
-        // only allow x and y axes for now
-        const numAxes = Math.min(gridInfo.length, 2);
-        const gridInfoReduced = gridInfo.slice(0, numAxes);
-        const numLines =
-            gridInfoReduced.map((a) => a.steps + 1).reduce((a, b) => a + b);
+        const transform = mat4.fromRotationTranslationScale(
+            mat4.create(),
+            quat.identity(quat.create()),
+            [-2, 0, 2],
+            [4, 1, 4]
+        )
+        this._transform = new Float32Array(transform.values());
 
-        this._positions = new Float32Array(numLines * 2 * 3);
+        this._gridInfo = new Float32Array([
+            -2, -2, 2, 2, -1, -1, 1, 1, 0.1, 0.1
+        ]);
 
-        const rotations = [
-            mat4.identity(mat4.create()),
-            mat4.fromRotation(mat4.create(), Math.PI, [1, 0, 1])
-        ];
-
-        let index = 0;
-        for(let i = 0; i < numAxes; i++) {
-            const info = gridInfoReduced[i];
-            const otherInfo = gridInfoReduced[1 - i];
-            const step = (info.max - info.min) / info.steps;
-            const rot = rotations[i];
-            for(let j = 0; j < info.steps + 1; j++) {
-                const x = info.min + step * j;
-                const start = vec3.fromValues(x, 0, otherInfo.min);
-                const end = vec3.fromValues(x, 0, otherInfo.max);
-                vec3.transformMat4(start, start, rot);
-                vec3.transformMat4(end, end, rot);
-                this._positions[index++] = start[0];
-                this._positions[index++] = start[1];
-                this._positions[index++] = start[2];
-                this._positions[index++] = end[0];
-                this._positions[index++] = end[1];
-                this._positions[index++] = end[2];
-            }
-        }
-
-        this._buffers[0].data(this._positions, this._gl.STATIC_DRAW);
+        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
     }
 }

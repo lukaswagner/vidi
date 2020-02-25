@@ -24,7 +24,6 @@ export class GridProgram {
         this._program.bind();
 
         this._uViewProjection = this._program.uniform('u_viewProjection');
-        this._uColor = this._program.uniform('u_color');
 
         this._program.unbind();
     }
@@ -46,12 +45,6 @@ export class GridProgram {
     ): void {
         if(bind) this._program.bind();
         this._gl.uniformMatrix4fv(this._uViewProjection, false, mat);
-        if(unbind) this._program.bind();
-    }
-
-    color(vec: vec3, bind: boolean = true, unbind: boolean = true): void {
-        if(bind) this._program.bind();
-        this._gl.uniform3fv(this._uColor, vec);
         if(unbind) this._program.bind();
     }
 }

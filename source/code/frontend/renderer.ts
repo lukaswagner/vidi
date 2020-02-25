@@ -148,35 +148,36 @@ export class TopicMapRenderer extends Renderer {
 
     protected onFrame(): void {
 
-        const gl = this._context.gl;
+        const gl = this._context.gl as WebGLRenderingContext;
 
         this._defaultFBO.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, false, false);
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
+        // grid
+        this._gridProgram.viewProjection(
+            this._camera.viewProjection, true, false);
+        gl.disable(gl.DEPTH_TEST);
+        this._gridGeometry.bind();
+        this._gridGeometry.draw();
+        this._gridGeometry.unbind();
+        gl.enable(gl.DEPTH_TEST);
+        this._gridProgram.unbind();
+
+        // labels
         gl.disable(gl.CULL_FACE);
         this._labels.frame();
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
-        gl.enable(gl.BLEND);
+        gl.disable(gl.BLEND);
 
+        // points
         this._pcProgram.viewProjection(
             this._camera.viewProjection, true, false);
-
         this._pcGeometry.bind();
         this._pcGeometry.draw();
         this._pcGeometry.unbind();
-
         this._pcProgram.unbind();
-
-        this._gridProgram.viewProjection(
-            this._camera.viewProjection, true, false);
-
-        this._gridGeometry.bind();
-        this._gridGeometry.draw();
-        this._gridGeometry.unbind();
-
-        this._gridProgram.unbind();
     }
 
     protected onSwap(): void {
