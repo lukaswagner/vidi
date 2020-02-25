@@ -8,12 +8,19 @@ precision lowp int;
     layout(location = 0) out vec4 fragColor;
 #endif
 
-const vec4 u_innerColor = vec4(0.0, 0.0, 0.0, 1.0);
-const vec4 u_outerColor = vec4(0.8, 0.8, 0.8, 1.0);
-const vec4 u_invisColor = vec4(248.0/255.0, 249.0/255.0, 250.0/255.0, 1.0);
+const vec3 u_innerColor = vec3(0.0, 0.0, 0.0);
+const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
+
+const float u_innerIntensity = 1.0;
+const float u_outerIntensity = 0.2;
+const float u_invisIntensity = 0.0;
 
 const float u_innerFeather = 0.1;
 const float u_outerFeather = 0.5;
+
+const float u_gridWidth = 0.1;
+
+const float u_aaStepScale = 0.5;
 
 varying vec2 v_uv;
 
@@ -30,6 +37,12 @@ varying vec2 v_dataUpperBoundsUV;
 varying vec2 v_dataRangeUV;
 varying vec2 v_gridResolutionUV;
 
+float aastep(float t, float value)
+{
+    float afwidth = fwidth(value) * u_aaStepScale;
+    return smoothstep(t - afwidth, t + afwidth, value);
+}
+
 void main()
 {
     vec2 dist2 = clamp(mix(
@@ -44,12 +57,18 @@ void main()
     float outerInnerMix = smoothstep(
         u_innerFeather, 0.0, dist);
 
-    vec4 color = u_invisColor;
-    color = mix(color, u_outerColor, invisOuterMix);
-    color = mix(color, u_innerColor, outerInnerMix);
+    float distIntensity = u_invisIntensity;
+    distIntensity = mix(distIntensity, u_outerIntensity, invisOuterMix);
+    distIntensity = mix(distIntensity, u_innerIntensity, outerInnerMix);
 
     vec2 grid2 = fract(v_uv / v_gridResolutionUV);
-    float grid = step(0.05, grid2.x) * step(0.05, grid2.y);
+    float halfWidth = u_gridWidth * 0.5;
+    vec2 a = 0.5 - abs(grid2 - 0.5);
+    float grid = 1.0 - (aastep(halfWidth, a.x) * aastep(halfWidth, a.y));
 
-    gl_FragColor = color * (1.0 - grid);
+    float intensity = distIntensity * grid;
+
+    vec3 color = mix(u_invisColor, u_innerColor, intensity);
+
+    gl_FragColor = vec4(color, 1.0);
 }
