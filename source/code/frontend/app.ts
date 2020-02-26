@@ -135,11 +135,7 @@ export class TopicMapApp extends Initializable {
             this._data.selectColumn(updatedAxis, this._controls.axes[updatedAxis].value)
         }
         const { positions, extents } = this._data.getCoordinates(
-            [{ 
-                min: -2, max: 2
-            },{
-                min: -2, max: 2
-            }]);
+            [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);
         this._renderer.positions = positions;
         this._renderer.grid = [
             { 
