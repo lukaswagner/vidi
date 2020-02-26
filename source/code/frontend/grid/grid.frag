@@ -12,13 +12,13 @@ const vec3 u_innerColor = vec3(0.0, 0.0, 0.0);
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
 const float u_innerIntensity = 1.0;
-const float u_outerIntensity = 0.2;
+const float u_outerIntensity = 0.15;
 const float u_invisIntensity = 0.0;
 
 const float u_innerFeather = 0.1;
-const float u_outerFeather = 0.5;
+const float u_outerFeather = 1.1;
 
-const float u_gridWidth = 0.1;
+const float u_gridWidth = 0.05;
 
 const float u_aaStepScale = 0.5;
 
