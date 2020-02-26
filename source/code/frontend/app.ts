@@ -66,8 +66,8 @@ export class TopicMapApp extends Initializable {
         this.fetchAvailable();
 
         this._renderer.grid = [
-            { min: -1, max: 1, steps: 10 },
-            { min: -1, max: 1, steps: 10 }
+            { min: -1, max: 1, resolution: 0.25 },
+            { min: -1, max: 1, resolution: 0.25 }
         ];
 
         return true;

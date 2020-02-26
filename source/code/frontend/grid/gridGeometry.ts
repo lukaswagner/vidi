@@ -10,6 +10,8 @@ import {
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
+    protected static readonly FADED_GRID_WIDTH = 1.0;
+
     protected _quadVertices = new Float32Array([
         0, 0, 0,
         1, 0, 0,
@@ -171,17 +173,30 @@ export class GridGeometry extends Geometry {
             this._gl.TRIANGLE_STRIP, 0, 4, 1);
     }
 
-    buildGrid(gridInfo: { min: number, max: number, steps: number }[]): void {
+    buildGrid(gridInfo: {
+        min: number, max: number, resolution: number
+    }[]): void {
+        // only supports two axes on one plane for now
+        const x = gridInfo[0];
+        const y = gridInfo[1];
+
+        const w = GridGeometry.FADED_GRID_WIDTH;
+        const ww = w * 2;
+
         const transform = mat4.fromRotationTranslationScale(
             mat4.create(),
             quat.identity(quat.create()),
-            [-2, 0, 2],
-            [4, 1, 4]
+            [x.min - w, 0, -y.min + w],
+            [x.max - x.min + ww, 1, y.max - y.min + ww]
         )
         this._transform = new Float32Array(transform.values());
 
         this._gridInfo = new Float32Array([
-            -2, -2, 2, 2, -1, -1, 1, 1, 0.1, 0.1
+            x.min - w, -y.min + w,
+            x.max + w, -y.max - w,
+            x.min, -y.min,
+            x.max, -y.max,
+            x.resolution, y.resolution
         ]);
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);

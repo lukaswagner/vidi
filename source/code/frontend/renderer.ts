@@ -191,19 +191,20 @@ export class TopicMapRenderer extends Renderer {
         }
     }
 
-    set grid(gridInfo: { min: number, max: number, steps: number }[]) {
+    set grid(gridInfo: { min: number, max: number, resolution: number }[]) {
         this._gridGeometry.buildGrid(gridInfo);
         const x = gridInfo[0];
         const y = gridInfo[1];
+        const labelDist = 0.1;
         this._labels.labels = [
             {
                 name: 'x axis',
-                pos: [0, 0, y.max],
+                pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
                 dir: [1, 0, 0],
                 up: [0, 0, -1],
             }, {
                 name: 'y axis',
-                pos: [x.min, 0, 0],
+                pos: [x.min - labelDist, 0, -(y.min + y.max) / 2],
                 dir: [0, 0, 1],
                 up: [1, 0, 0],
             }

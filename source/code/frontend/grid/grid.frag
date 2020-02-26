@@ -18,7 +18,7 @@ const float u_invisIntensity = 0.0;
 const float u_innerFeather = 0.1;
 const float u_outerFeather = 1.1;
 
-const float u_gridWidth = 0.05;
+const float u_gridWidth = 0.02;
 
 const float u_aaStepScale = 0.5;
 
