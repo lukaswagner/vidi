@@ -65,11 +65,6 @@ export class TopicMapApp extends Initializable {
         this.initControls();
         this.fetchAvailable();
 
-        this._renderer.grid = [
-            { min: -1, max: 1, resolution: 0.25 },
-            { min: -1, max: 1, resolution: 0.25 }
-        ];
-
         return true;
     }
 
@@ -100,9 +95,9 @@ export class TopicMapApp extends Initializable {
             sc.default, sc.min, sc.max, sc.step);
 
         // axes
-        this._controls.xAxis.handler = this.updatePositions.bind(this);
-        this._controls.yAxis.handler = this.updatePositions.bind(this);
-        this._controls.zAxis.handler = this.updatePositions.bind(this);
+        for(let i = 0; i < this._controls.axes.length; i++) {
+            this._controls.axes[i].handler = this.updatePositions.bind(this, i);
+        }
     }
 
     fetchAvailable(): void {
@@ -128,22 +123,38 @@ export class TopicMapApp extends Initializable {
         const columnNames = this._data.columnNames;
         const ids = ['__NOCOLUMN__'].concat(columnNames);
         const labels = ['None'].concat(columnNames);
-        this._controls.xAxis.setOptions(ids, labels);
-        this._controls.yAxis.setOptions(ids, labels);
-        this._controls.zAxis.setOptions(ids, labels);
-        this._controls.xAxis.element.selectedIndex = 1;
-        this._controls.yAxis.element.selectedIndex = 2;
-        this._controls.zAxis.element.selectedIndex = 0;
+        for(let i = 0; i < this._controls.axes.length; i++) {
+            this._controls.axes[i].setOptions(ids, labels);
+            this._controls.axes[i].element.value = this._data.selectedColumn(i);
+        }
         this.updatePositions();
     }
 
-    updatePositions() {
-        const positions = this._data.getCoordinates(
-            this._controls.xAxis.value,
-            this._controls.yAxis.value,
-            this._controls.zAxis.value,
-            { min: -1, max: 1 });
+    updatePositions(updatedAxis: number = -1) {
+        if(updatedAxis > -1) {
+            this._data.selectColumn(updatedAxis, this._controls.axes[updatedAxis].value)
+        }
+        const { positions, extents } = this._data.getCoordinates(
+            [{ 
+                min: -2, max: 2
+            },{
+                min: -2, max: 2
+            }]);
         this._renderer.positions = positions;
+        this._renderer.grid = [
+            { 
+                name: this._data.selectedColumn(0),
+                min: extents[0].min,
+                max: extents[0].max,
+                resolution: 0.25
+            }, {
+                name: this._data.selectedColumn(1),
+                min: extents[1].min,
+                max: extents[1].max,
+                resolution: 0.25
+            }
+        ];
+        this._renderer.updateGrid();
     }
 
     uninitialize(): void {

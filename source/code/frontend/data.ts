@@ -1,11 +1,15 @@
 class Column<T> {
     name: string;
     data: Array<T>;
+    min: T;
+    max: T;
 }
 
 export class Data {
     protected _columns = new Array<Column<number>>();
     protected _rowCount: number;
+
+    protected _selectedColumns: [number, number, number];
 
     constructor(csv: string) {
         // prepare data
@@ -17,7 +21,9 @@ export class Data {
         columnNames.forEach((column) => {
             this._columns.push({
                 name: column,
-                data: new Array<number>()
+                data: new Array<number>(),
+                min: Number.MAX_VALUE,
+                max: Number.MIN_VALUE
             });
         });
 
@@ -31,77 +37,100 @@ export class Data {
                 this._columns[column].data.push(Number(value));
             });
         });
+
+        // calculate min/max
+        this._columns.forEach((c) => {
+            let min = Number.MAX_VALUE;
+            let max = Number.MIN_VALUE;
+            c.data.forEach((n) => {
+                if(n < min) min = n;
+                if(n > max) max = n;
+            });
+            c.min = min;
+            c.max = max;
+        })
+
+        // init selected columns
+        this._selectedColumns = [0, 1, -1];
     }
 
     get columnNames(): string[] {
         return this._columns.map((c) => c.name);
     }
 
-    public extrema(columnName: string): { min: number, max: number } {
-        const data =
-            this._columns.find((c) => c.name === columnName)?.data;
-        if(data === undefined) {
-            return undefined;
-        }
-        let min = Number.MAX_VALUE;
-        let max = Number.MIN_VALUE;
-        data.forEach((n) => {
-            if(n < min) min = n;
-            if(n > max) max = n;
-        });
-        return { min, max };
+    selectColumn(axisIndex: number, column: string): void {
+        const columnIndex = this._columns.findIndex((c) => c.name === column);
+        this._selectedColumns[axisIndex] = columnIndex;
+    }
+
+    selectedColumn(axisIndex: number): string {
+        const i = this._selectedColumns[axisIndex];
+        if(i === -1) return '__NOCOLUMN__';
+        return this._columns[i].name;
     }
 
     public getCoordinates(
-        xAxis: string, yAxis: string, zAxis: string,
-        range?: {min: number, max: number}
-    ): Float32Array {
+        range?: { min: number, max: number }[]
+    ): { positions: Float32Array, extents: { min: number, max: number }[] } {
         let map: (x: number, y: number, z: number) => {
             x: number,
             y: number,
             z: number
         };
 
+        // if no custom output range is passed, just return the actual values
         if(range === undefined) {
             map = (x: number, y: number, z: number) => {
                 return { x, y, z };
             };
+        // otherwise, a mapping function has to be calculated per axis
         } else {
-            const nc = '__NOCOLUMN__';
-            const nce = { min: -1, max: 1 };
-            const xe = xAxis !== nc ? this.extrema(xAxis) : nce;
-            const ye = yAxis !== nc ? this.extrema(yAxis) : nce;
-            const ze = zAxis !== nc ? this.extrema(zAxis) : nce;
-            const oDiff = range.max - range.min;
-            const xDiffInv = 1 / (xe.max - xe.min);
-            const yDiffInv = 1 / (ye.max - ye.min);
-            const zDiffInv = 1 / (ze.max - ze.min);
+            // fetch the min/max values
+            const e = this._selectedColumns.map((ci) => {
+                if(ci === -1) return { min: -1, max: 1 };
+                const c = this._columns[ci];
+                return { min: c.min, max: c.max };
+            });
+            // ensure range exists for each axis
+            while(range.length < e.length) {
+                range.push(e[range.length]);
+            }
+            // pre-calc mapping factors for all axes
+            const f = e.map(
+                (e, i) => (range[i].max - range[i].min) / (e.max - e.min));
+
             map = (x: number, y: number, z: number) => {
                 return {
-                    x: range.min + (oDiff * xDiffInv * (x - xe.min)),
-                    y: range.min + (oDiff * yDiffInv * (y - ye.min)),
-                    z: range.min + (oDiff * zDiffInv * (z - ze.min))
+                    x: range[0].min + (f[0] * (x - e[0].min)),
+                    y: range[1].min + (f[1] * (y - e[1].min)),
+                    z: range[2].min + (f[2] * (z - e[2].min))
                 };
             };
         }
 
-        const dataX = this._columns.find((c) => c.name === xAxis)?.data;
-        const dataY = this._columns.find((c) => c.name === yAxis)?.data;
-        const dataZ = this._columns.find((c) => c.name === zAxis)?.data;
+        const sc = this._selectedColumns;
+        const get = sc.map((i) => {
+            if(i === -1) return () => 0;
+            const data = this._columns[i].data;
+            return (i: number) => data[i];
+        });
 
-        const result = new Float32Array(this._rowCount * 3);
-
-        const getX = dataX === undefined ? () => 0 : (i: number) => dataX[i];
-        const getY = dataY === undefined ? () => 0 : (i: number) => dataY[i];
-        const getZ = dataZ === undefined ? () => 0 : (i: number) => dataZ[i];
+        const positions = new Float32Array(this._rowCount * 3);
 
         for(let i = 0; i < this._rowCount; i++) {
-            const mapped = map(getX(i), getY(i), getZ(i));
-            result[i * 3] = mapped.x;
-            result[i * 3 + 1] = mapped.z;
-            result[i * 3 + 2] = mapped.y;
+            const mapped = map(get[0](i), get[1](i), get[2](i));
+            positions[i * 3] = mapped.x;
+            positions[i * 3 + 1] = mapped.z;
+            positions[i * 3 + 2] = -mapped.y;
         }
 
-        return result;
+        const extents = this._selectedColumns.map((ci, ai) => {
+            if(ci === -1) return { min: -1, max: 1 };
+            if(ai < range.length) return range[ai];
+            const c = this._columns[ci];
+            return { min: c.min, max: c.max };
+        });
+
+        return { positions, extents };
     }
 }

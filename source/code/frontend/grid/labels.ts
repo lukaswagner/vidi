@@ -15,7 +15,12 @@ export class Labels {
 
     protected _labelInfo: LabelInfo[];
 
-    constructor(context: Context, camera: Camera, fbo: DefaultFramebuffer) {
+    constructor(
+        context: Context,
+        camera: Camera,
+        fbo: DefaultFramebuffer,
+        invalidate: (force?: boolean) => void
+    ) {
         this._labelPass = new LabelRenderPass(context);
         this._labelPass.initialize();
         this._labelPass.camera = camera;
@@ -28,7 +33,7 @@ export class Labels {
                     label.fontFace = fontFace;
                 }
                 this._fontFace = fontFace;
-                this.setupLabels();
+                invalidate();
             });
     }
 

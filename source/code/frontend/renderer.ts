@@ -15,6 +15,7 @@ import { PointCloudProgram } from './points/pointCloudProgram';
 import { GridGeometry } from './grid/gridGeometry';
 import { GridProgram } from './grid/gridProgram';
 import { Labels } from './grid/labels';
+import { GridInfo } from './grid/gridInfo';
 
 export class TopicMapRenderer extends Renderer {
 
@@ -23,6 +24,7 @@ export class TopicMapRenderer extends Renderer {
     protected _pcGeometry: PointCloudGeometry;
     protected _pcProgram: PointCloudProgram;
 
+    protected _gridInfo: GridInfo[];
     protected _gridGeometry: GridGeometry;
     protected _gridProgram: GridProgram;
 
@@ -71,7 +73,11 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, mouseEventProvider);
         this._navigation.camera = this._camera;
 
-        this._labels = new Labels(context, this._camera, this._defaultFBO);
+        this._labels = new Labels(
+            context,
+            this._camera,
+            this._defaultFBO,
+            this.invalidate.bind(this));
 
         // prepare draw binding
 
@@ -191,24 +197,29 @@ export class TopicMapRenderer extends Renderer {
         }
     }
 
-    set grid(gridInfo: { min: number, max: number, resolution: number }[]) {
-        this._gridGeometry.buildGrid(gridInfo);
-        const x = gridInfo[0];
-        const y = gridInfo[1];
+    set grid(gridInfo: GridInfo[]) {
+        this._gridInfo = gridInfo;
+    }
+
+    updateGrid() {
+        this._gridGeometry.buildGrid(this._gridInfo);
+        const x = this._gridInfo[0];
+        const y = this._gridInfo[1];
         const labelDist = 0.1;
         this._labels.labels = [
             {
-                name: 'x axis',
+                name: x.name,
                 pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
                 dir: [1, 0, 0],
                 up: [0, 0, -1],
             }, {
-                name: 'y axis',
+                name: y.name,
                 pos: [x.min - labelDist, 0, -(y.min + y.max) / 2],
                 dir: [0, 0, 1],
                 up: [1, 0, 0],
             }
         ];
+        this._labels.setupLabels();
         this.invalidate();
     }
 

@@ -8,6 +8,7 @@ import {
     quat,
 } from 'webgl-operate';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
+import { GridInfo } from './gridInfo';
 
 export class GridGeometry extends Geometry {
     protected static readonly FADED_GRID_WIDTH = 1.0;
@@ -173,9 +174,7 @@ export class GridGeometry extends Geometry {
             this._gl.TRIANGLE_STRIP, 0, 4, 1);
     }
 
-    buildGrid(gridInfo: {
-        min: number, max: number, resolution: number
-    }[]): void {
+    buildGrid(gridInfo: GridInfo[]): void {
         // only supports two axes on one plane for now
         const x = gridInfo[0];
         const y = gridInfo[1];
