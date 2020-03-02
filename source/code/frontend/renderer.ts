@@ -10,19 +10,17 @@ import {
     Renderer,
     viewer,
 } from 'webgl-operate';
-import { PointCloudGeometry } from './points/pointCloudGeometry';
-import { PointCloudProgram } from './points/pointCloudProgram';
 import { GridGeometry } from './grid/gridGeometry';
 import { GridProgram } from './grid/gridProgram';
 import { Labels } from './grid/labels';
 import { GridInfo } from './grid/gridInfo';
+import { PointPass } from './points/pointPass';
 
 export class TopicMapRenderer extends Renderer {
 
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
 
-    protected _pcGeometry: PointCloudGeometry;
-    protected _pcProgram: PointCloudProgram;
+    protected _pointPass: PointPass;
 
     protected _gridInfo: GridInfo[];
     protected _gridGeometry: GridGeometry;
@@ -54,14 +52,6 @@ export class TopicMapRenderer extends Renderer {
         this._defaultFBO.initialize();
         this._defaultFBO.bind();
 
-        this._pcGeometry = new PointCloudGeometry(context);
-        this._pcGeometry.initialize();
-        this._pcProgram = new PointCloudProgram(context);
-
-        this._gridGeometry = new GridGeometry(context);
-        this._gridGeometry.initialize();
-        this._gridProgram = new GridProgram(context);
-
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
         this._camera.up = vec3.fromValues(0.0, 1.0, 0.0);
@@ -72,6 +62,15 @@ export class TopicMapRenderer extends Renderer {
 
         this._navigation = new Navigation(callback, mouseEventProvider);
         this._navigation.camera = this._camera;
+
+        this._pointPass = new PointPass(context);
+        this._pointPass.initialize();
+        this._pointPass.camera = this._camera;
+        this._pointPass.target = this._defaultFBO;
+
+        this._gridGeometry = new GridGeometry(context);
+        this._gridGeometry.initialize();
+        this._gridProgram = new GridProgram(context);
 
         this._labels = new Labels(
             context,
@@ -97,7 +96,7 @@ export class TopicMapRenderer extends Renderer {
         document.addEventListener('mozfullscreenchange', uud);
         document.addEventListener('webkitfullscreenchange', uud);
         document.addEventListener('msfullscreenchange', uud);
-        this._pcProgram.useDiscard(true);
+        this._pointPass.useDiscard = true;
 
         return true;
     }
@@ -107,8 +106,7 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onUninitialize(): void {
         super.uninitialize();
-        this._pcGeometry.uninitialize();
-        this._pcProgram.uninitialize();
+        this._pointPass.uninitialize();
         this._gridGeometry.uninitialize();
         this._gridProgram.uninitialize();
         this._defaultFBO.uninitialize();
@@ -135,13 +133,14 @@ export class TopicMapRenderer extends Renderer {
         if (this._altered.frameSize) {
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
-            this._pcProgram.frameSize(this._frameSize[0]);
+            this._pointPass.frameSize = this._frameSize[0];
         }
 
         if(this._altered.canvasSize) {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
+        this._pointPass.update();
         this._labels.update();
 
         if (this._altered.clearColor) {
@@ -178,19 +177,14 @@ export class TopicMapRenderer extends Renderer {
         gl.disable(gl.BLEND);
 
         // points
-        this._pcProgram.viewProjection(
-            this._camera.viewProjection, true, false);
-        this._pcGeometry.bind();
-        this._pcGeometry.draw();
-        this._pcGeometry.unbind();
-        this._pcProgram.unbind();
+        this._pointPass.frame();
     }
 
     protected onSwap(): void {
     }
 
     set positions(positions: Float32Array) {
-        this._pcGeometry.positions = positions;
+        this._pointPass.positions = positions;
 
         if (this.initialized) {
             this.invalidate();
@@ -224,12 +218,12 @@ export class TopicMapRenderer extends Renderer {
     }
 
     set pointSize(size: number) {
-        this._pcProgram.pointSize(size);
+        this._pointPass.pointSize = size;
         this.invalidate();
     }
 
     updateUseDiscard() {
-        this._pcProgram.useDiscard(!viewer.Fullscreen.active());
+        this._pointPass.useDiscard = !viewer.Fullscreen.active();
     }
 
     set scale(scale: number) {
