@@ -1,5 +1,4 @@
 import { Initializable, Context, Framebuffer, Camera, Program, Shader, ChangeLookup } from "webgl-operate";
-import { GLfloat2 } from "webgl-operate/lib/tuples";
 import { PointCloudGeometry } from "./pointCloudGeometry";
 
 export class PointPass extends Initializable {
@@ -9,11 +8,9 @@ export class PointPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         positions: false,
-        camera: false,
         frameSize: false,
         pointSize: false,
         useDiscard: false,
-        aaStepScale: false,
     });
 
     protected _context: Context;
@@ -91,11 +88,6 @@ export class PointPass extends Initializable {
 
         this._program.bind();
 
-        if (override || this._altered.camera || this._camera.altered) {
-            this._gl.uniformMatrix4fv(
-                this._uViewProjection, false, this._camera.viewProjection);
-        }
-
         if (override || this._altered.frameSize) {
             this._gl.uniform1f(this._uFrameSize, this._frameSize);
         }
@@ -122,7 +114,9 @@ export class PointPass extends Initializable {
         const size = this._target.size;
         this._gl.viewport(0, 0, size[0], size[1]);
 
+        // should be enabled anyway, just make sure
         this._gl.enable(this._gl.DEPTH_TEST);
+        // only enable for this pass -> disable afterwards
         this._gl.depthFunc(this._gl.LESS);
 
         this._gl.enable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
@@ -140,7 +134,6 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
-        this._gl.disable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
@@ -179,6 +172,5 @@ export class PointPass extends Initializable {
             return;
         }
         this._camera = camera;
-        this._altered.alter('camera');
     }
 }

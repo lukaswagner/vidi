@@ -10,11 +10,10 @@ import {
     Renderer,
     viewer,
 } from 'webgl-operate';
-import { GridGeometry } from './grid/gridGeometry';
-import { GridProgram } from './grid/gridProgram';
 import { Labels } from './grid/labels';
 import { GridInfo } from './grid/gridInfo';
 import { PointPass } from './points/pointPass';
+import { GridPass } from './grid/gridPass';
 
 export class TopicMapRenderer extends Renderer {
 
@@ -23,8 +22,7 @@ export class TopicMapRenderer extends Renderer {
     protected _pointPass: PointPass;
 
     protected _gridInfo: GridInfo[];
-    protected _gridGeometry: GridGeometry;
-    protected _gridProgram: GridProgram;
+    protected _gridPass: GridPass;
 
     protected _camera: Camera;
     protected _navigation: Navigation;
@@ -68,9 +66,10 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.camera = this._camera;
         this._pointPass.target = this._defaultFBO;
 
-        this._gridGeometry = new GridGeometry(context);
-        this._gridGeometry.initialize();
-        this._gridProgram = new GridProgram(context);
+        this._gridPass = new GridPass(context);
+        this._gridPass.initialize();
+        this._gridPass.camera = this._camera;
+        this._gridPass.target = this._defaultFBO;
 
         this._labels = new Labels(
             context,
@@ -107,8 +106,7 @@ export class TopicMapRenderer extends Renderer {
     protected onUninitialize(): void {
         super.uninitialize();
         this._pointPass.uninitialize();
-        this._gridGeometry.uninitialize();
-        this._gridProgram.uninitialize();
+        this._gridPass.uninitialize();
         this._defaultFBO.uninitialize();
         this._labels.uninitialize();
     }
@@ -141,6 +139,7 @@ export class TopicMapRenderer extends Renderer {
         }
 
         this._pointPass.update();
+        this._gridPass.update();
         this._labels.update();
 
         if (this._altered.clearColor) {
@@ -157,19 +156,10 @@ export class TopicMapRenderer extends Renderer {
 
         this._defaultFBO.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, false, false);
 
-        gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
-
         // grid
-        this._gridProgram.viewProjection(
-            this._camera.viewProjection, true, false);
-        gl.disable(gl.DEPTH_TEST);
-        this._gridGeometry.bind();
-        this._gridGeometry.draw();
-        this._gridGeometry.unbind();
-        gl.enable(gl.DEPTH_TEST);
-        this._gridProgram.unbind();
+        this._gridPass.frame();
 
-        // labels
+        // labels - needs some preparation and cleanup
         gl.disable(gl.CULL_FACE);
         this._labels.frame();
         gl.enable(gl.CULL_FACE);
@@ -196,7 +186,7 @@ export class TopicMapRenderer extends Renderer {
     }
 
     updateGrid() {
-        this._gridGeometry.buildGrid(this._gridInfo);
+        this._gridPass.gridInfo = this._gridInfo;
         const x = this._gridInfo[0];
         const y = this._gridInfo[1];
         const labelDist = 0.1;
