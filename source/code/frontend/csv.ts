@@ -55,9 +55,9 @@ export function importPointsFromCSV(list: Array<string>, progress?: HTMLProgress
                     if (waiting === 0) {
                         resolve(coordinates);
                     }
-                }).catch((e) => {
+                }).catch(() => {
                     reject(`importing '${list[i]} failed`);
-                })
+                });
             });
         }
     });

@@ -7,11 +7,11 @@ import {
     Program,
     Shader,
     tuples,
-} from "webgl-operate";
+} from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
 
-import { GridGeometry } from "./gridGeometry";
-import { GridInfo } from "./gridInfo";
+import { GridGeometry } from './gridGeometry';
+import { GridInfo } from './gridInfo';
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {

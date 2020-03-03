@@ -9,7 +9,7 @@ import {
     Initializable,
     ChangeLookup,
     Framebuffer
-} from "webgl-operate";
+} from 'webgl-operate';
 
 type LabelInfo = {
     name: string,

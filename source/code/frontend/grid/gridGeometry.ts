@@ -185,7 +185,7 @@ export class GridGeometry extends Geometry {
             quat.identity(quat.create()),
             [x.min - w, 0, -y.min + w],
             [x.max - x.min + ww, 1, y.max - y.min + ww]
-        )
+        );
         this._transform = new Float32Array(transform.values());
 
         this._gridInfo = new Float32Array([

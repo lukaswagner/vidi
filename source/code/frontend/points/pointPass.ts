@@ -7,10 +7,10 @@ import {
     Shader,
     ChangeLookup,
     tuples,
-} from "webgl-operate";
+} from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
 
-import { PointCloudGeometry } from "./pointCloudGeometry";
+import { PointCloudGeometry } from './pointCloudGeometry';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
