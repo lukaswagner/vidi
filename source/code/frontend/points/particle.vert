@@ -1,5 +1,6 @@
 precision lowp float;
-precision lowp int;
+
+@import ../shared/ndcoffset;
 
 #if __VERSION__ == 100
     #define texture(sampler, coord) texture2D(sampler, coord)
@@ -11,8 +12,8 @@ precision lowp int;
     layout(location = 1) in vec3 a_globalPos;
 #endif
 
-uniform mat4 u_view;
 uniform mat4 u_viewProjection;
+uniform vec2 u_ndcOffset;
 
 uniform float u_frameSize;
 uniform float u_pointSize;
@@ -22,6 +23,8 @@ varying vec3 v_pos;
 void main()
 {
     v_pos = a_localPos + a_globalPos;
-    gl_Position = u_viewProjection * vec4(v_pos, 1.0);
+    vec4 vertex = u_viewProjection * vec4(v_pos, 1.0);
+    ndcOffset(vertex, u_ndcOffset);
+    gl_Position = vertex;
     gl_PointSize = u_frameSize * u_pointSize / gl_Position.z;
 }

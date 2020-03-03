@@ -1,5 +1,6 @@
-#line 2 1337
 precision lowp float;
+
+@import ../shared/ndcoffset;
 
 #if __VERSION__ == 100
     attribute vec3 a_pos;
@@ -16,6 +17,7 @@ precision lowp float;
 #endif
 
 uniform mat4 u_viewProjection;
+uniform vec2 u_ndcOffset;
 
 varying vec2 v_uv;
 
@@ -49,5 +51,7 @@ void main()
     v_dataRangeUV = v_dataRange / v_quadRange;
     v_gridResolutionUV = v_gridResolution / v_quadRange;
 
-    gl_Position = u_viewProjection * a_transform * vec4(a_position, 1.0);
+    vec4 vertex = u_viewProjection * a_transform * vec4(a_position, 1.0);
+    ndcOffset(vertex, u_ndcOffset);
+    gl_Position = vertex;
 }

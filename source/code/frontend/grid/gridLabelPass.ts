@@ -1,4 +1,4 @@
-import { LabelRenderPass, Position3DLabel, FontFace, Context, Camera, DefaultFramebuffer, Label, Text, Initializable, ChangeLookup, Framebuffer } from "webgl-operate";
+import { LabelRenderPass, Position3DLabel, FontFace, Context, Camera, Label, Text, Initializable, ChangeLookup, Framebuffer } from "webgl-operate";
 
 type LabelInfo = {
     name: string,
@@ -11,6 +11,7 @@ export class GridLabelPass extends LabelRenderPass {
     protected readonly _labelsAltered = Object.assign(new ChangeLookup(), {
         any: false,
         labels: false,
+        fontFace: false,
     });
 
     protected _context: Context;
@@ -32,10 +33,8 @@ export class GridLabelPass extends LabelRenderPass {
     loadFont(font: string, invalidate: (force?: boolean) => void): void {
         FontFace.fromFile(font, this._context)
             .then((fontFace) => {
-                for (const label of this.labels) {
-                    label.fontFace = fontFace;
-                }
                 this._fontFace = fontFace;
+                this._labelsAltered.alter('fontFace');
                 invalidate();
             });
     }
@@ -64,11 +63,18 @@ export class GridLabelPass extends LabelRenderPass {
 
     @Initializable.assert_initialized()
     update(override: boolean = false): void {
-        super.update(override);
-
         if (override || this._labelsAltered.labels) {
             this.setupLabels();
         }
+
+        if (override || this._labelsAltered.fontFace) {
+            for (const label of this.labels) {
+                label.fontFace = this._fontFace;
+            }
+        }
+
+        // update after own updates to catch changes to labels
+        super.update(override);
 
         this._labelsAltered.reset();
     }

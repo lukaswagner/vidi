@@ -1,6 +1,7 @@
 import { ChangeLookup, Initializable, Context, Framebuffer, Camera, Program, Shader } from "webgl-operate";
 import { GridGeometry } from "./gridGeometry";
 import { GridInfo } from "./gridInfo";
+import { GLfloat2 } from "webgl-operate/lib/tuples";
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -14,9 +15,12 @@ export class GridPass extends Initializable {
     protected _target: Framebuffer;
     protected _camera: Camera;
 
+    protected _ndcOffset: GLfloat2 = [0.0, 0.0];
+
     protected _program: Program;
 
     protected _uViewProjection: WebGLUniformLocation;
+    protected _uNdcOffset: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
     protected _gridInfo: GridInfo[];
@@ -46,6 +50,7 @@ export class GridPass extends Initializable {
         this._program.link();
 
         this._uViewProjection = this._program.uniform('u_viewProjection');
+        this._uNdcOffset = this._program.uniform('u_ndcOffset');
 
         return true;
     }
@@ -56,6 +61,7 @@ export class GridPass extends Initializable {
         this._program.uninitialize();
 
         this._uViewProjection = undefined;
+        this._uNdcOffset = undefined;
     }
 
     @Initializable.assert_initialized()
@@ -81,6 +87,7 @@ export class GridPass extends Initializable {
 
         this._gl.uniformMatrix4fv(
             this._uViewProjection, false, this._camera.viewProjection);
+        this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();
 
@@ -110,5 +117,10 @@ export class GridPass extends Initializable {
             return;
         }
         this._camera = camera;
+    }
+
+    set ndcOffset(offset: GLfloat2) {
+        this.assertInitialized();
+        this._ndcOffset = offset;
     }
 }

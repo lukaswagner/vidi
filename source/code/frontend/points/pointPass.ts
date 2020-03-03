@@ -1,5 +1,6 @@
 import { Initializable, Context, Framebuffer, Camera, Program, Shader, ChangeLookup } from "webgl-operate";
 import { PointCloudGeometry } from "./pointCloudGeometry";
+import { GLfloat2 } from "webgl-operate/lib/tuples";
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -22,10 +23,12 @@ export class PointPass extends Initializable {
     protected _frameSize: GLfloat;
     protected _pointSize: GLfloat = PointPass.DEFAULT_POINT_SIZE;
     protected _useDiscard: boolean;
+    protected _ndcOffset: GLfloat2 = [0.0, 0.0];
 
     protected _program: Program;
 
     protected _uViewProjection: WebGLUniformLocation;
+    protected _uNdcOffset: WebGLUniformLocation;
     protected _uFrameSize: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
@@ -58,6 +61,7 @@ export class PointPass extends Initializable {
         this._program.link();
 
         this._uViewProjection = this._program.uniform('u_viewProjection');
+        this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uFrameSize = this._program.uniform('u_pointSize');
         this._uPointSize = this._program.uniform('u_frameSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
@@ -75,6 +79,7 @@ export class PointPass extends Initializable {
         this._program.uninitialize();
 
         this._uViewProjection = undefined;
+        this._uNdcOffset = undefined;
         this._uFrameSize = undefined;
         this._uPointSize = undefined;
         this._uUseDiscard = undefined;
@@ -125,6 +130,7 @@ export class PointPass extends Initializable {
 
         this._gl.uniformMatrix4fv(
             this._uViewProjection, false, this._camera.viewProjection);
+        this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();
 
@@ -172,5 +178,10 @@ export class PointPass extends Initializable {
             return;
         }
         this._camera = camera;
+    }
+
+    set ndcOffset(offset: GLfloat2) {
+        this.assertInitialized();
+        this._ndcOffset = offset;
     }
 }

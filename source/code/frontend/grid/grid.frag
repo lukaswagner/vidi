@@ -1,4 +1,3 @@
-#line 2 1338
 precision lowp float;
 precision lowp int;
 
