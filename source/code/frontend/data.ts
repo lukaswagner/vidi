@@ -48,7 +48,7 @@ export class Data {
             });
             c.min = min;
             c.max = max;
-        })
+        });
 
         this.initSelectedColumns(false);
     }

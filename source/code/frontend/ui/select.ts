@@ -1,4 +1,4 @@
-import { UiBase } from "./base";
+import { UiBase } from './base';
 
 export class Select extends UiBase {
     get element(): HTMLSelectElement {

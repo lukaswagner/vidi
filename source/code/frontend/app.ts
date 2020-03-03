@@ -8,9 +8,9 @@ import {
     Renderer,
     viewer,
     Color
-} from "webgl-operate";
+} from 'webgl-operate';
 
-import { TopicMapRenderer } from "./renderer";
+import { TopicMapRenderer } from './renderer';
 import { Data } from './data';
 import { Controls } from './controls';
 
@@ -136,7 +136,7 @@ export class TopicMapApp extends Initializable {
 
     updatePositions(updatedAxis: number = -1) {
         if(updatedAxis > -1) {
-            this._data.selectColumn(updatedAxis, this._controls.axes[updatedAxis].value)
+            this._data.selectColumn(updatedAxis, this._controls.axes[updatedAxis].value);
         }
         const { positions, extents } = this._data.getCoordinates(
             [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);

@@ -1,5 +1,5 @@
-import { Select } from "./ui/select";
-import { InputSlider } from "./ui/inputSlider";
+import { Select } from './ui/select';
+import { InputSlider } from './ui/inputSlider';
 
 export class Controls {
     public data: Select;

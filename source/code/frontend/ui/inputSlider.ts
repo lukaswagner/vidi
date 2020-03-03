@@ -1,4 +1,4 @@
-import { UiBase } from "./base";
+import { UiBase } from './base';
 
 export class InputSlider extends UiBase {
     protected _sliderElement: HTMLInputElement;
