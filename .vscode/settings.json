@@ -1,7 +1,10 @@
 {
+    "eslint.lintTask.enable": true,
     "cSpell.words": [
         "Initializable",
         "blit",
+        "devtool",
+        "glsl",
         "linebreak",
         "mozfullscreenchange",
         "msfullscreenchange",

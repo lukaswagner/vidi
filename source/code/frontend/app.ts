@@ -2,25 +2,19 @@ import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 import {
-    Initializable,
     Canvas,
-    Wizard,
+    Color,
+    Initializable,
     Renderer,
-    viewer,
-    Color
+    Wizard,
+    viewer
 } from 'webgl-operate';
 
-import { TopicMapRenderer } from './renderer';
-import { Data } from './data';
 import { Controls } from './controls';
+import { Data } from './data';
+import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
-
-    private _canvas: Canvas;
-    private _renderer: TopicMapRenderer;
-    private _controls: Controls;
-    private _data: Data;
-
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
         min: 0.001,
@@ -34,6 +28,11 @@ export class TopicMapApp extends Initializable {
         max: 10.0,
         step: 0.01
     };
+
+    private _canvas: Canvas;
+    private _renderer: TopicMapRenderer;
+    private _controls: Controls;
+    private _data: Data;
 
     initialize(element: HTMLCanvasElement | string): boolean {
         this._canvas = new Canvas(element, { antialias: false });
@@ -136,7 +135,8 @@ export class TopicMapApp extends Initializable {
 
     updatePositions(updatedAxis: number = -1) {
         if(updatedAxis > -1) {
-            this._data.selectColumn(updatedAxis, this._controls.axes[updatedAxis].value);
+            this._data.selectColumn(
+                updatedAxis, this._controls.axes[updatedAxis].value);
         }
         const { positions, extents } = this._data.getCoordinates(
             [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);

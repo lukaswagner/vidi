@@ -5,7 +5,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
-    entry: "./source/code/frontend/app.ts",
+    entry: './source/code/frontend/app.ts',
     devtool: 'inline-source-map',
     mode: 'development',
     module: {
@@ -39,13 +39,13 @@ module.exports = {
         libraryTarget: 'umd'
     },
     devServer: {
-        contentBase: path.resolve(__dirname, "./source"),
+        contentBase: path.resolve(__dirname, './source'),
         watchContentBase: true
     },
     plugins: [
         new HtmlWebpackPlugin({
             filename: 'index.html',
-            template: "./source/pages/index.pug",
+            template: './source/pages/index.pug',
             inject: false
         }),
         new CopyWebpackPlugin([
