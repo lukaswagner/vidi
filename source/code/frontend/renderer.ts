@@ -157,17 +157,8 @@ export class TopicMapRenderer extends Renderer {
 
         this._defaultFBO.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, false, false);
 
-        // grid
         this._gridPass.frame();
-
-        // labels - needs some preparation and cleanup
-        gl.disable(gl.CULL_FACE);
         this._gridLabelPass.frame();
-        gl.enable(gl.CULL_FACE);
-        gl.enable(gl.DEPTH_TEST);
-        gl.disable(gl.BLEND);
-
-        // points
         this._pointPass.frame();
     }
 

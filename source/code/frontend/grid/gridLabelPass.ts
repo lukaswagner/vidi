@@ -72,4 +72,13 @@ export class GridLabelPass extends LabelRenderPass {
 
         this._labelsAltered.reset();
     }
+
+    @Initializable.assert_initialized()
+    frame(): void {
+        this._gl.disable(this._gl.CULL_FACE);
+        super.frame();
+        this._gl.enable(this._gl.CULL_FACE);
+        this._gl.enable(this._gl.DEPTH_TEST);
+        this._gl.disable(this._gl.BLEND);
+    }
 }
