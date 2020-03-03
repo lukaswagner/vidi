@@ -11,9 +11,12 @@
   "devDependencies": {
     "@types/gl-matrix": "^2.4.5",
     "@types/webpack": "^4.41.6",
+    "@typescript-eslint/eslint-plugin": "^2.22.0",
+    "@typescript-eslint/parser": "^2.22.0",
     "bootstrap": "^4.4.1",
     "copy-webpack-plugin": "^5.1.1",
     "css-loader": "^3.3.2",
+    "eslint": "^6.8.0",
     "gl-matrix": "^3.1.0",
     "html-webpack-plugin": "^3.2.0",
     "jquery": "^3.4.1",
