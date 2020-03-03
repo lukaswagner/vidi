@@ -1,7 +1,15 @@
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
-import { Initializable, Canvas, auxiliaries, Wizard, Renderer, mat4, viewer, Color } from "webgl-operate";
+import {
+    Initializable,
+    Canvas,
+    Wizard,
+    Renderer,
+    viewer,
+    Color
+} from "webgl-operate";
+
 import { TopicMapRenderer } from "./renderer";
 import { Data } from './data';
 import { Controls } from './controls';

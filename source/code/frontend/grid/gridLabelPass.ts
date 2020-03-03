@@ -1,4 +1,15 @@
-import { LabelRenderPass, Position3DLabel, FontFace, Context, Camera, Label, Text, Initializable, ChangeLookup, Framebuffer } from "webgl-operate";
+import {
+    LabelRenderPass,
+    Position3DLabel,
+    FontFace,
+    Context,
+    Camera,
+    Label,
+    Text,
+    Initializable,
+    ChangeLookup,
+    Framebuffer
+} from "webgl-operate";
 
 type LabelInfo = {
     name: string,

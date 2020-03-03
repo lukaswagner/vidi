@@ -1,5 +1,3 @@
-import { mat4, quat, vec3, vec4 } from 'gl-matrix';
-
 import {
     Camera,
     Context,
@@ -16,8 +14,14 @@ import {
     AccumulatePass,
     BlitPass,
     Wizard,
+    vec3,
+    tuples
 } from 'webgl-operate';
-import { GLfloat2 } from "webgl-operate/lib/tuples";
+
+// can't use destructuring, so we have to import this manually
+// see https://github.com/microsoft/TypeScript/issues/13135
+import GLfloat2 = tuples.GLfloat2;
+
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridInfo } from './grid/gridInfo';
 import { PointPass } from './points/pointPass';

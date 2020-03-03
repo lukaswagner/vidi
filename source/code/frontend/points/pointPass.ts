@@ -1,6 +1,16 @@
-import { Initializable, Context, Framebuffer, Camera, Program, Shader, ChangeLookup } from "webgl-operate";
+import {
+    Initializable,
+    Context,
+    Framebuffer,
+    Camera,
+    Program,
+    Shader,
+    ChangeLookup,
+    tuples,
+} from "webgl-operate";
+import GLfloat2 = tuples.GLfloat2;
+
 import { PointCloudGeometry } from "./pointCloudGeometry";
-import { GLfloat2 } from "webgl-operate/lib/tuples";
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;

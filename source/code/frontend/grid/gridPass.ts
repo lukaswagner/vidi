@@ -1,7 +1,17 @@
-import { ChangeLookup, Initializable, Context, Framebuffer, Camera, Program, Shader } from "webgl-operate";
+import {
+    ChangeLookup,
+    Initializable,
+    Context,
+    Framebuffer,
+    Camera,
+    Program,
+    Shader,
+    tuples,
+} from "webgl-operate";
+import GLfloat2 = tuples.GLfloat2;
+
 import { GridGeometry } from "./gridGeometry";
 import { GridInfo } from "./gridInfo";
-import { GLfloat2 } from "webgl-operate/lib/tuples";
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {

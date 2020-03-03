@@ -3,8 +3,6 @@ import {
     Context,
     Geometry,
     mat4,
-    vec4,
-    vec3,
     quat,
 } from 'webgl-operate';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
