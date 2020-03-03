@@ -10,7 +10,7 @@ import {
     Renderer,
     viewer,
 } from 'webgl-operate';
-import { Labels } from './grid/labels';
+import { GridLabelPass } from './grid/gridLabelPass';
 import { GridInfo } from './grid/gridInfo';
 import { PointPass } from './points/pointPass';
 import { GridPass } from './grid/gridPass';
@@ -27,7 +27,7 @@ export class TopicMapRenderer extends Renderer {
     protected _camera: Camera;
     protected _navigation: Navigation;
 
-    protected _labels: Labels;
+    protected _gridLabelPass: GridLabelPass;
 
     protected _defaultFBO: DefaultFramebuffer;
 
@@ -71,11 +71,12 @@ export class TopicMapRenderer extends Renderer {
         this._gridPass.camera = this._camera;
         this._gridPass.target = this._defaultFBO;
 
-        this._labels = new Labels(
-            context,
-            this._camera,
-            this._defaultFBO,
-            this.invalidate.bind(this));
+        this._gridLabelPass = new GridLabelPass(context);
+        this._gridLabelPass.initialize();
+        this._gridLabelPass.camera = this._camera;
+        this._gridLabelPass.target = this._defaultFBO;
+        this._gridLabelPass.loadFont(
+            './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
 
         // prepare draw binding
 
@@ -108,7 +109,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.uninitialize();
         this._gridPass.uninitialize();
         this._defaultFBO.uninitialize();
-        this._labels.uninitialize();
+        this._gridLabelPass.uninitialize();
     }
 
     /**
@@ -140,7 +141,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._pointPass.update();
         this._gridPass.update();
-        this._labels.update();
+        this._gridLabelPass.update();
 
         if (this._altered.clearColor) {
             this._defaultFBO.clearColor(this._clearColor);
@@ -161,7 +162,7 @@ export class TopicMapRenderer extends Renderer {
 
         // labels - needs some preparation and cleanup
         gl.disable(gl.CULL_FACE);
-        this._labels.frame();
+        this._gridLabelPass.frame();
         gl.enable(gl.CULL_FACE);
         gl.enable(gl.DEPTH_TEST);
         gl.disable(gl.BLEND);
@@ -190,7 +191,7 @@ export class TopicMapRenderer extends Renderer {
         const x = this._gridInfo[0];
         const y = this._gridInfo[1];
         const labelDist = 0.1;
-        this._labels.labels = [
+        this._gridLabelPass.labelInfo = [
             {
                 name: x.name,
                 pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
@@ -203,7 +204,6 @@ export class TopicMapRenderer extends Renderer {
                 up: [1, 0, 0],
             }
         ];
-        this._labels.setupLabels();
         this.invalidate();
     }
 
