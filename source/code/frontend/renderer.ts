@@ -235,8 +235,8 @@ export class TopicMapRenderer extends Renderer {
     protected onSwap(): void {
         this._blitPass.framebuffer =
             this._accumulatePass.framebuffer ?
-            this._accumulatePass.framebuffer :
-            this._intermediateFBO;
+                this._accumulatePass.framebuffer :
+                this._intermediateFBO;
         this._blitPass.frame();
     }
 
