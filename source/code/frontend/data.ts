@@ -94,7 +94,7 @@ export class Data {
 
     selectedColumn(axisIndex: number): string {
         const i = this._selectedColumns[axisIndex];
-        if(i === -1) return '__NOCOLUMN__';
+        if(i === -1) return '__NONE__';
         return this._columns[i].name;
     }
 

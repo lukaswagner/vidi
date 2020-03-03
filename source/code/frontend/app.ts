@@ -125,7 +125,7 @@ export class TopicMapApp extends Initializable {
     prepareData(csv: string): void {
         this._data = new Data(csv);
         const columnNames = this._data.columnNames;
-        const ids = ['__NOCOLUMN__'].concat(columnNames);
+        const ids = ['__NONE__'].concat(columnNames);
         const labels = ['None'].concat(columnNames);
         for(let i = 0; i < this._controls.axes.length; i++) {
             this._controls.axes[i].setOptions(ids, labels);
