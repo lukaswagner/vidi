@@ -21,7 +21,7 @@ export class PointCloudGeometry extends Geometry {
      * @param identifier - Meaningful name for identification of this instance.
      * vertices).
      */
-    constructor(context: Context, identifier?: string) {
+    public constructor(context: Context, identifier?: string) {
         super(context, identifier);
 
         this._gl = context.gl as WebGLRenderingContext;
@@ -32,6 +32,41 @@ export class PointCloudGeometry extends Geometry {
 
         const globalPos = new Buffer(context);
         this._buffers.push(globalPos);
+    }
+
+    /**
+     * Creates the vertex buffer object (VBO) and creates and initializes the
+     * buffer's data store.
+     * @param globalPosLocation - Attribute binding point for vertices.
+     * @param normalLocation - Attribute binding point for vertex normal.
+     */
+    public initialize(
+        localPosLocation: GLuint = 0,
+        globalPosLocation: GLuint = 1,
+    ) : boolean {
+        this._localPosLocation = localPosLocation;
+        this._globalPosLocation = globalPosLocation;
+
+        const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER
+        ], [
+            localPosLocation,
+            globalPosLocation
+        ]);
+
+        this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
+        this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
+
+        return valid;
+    }
+
+    /**
+     * Draws the geometry.
+     */
+    public draw(): void {
+        this._gl2facade.drawArraysInstanced(
+            this._gl.POINTS, 0, 1, this._globalPositions.length / 3);
     }
 
 
@@ -59,42 +94,7 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[1].attribDisable(this._globalPosLocation, true, true);
     }
 
-    /**
-     * Creates the vertex buffer object (VBO) and creates and initializes the
-     * buffer's data store.
-     * @param globalPosLocation - Attribute binding point for vertices.
-     * @param normalLocation - Attribute binding point for vertex normal.
-     */
-    initialize(
-        localPosLocation: GLuint = 0,
-        globalPosLocation: GLuint = 1,
-    ) : boolean {
-        this._localPosLocation = localPosLocation;
-        this._globalPosLocation = globalPosLocation;
-
-        const valid = super.initialize([
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER
-        ], [
-            localPosLocation,
-            globalPosLocation
-        ]);
-
-        this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
-        this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
-
-        return valid;
-    }
-
-    /**
-     * Draws the geometry.
-     */
-    draw(): void {
-        this._gl2facade.drawArraysInstanced(
-            this._gl.POINTS, 0, 1, this._globalPositions.length / 3);
-    }
-
-    set positions(positions: Float32Array) {
+    public set positions(positions: Float32Array) {
         this._globalPositions = positions;
         this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
     }

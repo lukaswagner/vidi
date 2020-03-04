@@ -1,14 +1,14 @@
 import {
+    Camera,
+    ChangeLookup,
+    Context,
+    FontFace,
+    Framebuffer,
+    Initializable,
+    Label,
     LabelRenderPass,
     Position3DLabel,
-    FontFace,
-    Context,
-    Camera,
-    Label,
-    Text,
-    Initializable,
-    ChangeLookup,
-    Framebuffer
+    Text
 } from 'webgl-operate';
 
 type LabelInfo = {
@@ -34,14 +34,14 @@ export class GridLabelPass extends LabelRenderPass {
 
     protected _labelInfo: LabelInfo[];
 
-    constructor(context: Context) {
+    public constructor(context: Context) {
         super(context);
         this._context = context;
         this._gl = context.gl;
 
     }
 
-    loadFont(font: string, invalidate: (force?: boolean) => void): void {
+    public loadFont(font: string, invalidate: (force?: boolean) => void): void {
         FontFace.fromFile(font, this._context)
             .then((fontFace) => {
                 this._fontFace = fontFace;
@@ -50,30 +50,13 @@ export class GridLabelPass extends LabelRenderPass {
             });
     }
 
-    set labelInfo(labelInfo: LabelInfo[]) {
+    public set labelInfo(labelInfo: LabelInfo[]) {
         this._labelInfo = labelInfo;
         this._labelsAltered.alter('labels');
     }
 
-    protected setupLabels(): void {
-        this.labels = [];
-
-        this._labelInfo.forEach((i) => {
-            const l = new Position3DLabel(new Text(i.name), Label.Type.Static);
-            l.fontFace = this._fontFace;
-            l.fontSize = 0.15;
-            l.lineAnchor = Label.LineAnchor.Top;
-            l.alignment = Label.Alignment.Center;
-            l.position = i.pos;
-            l.direction = i.dir;
-            l.up = i.up;
-            l.color.fromRGB(0, 0, 0);
-            this.labels.push(l);
-        });
-    }
-
     @Initializable.assert_initialized()
-    update(override: boolean = false): void {
+    public update(override: boolean = false): void {
         if (override || this._labelsAltered.labels) {
             this.setupLabels();
         }
@@ -91,11 +74,28 @@ export class GridLabelPass extends LabelRenderPass {
     }
 
     @Initializable.assert_initialized()
-    frame(): void {
+    public frame(): void {
         this._gl.disable(this._gl.CULL_FACE);
         super.frame();
         this._gl.enable(this._gl.CULL_FACE);
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.BLEND);
+    }
+
+    protected setupLabels(): void {
+        this.labels = [];
+
+        this._labelInfo.forEach((i) => {
+            const l = new Position3DLabel(new Text(i.name), Label.Type.Static);
+            l.fontFace = this._fontFace;
+            l.fontSize = 0.15;
+            l.lineAnchor = Label.LineAnchor.Top;
+            l.alignment = Label.Alignment.Center;
+            l.position = i.pos;
+            l.direction = i.dir;
+            l.up = i.up;
+            l.color.fromRGB(0, 0, 0);
+            this.labels.push(l);
+        });
     }
 }

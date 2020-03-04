@@ -1,18 +1,6 @@
 import { UiBase } from './base';
 
 export class Select extends UiBase {
-    get element(): HTMLSelectElement {
-        return this._element as HTMLSelectElement;
-    }
-
-    get value(): string {
-        return this.element.value;
-    }
-
-    set handler(f: (v: string) => void) {
-        this._element.addEventListener('change', () => f(this.value));
-    }
-
     public setOptions(ids: string[], labels?: string[]) {
         if(labels === undefined || labels.length != ids.length) {
             labels = ids;
@@ -29,5 +17,17 @@ export class Select extends UiBase {
             o.text = labels[i];
             element.options.add(o);
         }
+    }
+
+    public get element(): HTMLSelectElement {
+        return this._element as HTMLSelectElement;
+    }
+
+    public get value(): string {
+        return this.element.value;
+    }
+
+    public set handler(f: (v: string) => void) {
+        this._element.addEventListener('change', () => f(this.value));
     }
 }

@@ -5,7 +5,6 @@ import {
     Canvas,
     Color,
     Initializable,
-    Renderer,
     Wizard,
     viewer
 } from 'webgl-operate';
@@ -34,7 +33,7 @@ export class TopicMapApp extends Initializable {
     private _controls: Controls;
     private _data: Data;
 
-    initialize(element: HTMLCanvasElement | string): boolean {
+    public initialize(element: HTMLCanvasElement | string): boolean {
         this._canvas = new Canvas(element, { antialias: false });
         this._canvas.controller.multiFrameNumber = 16;
         this._canvas.framePrecision = Wizard.Precision.half;
@@ -71,7 +70,12 @@ export class TopicMapApp extends Initializable {
         return true;
     }
 
-    initControls(): void {
+    public uninitialize(): void {
+        this._canvas.dispose();
+        this._renderer.uninitialize();
+    }
+
+    protected initControls(): void {
         this._controls = new Controls();
 
         // data
@@ -103,7 +107,7 @@ export class TopicMapApp extends Initializable {
         }
     }
 
-    fetchAvailable(): void {
+    protected fetchAvailable(): void {
         fetch('/ls').then((res) => {
             res.json().then((j) => {
                 this._controls.data.setOptions(j as string[]);
@@ -112,7 +116,7 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    load(path: string): void {
+    protected load(path: string): void {
         console.log('loading', path);
         fetch('data/' + path).then((r) => {
             r.text().then((csv) => {
@@ -121,7 +125,7 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    prepareData(csv: string): void {
+    protected prepareData(csv: string): void {
         this._data = new Data(csv);
         const columnNames = this._data.columnNames;
         const ids = ['__NONE__'].concat(columnNames);
@@ -133,7 +137,7 @@ export class TopicMapApp extends Initializable {
         this.updatePositions();
     }
 
-    updatePositions(updatedAxis: number = -1) {
+    protected updatePositions(updatedAxis: number = -1) {
         if(updatedAxis > -1) {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);
@@ -155,18 +159,5 @@ export class TopicMapApp extends Initializable {
             }
         ];
         this._renderer.updateGrid();
-    }
-
-    uninitialize(): void {
-        this._canvas.dispose();
-        (this._renderer as Renderer).uninitialize();
-    }
-
-    get canvas(): Canvas {
-        return this._canvas;
-    }
-
-    get renderer(): TopicMapRenderer {
-        return this._renderer;
     }
 }

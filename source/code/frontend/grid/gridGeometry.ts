@@ -50,7 +50,7 @@ export class GridGeometry extends Geometry {
      * @param identifier - Meaningful name for identification of this instance.
      * vertices).
      */
-    constructor(context: Context, identifier?: string) {
+    public constructor(context: Context, identifier?: string) {
         super(context, identifier);
 
         this._gl = context.gl as WebGLRenderingContext;
@@ -64,6 +64,78 @@ export class GridGeometry extends Geometry {
         );
     }
 
+    /**
+     * Creates the vertex buffer object (VBO) and creates and initializes the
+     * buffer's data store.
+     * @param globalPosLocation - Attribute binding point for vertices.
+     * @param normalLocation - Attribute binding point for vertex normal.
+     */
+    public initialize(
+        localPosLocation: GLuint = 0,
+        uvLocation: GLuint = 1,
+        transformLocation: GLuint = 2,
+        gridInfoLocation: GLuint = 6
+    ) : boolean {
+        this._vertexLocation = localPosLocation;
+        this._uvLocation = uvLocation;
+        this._transformLocation = transformLocation;
+        this._gridInfoLocation = gridInfoLocation;
+
+        const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
+        ], [
+            this._vertexLocation,
+            this._uvLocation,
+            this._transformLocation,
+            this._gridInfoLocation,
+        ]);
+
+        this._buffers[0].data(this._quadVertices, this._gl.STATIC_DRAW);
+        this._buffers[1].data(this._uvCoordinates, this._gl.STATIC_DRAW);
+        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
+
+        return valid;
+    }
+
+    /**
+     * Draws the geometry.
+     */
+    public draw(): void {
+        this._gl2facade.drawArraysInstanced(
+            this._gl.TRIANGLE_STRIP, 0, 4, 1);
+    }
+
+    public buildGrid(gridInfo: GridInfo[]): void {
+        // only supports two axes on one plane for now
+        const x = gridInfo[0];
+        const y = gridInfo[1];
+
+        const w = GridGeometry.FADED_GRID_WIDTH;
+        const ww = w * 2;
+
+        const transform = mat4.fromRotationTranslationScale(
+            mat4.create(),
+            quat.identity(quat.create()),
+            [x.min - w, 0, -y.min + w],
+            [x.max - x.min + ww, 1, y.max - y.min + ww]
+        );
+        this._transform = new Float32Array(transform.values());
+
+        this._gridInfo = new Float32Array([
+            x.min - w, -y.min + w,
+            x.max + w, -y.max - w,
+            x.min, -y.min,
+            x.max, -y.max,
+            x.resolution, y.resolution
+        ]);
+
+        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
+    }
 
     /**
      * Binds the vertex buffer object (VBO) to an attribute binding point of a
@@ -125,78 +197,5 @@ export class GridGeometry extends Geometry {
         b[3].attribDisable(gil + 2, false, false);
         b[3].attribDisable(gil + 3, false, false);
         b[3].attribDisable(gil + 4, false, true);
-    }
-
-    /**
-     * Creates the vertex buffer object (VBO) and creates and initializes the
-     * buffer's data store.
-     * @param globalPosLocation - Attribute binding point for vertices.
-     * @param normalLocation - Attribute binding point for vertex normal.
-     */
-    initialize(
-        localPosLocation: GLuint = 0,
-        uvLocation: GLuint = 1,
-        transformLocation: GLuint = 2,
-        gridInfoLocation: GLuint = 6
-    ) : boolean {
-        this._vertexLocation = localPosLocation;
-        this._uvLocation = uvLocation;
-        this._transformLocation = transformLocation;
-        this._gridInfoLocation = gridInfoLocation;
-
-        const valid = super.initialize([
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-        ], [
-            this._vertexLocation,
-            this._uvLocation,
-            this._transformLocation,
-            this._gridInfoLocation,
-        ]);
-
-        this._buffers[0].data(this._quadVertices, this._gl.STATIC_DRAW);
-        this._buffers[1].data(this._uvCoordinates, this._gl.STATIC_DRAW);
-        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
-
-        return valid;
-    }
-
-    /**
-     * Draws the geometry.
-     */
-    draw(): void {
-        this._gl2facade.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 4, 1);
-    }
-
-    buildGrid(gridInfo: GridInfo[]): void {
-        // only supports two axes on one plane for now
-        const x = gridInfo[0];
-        const y = gridInfo[1];
-
-        const w = GridGeometry.FADED_GRID_WIDTH;
-        const ww = w * 2;
-
-        const transform = mat4.fromRotationTranslationScale(
-            mat4.create(),
-            quat.identity(quat.create()),
-            [x.min - w, 0, -y.min + w],
-            [x.max - x.min + ww, 1, y.max - y.min + ww]
-        );
-        this._transform = new Float32Array(transform.values());
-
-        this._gridInfo = new Float32Array([
-            x.min - w, -y.min + w,
-            x.max + w, -y.max - w,
-            x.min, -y.min,
-            x.max, -y.max,
-            x.resolution, y.resolution
-        ]);
-
-        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
     }
 }

@@ -1,31 +1,31 @@
 import {
+    AccumulatePass,
+    AntiAliasingKernel,
+    BlitPass,
     Camera,
     Context,
     DefaultFramebuffer,
+    Framebuffer,
     Invalidate,
     MouseEventProvider,
     Navigation,
-    Renderer,
-    viewer,
     Renderbuffer,
+    Renderer,
     Texture2D,
-    Framebuffer,
-    AntiAliasingKernel,
-    AccumulatePass,
-    BlitPass,
     Wizard,
+    tuples,
     vec3,
-    tuples
+    viewer
 } from 'webgl-operate';
 
 // can't use destructuring, so we have to import this manually
 // see https://github.com/microsoft/TypeScript/issues/13135
 import GLfloat2 = tuples.GLfloat2;
 
-import { GridLabelPass } from './grid/gridLabelPass';
 import { GridInfo } from './grid/gridInfo';
-import { PointPass } from './points/pointPass';
+import { GridLabelPass } from './grid/gridLabelPass';
 import { GridPass } from './grid/gridPass';
+import { PointPass } from './points/pointPass';
 
 export class TopicMapRenderer extends Renderer {
     // scene data
@@ -52,8 +52,34 @@ export class TopicMapRenderer extends Renderer {
     protected _accumulatePass: AccumulatePass;
     protected _blitPass: BlitPass;
 
+    public updateUseDiscard() {
+        this._pointPass.useDiscard = !viewer.Fullscreen.active();
+    }
+
+    public updateGrid() {
+        this._gridPass.gridInfo = this._gridInfo;
+        const x = this._gridInfo[0];
+        const y = this._gridInfo[1];
+        const labelDist = 0.1;
+        this._gridLabelPass.labelInfo = [
+            {
+                name: x.name,
+                pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
+                dir: [1, 0, 0],
+                up: [0, 0, -1],
+            }, {
+                name: y.name,
+                pos: [x.min - labelDist, 0, -(y.min + y.max) / 2],
+                dir: [0, 0, 1],
+                up: [1, 0, 0],
+            }
+        ];
+        this.invalidate();
+    }
+
     /**
-     * Initializes and sets up buffer, cube geometry, camera and links shaders with program.
+     * Initializes and sets up buffer, cube geometry, camera and links shaders
+     * with program.
      * @param context - valid context to create the object for.
      * @param identifier - meaningful name for identification of this instance.
      * @param mouseEventProvider - required for mouse interaction
@@ -82,16 +108,21 @@ export class TopicMapRenderer extends Renderer {
         this._navigation.camera = this._camera;
 
         // set up intermediate rendering
-        const internalFormatAndType = Wizard.queryInternalTextureFormat(this._context, gl.RGBA, Wizard.Precision.half);
+        const internalFormatAndType = Wizard.queryInternalTextureFormat(
+            this._context, gl.RGBA, Wizard.Precision.half);
 
-        this._colorRenderTexture = new Texture2D(this._context, 'ColorRenderTexture');
-        this._colorRenderTexture.initialize(1, 1, internalFormatAndType[0], gl.RGBA, internalFormatAndType[1]);
+        this._colorRenderTexture = new Texture2D(
+            this._context, 'ColorRenderTexture');
+        this._colorRenderTexture.initialize(
+            1, 1, internalFormatAndType[0], gl.RGBA, internalFormatAndType[1]);
         this._colorRenderTexture.filter(gl.LINEAR, gl.LINEAR);
 
-        this._depthRenderbuffer = new Renderbuffer(this._context, 'DepthRenderbuffer');
+        this._depthRenderbuffer = new Renderbuffer(
+            this._context, 'DepthRenderbuffer');
         this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_COMPONENT16);
 
-        this._intermediateFBO = new Framebuffer(this._context, 'IntermediateFBO');
+        this._intermediateFBO = new Framebuffer(
+            this._context, 'IntermediateFBO');
         this._intermediateFBO.initialize([
             [gl2facade.COLOR_ATTACHMENT0, this._colorRenderTexture],
             [gl.DEPTH_ATTACHMENT, this._depthRenderbuffer]]);
@@ -161,10 +192,12 @@ export class TopicMapRenderer extends Renderer {
     }
 
     /**
-     * This is invoked in order to check if rendering of a frame is required by means of implementation specific
-     * evaluation (e.g., lazy non continuous rendering). Regardless of the return value a new frame (preparation,
-     * frame, swap) might be invoked anyway, e.g., when update is forced or canvas or context properties have
-     * changed or the renderer was invalidated @see{@link invalidate}.
+     * This is invoked in order to check if rendering of a frame is required by
+     * means of implementation specific evaluation (e.g., lazy non continuous
+     * rendering). Regardless of the return value a new frame (preparation,
+     * frame, swap) might be invoked anyway, e.g., when update is forced or
+     * canvas or context properties have changed or the renderer was
+     * invalidated @see{@link invalidate}.
      * @returns whether to redraw
      */
     protected onUpdate(): boolean {
@@ -172,8 +205,8 @@ export class TopicMapRenderer extends Renderer {
         return true;
     }
     /**
-     * This is invoked in order to prepare rendering of one or more frames, regarding multi-frame rendering and
-     * camera-updates.
+     * This is invoked in order to prepare rendering of one or more frames,
+     * regarding multi-frame rendering and camera-updates.
      */
     protected onPrepare(): void {
         if (this._altered.frameSize) {
@@ -240,7 +273,7 @@ export class TopicMapRenderer extends Renderer {
         this._blitPass.frame();
     }
 
-    set positions(positions: Float32Array) {
+    public set positions(positions: Float32Array) {
         this._pointPass.positions = positions;
 
         if (this.initialized) {
@@ -248,41 +281,16 @@ export class TopicMapRenderer extends Renderer {
         }
     }
 
-    set grid(gridInfo: GridInfo[]) {
+    public set grid(gridInfo: GridInfo[]) {
         this._gridInfo = gridInfo;
     }
 
-    updateGrid() {
-        this._gridPass.gridInfo = this._gridInfo;
-        const x = this._gridInfo[0];
-        const y = this._gridInfo[1];
-        const labelDist = 0.1;
-        this._gridLabelPass.labelInfo = [
-            {
-                name: x.name,
-                pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
-                dir: [1, 0, 0],
-                up: [0, 0, -1],
-            }, {
-                name: y.name,
-                pos: [x.min - labelDist, 0, -(y.min + y.max) / 2],
-                dir: [0, 0, 1],
-                up: [1, 0, 0],
-            }
-        ];
-        this.invalidate();
-    }
-
-    set pointSize(size: number) {
+    public set pointSize(size: number) {
         this._pointPass.pointSize = size;
         this.invalidate();
     }
 
-    updateUseDiscard() {
-        this._pointPass.useDiscard = !viewer.Fullscreen.active();
-    }
-
-    set scale(scale: number) {
+    public set scale(scale: number) {
         const temp = vec3.create();
         vec3.normalize(temp, this._camera.eye);
         vec3.scale(temp, temp, 10 / scale);

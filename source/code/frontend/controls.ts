@@ -1,5 +1,5 @@
-import { Select } from './ui/select';
 import { InputSlider } from './ui/inputSlider';
+import { Select } from './ui/select';
 
 export class Controls {
     public data: Select;
@@ -7,7 +7,7 @@ export class Controls {
     public scale: InputSlider;
     public axes: Select[];
 
-    constructor() {
+    public constructor() {
         this.data = new Select('data-select');
         this.pointSize = new InputSlider('point-size');
         this.scale = new InputSlider('scale');

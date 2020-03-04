@@ -1,9 +1,9 @@
 import {
+    Camera,
     ChangeLookup,
-    Initializable,
     Context,
     Framebuffer,
-    Camera,
+    Initializable,
     Program,
     Shader,
     tuples,
@@ -35,7 +35,7 @@ export class GridPass extends Initializable {
     protected _geometry: GridGeometry;
     protected _gridInfo: GridInfo[];
 
-    constructor(context: Context) {
+    public constructor(context: Context) {
         super();
         this._context = context;
         this._gl = context.gl;
@@ -45,7 +45,7 @@ export class GridPass extends Initializable {
     }
 
     @Initializable.initialize()
-    initialize(): boolean {
+    public initialize(): boolean {
         this._geometry.initialize();
 
         this._context.enable(['OES_standard_derivatives']);
@@ -66,7 +66,7 @@ export class GridPass extends Initializable {
     }
 
     @Initializable.uninitialize()
-    uninitialize(): void {
+    public uninitialize(): void {
         this._geometry.uninitialize();
         this._program.uninitialize();
 
@@ -75,14 +75,14 @@ export class GridPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    update(override: boolean = false): void {
+    public update(override: boolean = false): void {
         if (override || this._altered.gridInfo) {
             this._geometry.buildGrid(this._gridInfo);
         }
     }
 
     @Initializable.assert_initialized()
-    frame(): void {
+    public frame(): void {
         if(this._gridInfo === undefined) {
             return;
         }
@@ -110,18 +110,18 @@ export class GridPass extends Initializable {
         this._gl.enable(this._gl.DEPTH_TEST);
     }
 
-    set gridInfo(gridInfo: GridInfo[]) {
+    public set gridInfo(gridInfo: GridInfo[]) {
         this.assertInitialized();
         this._gridInfo = gridInfo;
         this._altered.alter('gridInfo');
     }
 
-    set target(target: Framebuffer) {
+    public set target(target: Framebuffer) {
         this.assertInitialized();
         this._target = target;
     }
 
-    set camera(camera: Camera) {
+    public set camera(camera: Camera) {
         this.assertInitialized();
         if (this._camera === camera) {
             return;
@@ -129,7 +129,7 @@ export class GridPass extends Initializable {
         this._camera = camera;
     }
 
-    set ndcOffset(offset: GLfloat2) {
+    public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
     }

@@ -1,4 +1,4 @@
-class Column<T> {
+type Column<T> = {
     name: string;
     data: Array<T>;
     min: T;
@@ -11,7 +11,7 @@ export class Data {
 
     protected _selectedColumns: number[];
 
-    constructor(csv: string) {
+    public constructor(csv: string) {
         // prepare data
         let lines = csv.split(/\r\n|\n/);
         lines = lines.filter((s: string) => s.trim() !== '');
@@ -53,46 +53,16 @@ export class Data {
         this.initSelectedColumns(false);
     }
 
-    initSelectedColumns(initZ: boolean): void {
-        const strings = ['x', 'y', 'z'];
-        const columnNames = this._columns.map((c, i) => {
-            return { name: c.name.toLowerCase(), index: i };
-        });
-
-        const matches = strings.map((s) => {
-            return columnNames.filter((c) => c.name.includes(s)).map((c) => {
-                return { name: c.name.replace(s, ''), index: c.index };
-            });
-        });
-
-        const matchMatches = matches[0].map((x) => {
-            return [
-                x.index,
-                matches[1].filter((y) => x.name === y.name)[0].index,
-                initZ ?
-                    matches[2].filter((y) => x.name === y.name)[0].index :
-                    -1
-            ];
-        });
-
-        if(matchMatches.length > 0) {
-            this._selectedColumns = matchMatches[0];
-        } else {
-            // fallback: use first columns
-            this._selectedColumns = [0, 1, initZ ? 2 : -1];
-        }
-    }
-
-    get columnNames(): string[] {
+    public get columnNames(): string[] {
         return this._columns.map((c) => c.name);
     }
 
-    selectColumn(axisIndex: number, column: string): void {
+    public selectColumn(axisIndex: number, column: string): void {
         const columnIndex = this._columns.findIndex((c) => c.name === column);
         this._selectedColumns[axisIndex] = columnIndex;
     }
 
-    selectedColumn(axisIndex: number): string {
+    public selectedColumn(axisIndex: number): string {
         const i = this._selectedColumns[axisIndex];
         if(i === -1) return '__NONE__';
         return this._columns[i].name;
@@ -161,5 +131,35 @@ export class Data {
         });
 
         return { positions, extents };
+    }
+
+    protected initSelectedColumns(initZ: boolean): void {
+        const strings = ['x', 'y', 'z'];
+        const columnNames = this._columns.map((c, i) => {
+            return { name: c.name.toLowerCase(), index: i };
+        });
+
+        const matches = strings.map((s) => {
+            return columnNames.filter((c) => c.name.includes(s)).map((c) => {
+                return { name: c.name.replace(s, ''), index: c.index };
+            });
+        });
+
+        const matchMatches = matches[0].map((x) => {
+            return [
+                x.index,
+                matches[1].filter((y) => x.name === y.name)[0].index,
+                initZ ?
+                    matches[2].filter((y) => x.name === y.name)[0].index :
+                    -1
+            ];
+        });
+
+        if(matchMatches.length > 0) {
+            this._selectedColumns = matchMatches[0];
+        } else {
+            // fallback: use first columns
+            this._selectedColumns = [0, 1, initZ ? 2 : -1];
+        }
     }
 }

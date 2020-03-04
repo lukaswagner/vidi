@@ -1,11 +1,11 @@
 import {
-    Initializable,
+    Camera,
+    ChangeLookup,
     Context,
     Framebuffer,
-    Camera,
+    Initializable,
     Program,
     Shader,
-    ChangeLookup,
     tuples,
 } from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
@@ -46,7 +46,7 @@ export class PointPass extends Initializable {
     protected _geometry: PointCloudGeometry;
     protected _positions: Float32Array;
 
-    constructor(context: Context) {
+    public constructor(context: Context) {
         super();
         this._context = context;
         this._gl = context.gl;
@@ -56,7 +56,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.initialize()
-    initialize(): boolean {
+    public initialize(): boolean {
         this._geometry.initialize();
 
         this._context.enable(['OES_standard_derivatives']);
@@ -84,7 +84,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.uninitialize()
-    uninitialize(): void {
+    public uninitialize(): void {
         this._geometry.uninitialize();
         this._program.uninitialize();
 
@@ -96,7 +96,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    update(override: boolean = false): void {
+    public update(override: boolean = false): void {
         if (override || this._altered.positions) {
             this._geometry.positions = this._positions;
         }
@@ -121,7 +121,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    frame(): void {
+    public frame(): void {
         if (this._positions === undefined || this._positions.length === 0) {
             return;
         }
@@ -153,36 +153,36 @@ export class PointPass extends Initializable {
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
-    set positions(positions: Float32Array) {
+    public set positions(positions: Float32Array) {
         this.assertInitialized();
         this._positions = positions;
         this._altered.alter('positions');
     }
 
-    set target(target: Framebuffer) {
+    public set target(target: Framebuffer) {
         this.assertInitialized();
         this._target = target;
     }
 
-    set frameSize(size: GLfloat) {
+    public set frameSize(size: GLfloat) {
         this.assertInitialized();
         this._frameSize = size;
         this._altered.alter('frameSize');
     }
 
-    set pointSize(size: GLfloat) {
+    public set pointSize(size: GLfloat) {
         this.assertInitialized();
         this._pointSize = size;
         this._altered.alter('pointSize');
     }
 
-    set useDiscard(enabled: boolean) {
+    public set useDiscard(enabled: boolean) {
         this.assertInitialized();
         this._useDiscard = enabled;
         this._altered.alter('useDiscard');
     }
 
-    set camera(camera: Camera) {
+    public set camera(camera: Camera) {
         this.assertInitialized();
         if (this._camera === camera) {
             return;
@@ -190,7 +190,7 @@ export class PointPass extends Initializable {
         this._camera = camera;
     }
 
-    set ndcOffset(offset: GLfloat2) {
+    public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
     }
