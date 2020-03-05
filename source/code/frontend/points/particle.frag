@@ -14,6 +14,7 @@ precision lowp int;
 uniform bool u_useDiscard;
 
 varying vec3 v_pos;
+varying vec3 v_color;
 
 void main()
 {
@@ -29,5 +30,5 @@ void main()
         alpha = 1.0;
     }
 
-    gl_FragColor = vec4(v_pos + 0.5, alpha);
+    gl_FragColor = vec4(v_color, alpha);
 }
