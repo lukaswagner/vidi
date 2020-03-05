@@ -1,6 +1,7 @@
 precision lowp float;
 
 @import ../shared/ndcoffset;
+#line 5
 
 #if __VERSION__ == 100
     attribute vec3 a_pos;

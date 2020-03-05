@@ -1,6 +1,7 @@
 precision lowp float;
 
 @import ../shared/ndcoffset;
+#line 5
 
 #if __VERSION__ == 100
     #define texture(sampler, coord) texture2D(sampler, coord)
