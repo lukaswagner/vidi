@@ -10,7 +10,7 @@ footer {
     padding-bottom: 2rem;
 }
 
-.embed-responsive-34by9::before {
+.embed-responsive-26by9::before {
     padding-top: 34.61538%;
 }
 
@@ -50,4 +50,36 @@ input.slider::-webkit-slider-thumb {
     background: var(--primary);
     cursor: pointer;
     -webkit-appearance: none;
+}
+
+.neg-margin {
+    margin-top: -2em;
+    margin-bottom: -1em;
+}
+
+.canvas-fade {
+    --light-with-alpha: rgba(248, 249, 250, 0);
+}
+
+.canvas-fade::before,.canvas-fade::after {
+    display: block;
+    content: "";
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    pointer-events: none;
+    width: 100%;
+    height: 2em;
+}
+
+.canvas-fade::before {
+    top: 0;
+    background-image: linear-gradient(
+        to bottom, var(--light), var(--light-with-alpha));
+}
+
+.canvas-fade::after {
+    bottom: 0;
+    background-image: linear-gradient(
+        to top, var(--light), var(--light-with-alpha));
 }
