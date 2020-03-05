@@ -50,9 +50,11 @@ export class GridPass extends Initializable {
 
         this._context.enable(['OES_standard_derivatives']);
 
-        const vert = new Shader(this._context, this._gl.VERTEX_SHADER);
+        const vert = new Shader(
+            this._context, this._gl.VERTEX_SHADER, 'grid.vert');
         vert.initialize(require('./grid.vert'));
-        const frag = new Shader(this._context, this._gl.FRAGMENT_SHADER);
+        const frag = new Shader(
+            this._context, this._gl.FRAGMENT_SHADER, 'grid.frag');
         frag.initialize(require('./grid.frag'));
 
         this._program.initialize([vert, frag], false);
@@ -85,7 +87,7 @@ export class GridPass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
-        if(this._gridInfo === undefined) {
+        if (this._gridInfo === undefined) {
             return;
         }
 

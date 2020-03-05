@@ -61,9 +61,11 @@ export class PointPass extends Initializable {
 
         this._context.enable(['OES_standard_derivatives']);
 
-        const vert = new Shader(this._context, this._gl.VERTEX_SHADER);
+        const vert = new Shader(
+            this._context, this._gl.VERTEX_SHADER, 'particle.vert');
         vert.initialize(require('./particle.vert'));
-        const frag = new Shader(this._context, this._gl.FRAGMENT_SHADER);
+        const frag = new Shader(
+            this._context, this._gl.FRAGMENT_SHADER, 'particle.frag');
         frag.initialize(require('./particle.frag'));
 
         this._program.initialize([vert, frag], false);
