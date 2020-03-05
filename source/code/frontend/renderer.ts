@@ -202,7 +202,11 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onUpdate(): boolean {
         this._navigation.update();
-        return true;
+        return this._altered.any ||
+            this._camera.altered ||
+            this._pointPass.altered ||
+            this._gridPass.altered ||
+            this._gridLabelPass.altered;
     }
     /**
      * This is invoked in order to prepare rendering of one or more frames,

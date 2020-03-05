@@ -194,4 +194,8 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._ndcOffset = offset;
     }
+
+    public get altered(): boolean {
+        return this._altered.any;
+    }
 }

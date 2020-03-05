@@ -79,6 +79,8 @@ export class GridPass extends Initializable {
         if (override || this._altered.gridInfo) {
             this._geometry.buildGrid(this._gridInfo);
         }
+
+        this._altered.reset();
     }
 
     @Initializable.assert_initialized()
@@ -132,5 +134,9 @@ export class GridPass extends Initializable {
     public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
+    }
+
+    public get altered(): boolean {
+        return this._altered.any;
     }
 }
