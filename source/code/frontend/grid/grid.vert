@@ -1,10 +1,14 @@
 precision lowp float;
 
-@import ../shared/ndcoffset;
-#line 5
-
 #if __VERSION__ == 100
-    attribute vec3 a_pos;
+    attribute vec3 a_position;
+    attribute vec2 a_uv;
+    attribute mat4 a_transform;
+    attribute vec2 a_quadLowerBounds;
+    attribute vec2 a_quadUpperBounds;
+    attribute vec2 a_dataLowerBounds;
+    attribute vec2 a_dataUpperBounds;
+    attribute vec2 a_gridResolution;
 #else
     #define varying out
     layout(location = 0) in vec3 a_position;
@@ -53,6 +57,6 @@ void main()
     v_gridResolutionUV = v_gridResolution / v_quadRange;
 
     vec4 vertex = u_viewProjection * a_transform * vec4(a_position, 1.0);
-    ndcOffset(vertex, u_ndcOffset);
+    vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;
     gl_Position = vertex;
 }

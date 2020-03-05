@@ -1,6 +1,8 @@
 precision lowp float;
 precision lowp int;
 
+#extension GL_OES_standard_derivatives : enable
+
 #if __VERSION__ != 100
     #define varying in
     #define gl_FragColor fragColor
