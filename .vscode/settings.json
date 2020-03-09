@@ -4,9 +4,11 @@
     "cSpell.words": [
         "Initializable",
         "blit",
+        "coord",
         "devtool",
         "glsl",
         "linebreak",
+        "lowp",
         "mozfullscreenchange",
         "msfullscreenchange",
         "readonly",
