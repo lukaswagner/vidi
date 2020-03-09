@@ -6,6 +6,9 @@ export class Controls {
     public pointSize: InputSlider;
     public scale: InputSlider;
     public axes: Select[];
+    public colorMode: Select;
+    public colorMapping: Select;
+    public colorColumn: Select;
 
     public constructor() {
         this.data = new Select('data-select');
@@ -16,5 +19,8 @@ export class Controls {
             new Select('y-axis'),
             new Select('z-axis')
         ];
+        this.colorMode = new Select('color-mode');
+        this.colorMapping = new Select('color-mapping');
+        this.colorColumn = new Select('color-column');
     }
 }

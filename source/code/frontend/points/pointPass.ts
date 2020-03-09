@@ -22,6 +22,8 @@ export class PointPass extends Initializable {
         frameSize: false,
         pointSize: false,
         useDiscard: false,
+        colorMode: false,
+        colorMapping: false,
     });
 
     protected _context: Context;
@@ -33,6 +35,8 @@ export class PointPass extends Initializable {
     protected _frameSize: GLfloat;
     protected _pointSize: GLfloat = PointPass.DEFAULT_POINT_SIZE;
     protected _useDiscard: boolean;
+    protected _colorMode: number;
+    protected _colorMapping: number;
     protected _ndcOffset: GLfloat2 = [0.0, 0.0];
 
     protected _program: Program;
@@ -42,6 +46,8 @@ export class PointPass extends Initializable {
     protected _uFrameSize: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
+    protected _uColorMode: WebGLUniformLocation;
+    protected _uColorMapping: WebGLUniformLocation;
 
     protected _geometry: PointCloudGeometry;
     protected _positions: Float32Array;
@@ -77,6 +83,8 @@ export class PointPass extends Initializable {
         this._uFrameSize = this._program.uniform('u_pointSize');
         this._uPointSize = this._program.uniform('u_frameSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
+        this._uColorMode = this._program.uniform('u_colorMode');
+        this._uColorMapping = this._program.uniform('u_colorMapping');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -95,6 +103,8 @@ export class PointPass extends Initializable {
         this._uFrameSize = undefined;
         this._uPointSize = undefined;
         this._uUseDiscard = undefined;
+        this._uColorMode = undefined;
+        this._uColorMapping = undefined;
     }
 
     @Initializable.assert_initialized()
@@ -115,6 +125,14 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.useDiscard) {
             this._gl.uniform1i(this._uUseDiscard, Number(this._useDiscard));
+        }
+
+        if (override || this._altered.colorMode) {
+            this._gl.uniform1i(this._uColorMode, Number(this._colorMode));
+        }
+
+        if (override || this._altered.colorMapping) {
+            this._gl.uniform1i(this._uColorMapping, Number(this._colorMapping));
         }
 
         this._program.unbind();
@@ -182,6 +200,18 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._useDiscard = enabled;
         this._altered.alter('useDiscard');
+    }
+
+    public set colorMode(mode: number) {
+        this.assertInitialized();
+        this._colorMode = mode;
+        this._altered.alter('colorMode');
+    }
+
+    public set colorMapping(mode: number) {
+        this.assertInitialized();
+        this._colorMapping = mode;
+        this._altered.alter('colorMapping');
     }
 
     public set camera(camera: Camera) {

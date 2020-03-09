@@ -9,9 +9,11 @@ import {
     viewer
 } from 'webgl-operate';
 
+import { ColorMode, ColorModeDefault } from './points/colorMode';
 import { Controls } from './controls';
 import { Data } from './data';
 import { TopicMapRenderer } from './renderer';
+import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -102,9 +104,26 @@ export class TopicMapApp extends Initializable {
             sc.default, sc.min, sc.max, sc.step);
 
         // axes
-        for(let i = 0; i < this._controls.axes.length; i++) {
+        for (let i = 0; i < this._controls.axes.length; i++) {
             this._controls.axes[i].handler = this.updatePositions.bind(this, i);
         }
+
+        // colors
+        this._controls.colorMode.handler = (m) => {
+            this._renderer.colorMode = Number(m);
+        };
+
+        this._controls.colorMode.fromDict(ColorMode);
+        this._renderer.colorMode = ColorModeDefault;
+        this._controls.colorMode.value = ColorModeDefault.toString();
+
+        this._controls.colorMapping.handler = (m) => {
+            this._renderer.colorMapping = Number(m);
+        };
+
+        this._controls.colorMapping.fromDict(ColorMapping);
+        this._renderer.colorMapping = ColorMappingDefault;
+        this._controls.colorMapping.value = ColorMappingDefault.toString();
     }
 
     protected fetchAvailable(): void {
@@ -130,7 +149,7 @@ export class TopicMapApp extends Initializable {
         const columnNames = this._data.columnNames;
         const ids = ['__NONE__'].concat(columnNames);
         const labels = ['None'].concat(columnNames);
-        for(let i = 0; i < this._controls.axes.length; i++) {
+        for (let i = 0; i < this._controls.axes.length; i++) {
             this._controls.axes[i].setOptions(ids, labels);
             this._controls.axes[i].element.value = this._data.selectedColumn(i);
         }
@@ -138,7 +157,7 @@ export class TopicMapApp extends Initializable {
     }
 
     protected updatePositions(updatedAxis: number = -1) {
-        if(updatedAxis > -1) {
+        if (updatedAxis > -1) {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);
         }
@@ -146,7 +165,7 @@ export class TopicMapApp extends Initializable {
             [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);
         this._renderer.positions = positions;
         this._renderer.grid = [
-            { 
+            {
                 name: this._data.selectedColumn(0),
                 min: extents[0].min,
                 max: extents[0].max,

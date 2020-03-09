@@ -221,7 +221,7 @@ export class TopicMapRenderer extends Renderer {
             this._pointPass.frameSize = this._frameSize[0];
         }
 
-        if(this._altered.canvasSize) {
+        if (this._altered.canvasSize) {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
@@ -299,6 +299,16 @@ export class TopicMapRenderer extends Renderer {
         vec3.normalize(temp, this._camera.eye);
         vec3.scale(temp, temp, 10 / scale);
         this._camera.eye = temp;
-        this.invalidate(true);
+        this.invalidate();
+    }
+
+    public set colorMode(mode: number) {
+        this._pointPass.colorMode = mode;
+        this.invalidate();
+    }
+
+    public set colorMapping(mapping: number) {
+        this._pointPass.colorMapping = mapping;
+        this.invalidate();
     }
 }
