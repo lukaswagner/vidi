@@ -132,6 +132,14 @@ export class TopicMapApp extends Initializable {
         this._controls.colorMapping.fromDict(ColorMapping);
         this._renderer.colorMapping = ColorMappingDefault;
         this._controls.colorMapping.value = ColorMappingDefault.toString();
+
+        // TODO: handle color column switch
+
+        const columnNames = this._data.columnNames;
+        const ids = ['__NONE__'].concat(columnNames);
+        const labels = ['None'].concat(columnNames);
+        this._controls.colorColumn.setOptions(ids, labels);
+        this._controls.colorColumn.element.value = ids[0];
     }
 
     protected fetchAvailable(): void {
@@ -186,5 +194,8 @@ export class TopicMapApp extends Initializable {
             }
         ];
         this._renderer.updateGrid();
+    }
+
+    protected updateColors(): void {
     }
 }

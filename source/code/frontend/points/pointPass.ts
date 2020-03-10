@@ -137,6 +137,8 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
+        this._geometry.update();
+
         this._altered.reset();
     }
 
