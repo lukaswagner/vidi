@@ -311,4 +311,9 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.colorMapping = mapping;
         this.invalidate();
     }
+
+    public set vertexColors(colors: Float32Array) {
+        this._pointPass.vertexColors = colors;
+        this.invalidate();
+    }
 }

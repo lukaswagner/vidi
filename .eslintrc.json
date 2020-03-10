@@ -22,10 +22,7 @@
         "@typescript-eslint"
     ],
     "rules": {
-        "indent": [
-            "error",
-            4
-        ],
+        "indent": "off",
         "linebreak-style": "off",
         "quotes": [
             "error",
@@ -56,6 +53,10 @@
         "@typescript-eslint/type-annotation-spacing": "error",
         "@typescript-eslint/unbound-method": "error",
         "brace-style": "off",
-        "@typescript-eslint/brace-style": "error"
+        "@typescript-eslint/brace-style": "error",
+        "@typescript-eslint/indent": [
+            "error",
+            4
+        ]
     }
 }

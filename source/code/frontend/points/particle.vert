@@ -4,12 +4,12 @@ precision lowp float;
     #define texture(sampler, coord) texture2D(sampler, coord)
     attribute vec3 a_localPos;
     attribute vec3 a_globalPos;
-    attribute vec3 a_pointColor;
+    attribute vec3 a_vertexColor;
 #else
     #define varying out
     layout(location = 0) in vec3 a_localPos;
     layout(location = 1) in vec3 a_globalPos;
-    layout(location = 2) in vec3 a_pointColor;
+    layout(location = 2) in vec3 a_vertexColor;
 #endif
 
 uniform mat4 u_viewProjection;
@@ -60,7 +60,7 @@ vec3 color()
     } else if (u_colorMode == COLOR_MODE_POSITION_BASED) {
         return positionBasedColor();
     } else if (u_colorMode == COLOR_MODE_VERTEX_COLOR) {
-        return a_pointColor;
+        return a_vertexColor;
     }
 }
 

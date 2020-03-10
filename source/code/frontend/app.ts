@@ -19,8 +19,12 @@ import {
     ColorModeDefault
 } from './points/colorMode';
 
+import {
+    Data,
+    DataType
+} from './data';
+
 import { Controls } from './controls';
-import { Data } from './data';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
@@ -45,7 +49,7 @@ export class TopicMapApp extends Initializable {
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         this._canvas = new Canvas(element, { antialias: false });
-        this._canvas.controller.multiFrameNumber = 16;
+        this._canvas.controller.multiFrameNumber = 8;
         this._canvas.framePrecision = Wizard.Precision.half;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
@@ -133,13 +137,7 @@ export class TopicMapApp extends Initializable {
         this._renderer.colorMapping = ColorMappingDefault;
         this._controls.colorMapping.value = ColorMappingDefault.toString();
 
-        // TODO: handle color column switch
-
-        const columnNames = this._data.columnNames;
-        const ids = ['__NONE__'].concat(columnNames);
-        const labels = ['None'].concat(columnNames);
-        this._controls.colorColumn.setOptions(ids, labels);
-        this._controls.colorColumn.element.value = ids[0];
+        this._controls.colorColumn.handler = this.updateColors.bind(this);
     }
 
     protected fetchAvailable(): void {
@@ -162,14 +160,24 @@ export class TopicMapApp extends Initializable {
 
     protected prepareData(csv: string): void {
         this._data = new Data(csv);
-        const columnNames = this._data.columnNames;
-        const ids = ['__NONE__'].concat(columnNames);
-        const labels = ['None'].concat(columnNames);
+
+        // set up axis controls
+        const axisColumnNames = this._data.getColumnNames(DataType.Number);
+        const axisIds = ['__NONE__'].concat(axisColumnNames);
+        const axisLabels = ['None'].concat(axisColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].setOptions(ids, labels);
+            this._controls.axes[i].setOptions(axisIds, axisLabels);
             this._controls.axes[i].element.value = this._data.selectedColumn(i);
         }
         this.updatePositions();
+
+        // set up vertex color controls
+        const colorColumnNames = this._data.getColumnNames(DataType.Color);
+        const colorIds = ['__NONE__'].concat(colorColumnNames);
+        const colorLabels = ['None'].concat(colorColumnNames);
+        this._controls.colorColumn.setOptions(colorIds, colorLabels);
+        this._controls.colorColumn.element.value = colorIds[0];
+        this.updateColors(colorIds[0]);
     }
 
     protected updatePositions(updatedAxis: number = -1): void {
@@ -196,6 +204,7 @@ export class TopicMapApp extends Initializable {
         this._renderer.updateGrid();
     }
 
-    protected updateColors(): void {
+    protected updateColors(colorAxis: string): void {
+        this._renderer.vertexColors = this._data.getColors(colorAxis);
     }
 }

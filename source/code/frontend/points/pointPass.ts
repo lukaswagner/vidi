@@ -24,6 +24,7 @@ export class PointPass extends Initializable {
         useDiscard: false,
         colorMode: false,
         colorMapping: false,
+        vertexColors: false,
     });
 
     protected _context: Context;
@@ -51,6 +52,7 @@ export class PointPass extends Initializable {
 
     protected _geometry: PointCloudGeometry;
     protected _positions: Float32Array;
+    protected _vertexColors: Float32Array;
 
     public constructor(context: Context) {
         super();
@@ -111,6 +113,10 @@ export class PointPass extends Initializable {
     public update(override: boolean = false): void {
         if (override || this._altered.positions) {
             this._geometry.positions = this._positions;
+        }
+
+        if (override || this._altered.vertexColors) {
+            this._geometry.vertexColors = this._vertexColors;
         }
 
         this._program.bind();
@@ -214,6 +220,12 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._colorMapping = mode;
         this._altered.alter('colorMapping');
+    }
+
+    public set vertexColors(colors: Float32Array) {
+        this.assertInitialized();
+        this._vertexColors = colors;
+        this._altered.alter('vertexColors');
     }
 
     public set camera(camera: Camera) {

@@ -12,6 +12,7 @@ export class PointCloudGeometry extends Geometry {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         positions: false,
+        vertexCount: false,
         vertexColors: false,
     });
 
@@ -83,7 +84,7 @@ export class PointCloudGeometry extends Geometry {
             this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
         }
 
-        if (!this._altered.vertexColors && this._altered.positions) {
+        if (!this._altered.vertexColors && this._altered.vertexCount) {
             this._vertexColors = new Float32Array(this._globalPositions.length);
             this._altered.alter('vertexColors');
         }
@@ -135,11 +136,14 @@ export class PointCloudGeometry extends Geometry {
     }
 
     public set positions(positions: Float32Array) {
+        if (positions.length !== this._globalPositions.length) {
+            this._altered.alter('vertexCount');
+        }
         this._globalPositions = positions;
         this._altered.alter('positions');
     }
 
-    public set colors(colors: Float32Array) {
+    public set vertexColors(colors: Float32Array) {
         this._vertexColors = colors;
         this._altered.alter('vertexColors');
     }
