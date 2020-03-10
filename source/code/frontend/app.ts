@@ -9,11 +9,19 @@ import {
     viewer
 } from 'webgl-operate';
 
-import { ColorMode, ColorModeDefault } from './points/colorMode';
+import {
+    ColorMapping,
+    ColorMappingDefault
+} from './points/colorMapping';
+
+import {
+    ColorMode,
+    ColorModeDefault
+} from './points/colorMode';
+
 import { Controls } from './controls';
 import { Data } from './data';
 import { TopicMapRenderer } from './renderer';
-import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
