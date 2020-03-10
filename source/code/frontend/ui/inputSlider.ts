@@ -17,7 +17,9 @@ export class InputSlider extends UiBase {
             () => this.element.value = this._sliderElement.value);
     }
 
-    public setOptions(value: number, min: number, max: number, step: number) {
+    public setOptions(
+        value: number, min: number, max: number, step: number
+    ): void {
         this.element.value = value.toString();
         this._sliderElement.min = min.toString();
         this._sliderElement.max = max.toString();
@@ -45,7 +47,7 @@ export class InputSlider extends UiBase {
         v = Math.max(Math.min(v, this._max), this._min);
         const remainder = v % this._step;
         const rounded = (remainder > this._step / 2) ?
-            v - remainder + this._step:
+            v - remainder + this._step :
             v - remainder;
         const magnitude = -Math.log10(this._step);
         const asString = rounded.toFixed(magnitude);

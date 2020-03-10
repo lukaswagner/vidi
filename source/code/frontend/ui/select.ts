@@ -2,7 +2,7 @@ import { Dict } from '../util/dict';
 import { UiBase } from './base';
 
 export class Select extends UiBase {
-    public setOptions(ids: string[], labels?: string[]) {
+    public setOptions(ids: string[], labels?: string[]): void {
         if (labels === undefined || labels.length != ids.length) {
             labels = ids;
         }
@@ -20,7 +20,7 @@ export class Select extends UiBase {
         }
     }
 
-    public fromDict(options: Dict<any, any>) {
+    public fromDict(options: Dict<any, any>): void {
         this.setOptions(
             options.map((m) => m[0].toString()),
             options.map((m) => m[1].toString()),

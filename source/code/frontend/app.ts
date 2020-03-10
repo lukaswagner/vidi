@@ -172,7 +172,7 @@ export class TopicMapApp extends Initializable {
         this.updatePositions();
     }
 
-    protected updatePositions(updatedAxis: number = -1) {
+    protected updatePositions(updatedAxis: number = -1): void {
         if (updatedAxis > -1) {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);

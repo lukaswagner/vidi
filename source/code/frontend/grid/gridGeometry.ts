@@ -75,7 +75,7 @@ export class GridGeometry extends Geometry {
         uvLocation: GLuint = 1,
         transformLocation: GLuint = 2,
         gridInfoLocation: GLuint = 6
-    ) : boolean {
+    ): boolean {
         this._vertexLocation = localPosLocation;
         this._uvLocation = uvLocation;
         this._transformLocation = transformLocation;

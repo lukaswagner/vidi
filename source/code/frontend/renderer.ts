@@ -52,11 +52,11 @@ export class TopicMapRenderer extends Renderer {
     protected _accumulatePass: AccumulatePass;
     protected _blitPass: BlitPass;
 
-    public updateUseDiscard() {
+    public updateUseDiscard(): void {
         this._pointPass.useDiscard = !viewer.Fullscreen.active();
     }
 
-    public updateGrid() {
+    public updateGrid(): void {
         this._gridPass.gridInfo = this._gridInfo;
         const x = this._gridInfo[0];
         const y = this._gridInfo[1];
