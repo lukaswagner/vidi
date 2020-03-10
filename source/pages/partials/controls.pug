@@ -32,3 +32,11 @@
             .col-4.mb-3
                 label(for='color-column') Column for per-point color
                 select#color-column.form-control
+            .col-4.mb-3
+                label(for='variable-point-size-strength-input') Variable point size
+                .row.m-0
+                    input#variable-point-size-strength-input.col-3.form-control
+                    input#variable-point-size-strength-range.col.ml-2.slider(type='range')
+            .col-4.mb-3
+                label(for='variable-point-size-column') Column for variable point size
+                select#variable-point-size-column.form-control

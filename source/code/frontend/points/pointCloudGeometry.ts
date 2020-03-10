@@ -14,15 +14,18 @@ export class PointCloudGeometry extends Geometry {
         positions: false,
         vertexCount: false,
         vertexColors: false,
+        variablePointSize: false,
     });
 
     protected _localPositions = new Float32Array([0, 0, 0]);
     protected _globalPositions = new Float32Array([]);
     protected _vertexColors = new Float32Array([]);
+    protected _variablePointSize = new Float32Array([]);
 
     protected _localPosLocation: GLuint = 0;
     protected _globalPosLocation: GLuint = 1;
     protected _vertexColorLocation: GLuint = 2;
+    protected _variablePointSizeLocation: GLuint = 3;
 
     protected _gl: WebGLRenderingContext;
     protected _gl2facade: GL2Facade;
@@ -42,6 +45,7 @@ export class PointCloudGeometry extends Geometry {
         this._buffers.push(
             new Buffer(context),
             new Buffer(context),
+            new Buffer(context),
             new Buffer(context)
         );
     }
@@ -56,24 +60,30 @@ export class PointCloudGeometry extends Geometry {
         localPosLocation: GLuint = 0,
         globalPosLocation: GLuint = 1,
         vertexColorLocation: GLuint = 2,
+        variablePointSizeLocation: GLuint = 3,
     ): boolean {
         this._localPosLocation = localPosLocation;
         this._globalPosLocation = globalPosLocation;
         this._vertexColorLocation = vertexColorLocation;
+        this._variablePointSizeLocation = variablePointSizeLocation;
 
         const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER
         ], [
             localPosLocation,
             globalPosLocation,
-            vertexColorLocation
+            vertexColorLocation,
+            variablePointSizeLocation
         ]);
 
         this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
         this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
         this._buffers[2].data(this._vertexColors, this._gl.STATIC_DRAW);
+        this._buffers[3].data(
+            this._variablePointSizeLocation, this._gl.STATIC_DRAW);
 
         return valid;
     }
@@ -91,6 +101,17 @@ export class PointCloudGeometry extends Geometry {
 
         if (override || this._altered.vertexColors) {
             this._buffers[2].data(this._vertexColors, this._gl.STATIC_DRAW);
+        }
+
+        if (!this._altered.variablePointSize && this._altered.vertexCount) {
+            this._variablePointSize =
+                new Float32Array(this._globalPositions.length / 3);
+            this._altered.alter('variablePointSize');
+        }
+
+        if (override || this._altered.variablePointSize) {
+            this._buffers[3].data(
+                this._variablePointSize, this._gl.STATIC_DRAW);
         }
 
         this._altered.reset();
@@ -124,6 +145,11 @@ export class PointCloudGeometry extends Geometry {
             this._vertexColorLocation, 3, this._gl.FLOAT,
             false, 0, 0, true, false);
         this._gl2facade.vertexAttribDivisor(this._vertexColorLocation, 1);
+
+        this._buffers[3].attribEnable(
+            this._variablePointSizeLocation, 1, this._gl.FLOAT,
+            false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(this._variablePointSizeLocation, 1);
     }
 
     /**
@@ -133,6 +159,8 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[0].attribDisable(this._localPosLocation, true, true);
         this._buffers[1].attribDisable(this._globalPosLocation, true, true);
         this._buffers[2].attribDisable(this._vertexColorLocation, true, true);
+        this._buffers[3].attribDisable(
+            this._variablePointSizeLocation, true, true);
     }
 
     public set positions(positions: Float32Array) {
@@ -146,5 +174,10 @@ export class PointCloudGeometry extends Geometry {
     public set vertexColors(colors: Float32Array) {
         this._vertexColors = colors;
         this._altered.alter('vertexColors');
+    }
+
+    public set variablePointSize(pointSize: Float32Array) {
+        this._variablePointSize = pointSize;
+        this._altered.alter('variablePointSize');
     }
 }

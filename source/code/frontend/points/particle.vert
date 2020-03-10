@@ -5,17 +5,20 @@ precision lowp float;
     attribute vec3 a_localPos;
     attribute vec3 a_globalPos;
     attribute vec3 a_vertexColor;
+    attribute float a_variablePointSize;
 #else
     #define varying out
     layout(location = 0) in vec3 a_localPos;
     layout(location = 1) in vec3 a_globalPos;
     layout(location = 2) in vec3 a_vertexColor;
+    layout(location = 3) in float a_variablePointSize;
 #endif
 
 uniform mat4 u_viewProjection;
 uniform vec2 u_ndcOffset;
 uniform float u_frameSize;
 uniform float u_pointSize;
+uniform float u_variablePointSizeStrength;
 
 const int COLOR_MODE_SINGLE_COLOR = 0;
 const int COLOR_MODE_POSITION_BASED = 1;
@@ -72,5 +75,8 @@ void main()
     vec4 vertex = u_viewProjection * vec4(v_pos, 1.0);
     vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;
     gl_Position = vertex;
-    gl_PointSize = u_frameSize * u_pointSize / gl_Position.z;
+    gl_PointSize =
+        u_frameSize * u_pointSize *
+        mix(1.0, a_variablePointSize, u_variablePointSizeStrength) /
+        gl_Position.z;
 }

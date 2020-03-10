@@ -9,6 +9,8 @@ export class Controls {
     public colorMode: Select;
     public colorMapping: Select;
     public colorColumn: Select;
+    public variablePointSizeStrength: InputSlider;
+    public variablePointSizeColumn: Select;
 
     public constructor() {
         this.data = new Select('data-select');
@@ -22,5 +24,8 @@ export class Controls {
         this.colorMode = new Select('color-mode');
         this.colorMapping = new Select('color-mapping');
         this.colorColumn = new Select('color-column');
+        this.variablePointSizeStrength =
+            new InputSlider('variable-point-size-strength');
+        this.variablePointSizeColumn = new Select('variable-point-size-column');
     }
 }

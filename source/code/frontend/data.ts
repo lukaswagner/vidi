@@ -209,6 +209,22 @@ export class Data {
         return colors;
     }
 
+    public getVariablePointSize(column: string): Float32Array {
+        const pointSize = new Float32Array(this._rowCount);
+        const columnIndex = this.getColumnIndex(column);
+        if (
+            columnIndex === -1 ||
+            this._columns[columnIndex].type !== DataType.Number
+        ) {
+            return pointSize.fill(1);
+        }
+        const data = this._columns[columnIndex].data;
+        for (let i = 0; i < this._rowCount; i++) {
+            pointSize[i] = Math.log(data[i] as number);
+        }
+        return pointSize;
+    }
+
     protected inferType(input: string): DataType {
         if (!Number.isNaN(Number(input))) {
             return DataType.Number;

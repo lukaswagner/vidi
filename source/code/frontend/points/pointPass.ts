@@ -25,6 +25,8 @@ export class PointPass extends Initializable {
         colorMode: false,
         colorMapping: false,
         vertexColors: false,
+        variablePointSizeStrength: false,
+        variablePointSize: false,
     });
 
     protected _context: Context;
@@ -39,6 +41,7 @@ export class PointPass extends Initializable {
     protected _colorMode: number;
     protected _colorMapping: number;
     protected _ndcOffset: GLfloat2 = [0.0, 0.0];
+    protected _variablePointSizeStrength: GLfloat = 1;
 
     protected _program: Program;
 
@@ -49,10 +52,12 @@ export class PointPass extends Initializable {
     protected _uUseDiscard: WebGLUniformLocation;
     protected _uColorMode: WebGLUniformLocation;
     protected _uColorMapping: WebGLUniformLocation;
+    protected _uVariablePointSizeStrength: WebGLUniformLocation;
 
     protected _geometry: PointCloudGeometry;
     protected _positions: Float32Array;
     protected _vertexColors: Float32Array;
+    protected _variablePointSize: Float32Array;
 
     public constructor(context: Context) {
         super();
@@ -87,6 +92,8 @@ export class PointPass extends Initializable {
         this._uUseDiscard = this._program.uniform('u_useDiscard');
         this._uColorMode = this._program.uniform('u_colorMode');
         this._uColorMapping = this._program.uniform('u_colorMapping');
+        this._uVariablePointSizeStrength =
+            this._program.uniform('u_variablePointSizeStrength');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -107,6 +114,7 @@ export class PointPass extends Initializable {
         this._uUseDiscard = undefined;
         this._uColorMode = undefined;
         this._uColorMapping = undefined;
+        this._uVariablePointSizeStrength = undefined;
     }
 
     @Initializable.assert_initialized()
@@ -117,6 +125,10 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.vertexColors) {
             this._geometry.vertexColors = this._vertexColors;
+        }
+
+        if (override || this._altered.variablePointSize) {
+            this._geometry.variablePointSize = this._variablePointSize;
         }
 
         this._program.bind();
@@ -139,6 +151,13 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.colorMapping) {
             this._gl.uniform1i(this._uColorMapping, Number(this._colorMapping));
+        }
+
+        if (override || this._altered.variablePointSizeStrength) {
+            this._gl.uniform1f(
+                this._uVariablePointSizeStrength,
+                Number(this._variablePointSizeStrength)
+            );
         }
 
         this._program.unbind();
@@ -226,6 +245,18 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._vertexColors = colors;
         this._altered.alter('vertexColors');
+    }
+
+    public set variablePointSizeStrength(strength: GLfloat) {
+        this.assertInitialized();
+        this._variablePointSizeStrength = strength;
+        this._altered.alter('variablePointSizeStrength');
+    }
+
+    public set variablePointSize(pointSize: Float32Array) {
+        this.assertInitialized();
+        this._variablePointSize = pointSize;
+        this._altered.alter('variablePointSize');
     }
 
     public set camera(camera: Camera) {

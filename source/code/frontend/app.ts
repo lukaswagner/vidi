@@ -42,6 +42,13 @@ export class TopicMapApp extends Initializable {
         step: 0.01
     };
 
+    private static readonly VARIABLE_POINT_SIZE_CONTROL = {
+        default: 0,
+        min: 0,
+        max: 2,
+        step: 0.01
+    };
+
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
@@ -138,6 +145,19 @@ export class TopicMapApp extends Initializable {
         this._controls.colorMapping.value = ColorMappingDefault.toString();
 
         this._controls.colorColumn.handler = this.updateColors.bind(this);
+
+        // variable point size
+        this._controls.variablePointSizeStrength.handler = (v: number) => {
+            this._renderer.variablePointSizeStrength = v;
+        };
+
+        const vsc = TopicMapApp.VARIABLE_POINT_SIZE_CONTROL;
+        this._renderer.variablePointSizeStrength = Number(vsc.default);
+        this._controls.variablePointSizeStrength.setOptions(
+            vsc.default, vsc.min, vsc.max, vsc.step);
+
+        this._controls.variablePointSizeColumn.handler =
+            this.updateVariablePointSize.bind(this);
     }
 
     protected fetchAvailable(): void {
@@ -162,11 +182,11 @@ export class TopicMapApp extends Initializable {
         this._data = new Data(csv);
 
         // set up axis controls
-        const axisColumnNames = this._data.getColumnNames(DataType.Number);
-        const axisIds = ['__NONE__'].concat(axisColumnNames);
-        const axisLabels = ['None'].concat(axisColumnNames);
+        const numberColumnNames = this._data.getColumnNames(DataType.Number);
+        const numberIds = ['__NONE__'].concat(numberColumnNames);
+        const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].setOptions(axisIds, axisLabels);
+            this._controls.axes[i].setOptions(numberIds, numberLabels);
             this._controls.axes[i].element.value = this._data.selectedColumn(i);
         }
         this.updatePositions();
@@ -178,6 +198,12 @@ export class TopicMapApp extends Initializable {
         this._controls.colorColumn.setOptions(colorIds, colorLabels);
         this._controls.colorColumn.element.value = colorIds[0];
         this.updateColors(colorIds[0]);
+
+        // set up variable point size controls
+        this._controls.variablePointSizeColumn.setOptions(
+            numberIds, numberLabels);
+        this._controls.variablePointSizeColumn.element.value = numberIds[0];
+        this.updateVariablePointSize(numberIds[0]);
     }
 
     protected updatePositions(updatedAxis: number = -1): void {
@@ -206,5 +232,10 @@ export class TopicMapApp extends Initializable {
 
     protected updateColors(colorAxis: string): void {
         this._renderer.vertexColors = this._data.getColors(colorAxis);
+    }
+
+    protected updateVariablePointSize(sizeAxis: string): void {
+        this._renderer.variablePointSize =
+            this._data.getVariablePointSize(sizeAxis);
     }
 }

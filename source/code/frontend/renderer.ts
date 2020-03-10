@@ -316,4 +316,14 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.vertexColors = colors;
         this.invalidate();
     }
+
+    public set variablePointSizeStrength(strength: number) {
+        this._pointPass.variablePointSizeStrength = strength;
+        this.invalidate();
+    }
+
+    public set variablePointSize(pointSize: Float32Array) {
+        this._pointPass.variablePointSize = pointSize;
+        this.invalidate();
+    }
 }
