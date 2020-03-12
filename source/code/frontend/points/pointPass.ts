@@ -19,7 +19,7 @@ export class PointPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         positions: false,
-        frameSize: false,
+        aspectRatio: false,
         pointSize: false,
         useDiscard: false,
         colorMode: false,
@@ -35,7 +35,7 @@ export class PointPass extends Initializable {
     protected _target: Framebuffer;
     protected _camera: Camera;
 
-    protected _frameSize: GLfloat;
+    protected _aspectRatio: GLfloat;
     protected _pointSize: GLfloat = PointPass.DEFAULT_POINT_SIZE;
     protected _useDiscard: boolean;
     protected _colorMode: number;
@@ -46,8 +46,9 @@ export class PointPass extends Initializable {
     protected _program: Program;
 
     protected _uViewProjection: WebGLUniformLocation;
+    protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
-    protected _uFrameSize: WebGLUniformLocation;
+    protected _uAspectRatio: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
     protected _uColorMode: WebGLUniformLocation;
@@ -86,9 +87,11 @@ export class PointPass extends Initializable {
         this._program.link();
 
         this._uViewProjection = this._program.uniform('u_viewProjection');
+        this._uViewProjectionInverse =
+            this._program.uniform('u_viewProjectionInverse');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
-        this._uFrameSize = this._program.uniform('u_pointSize');
-        this._uPointSize = this._program.uniform('u_frameSize');
+        this._uAspectRatio = this._program.uniform('u_aspectRatio');
+        this._uPointSize = this._program.uniform('u_pointSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
         this._uColorMode = this._program.uniform('u_colorMode');
         this._uColorMapping = this._program.uniform('u_colorMapping');
@@ -108,8 +111,9 @@ export class PointPass extends Initializable {
         this._program.uninitialize();
 
         this._uViewProjection = undefined;
+        this._uViewProjectionInverse = undefined;
         this._uNdcOffset = undefined;
-        this._uFrameSize = undefined;
+        this._uAspectRatio = undefined;
         this._uPointSize = undefined;
         this._uUseDiscard = undefined;
         this._uColorMode = undefined;
@@ -133,8 +137,8 @@ export class PointPass extends Initializable {
 
         this._program.bind();
 
-        if (override || this._altered.frameSize) {
-            this._gl.uniform1f(this._uFrameSize, this._frameSize);
+        if (override || this._altered.aspectRatio) {
+            this._gl.uniform1f(this._uAspectRatio, this._aspectRatio);
         }
 
         if (override || this._altered.pointSize) {
@@ -187,6 +191,10 @@ export class PointPass extends Initializable {
 
         this._gl.uniformMatrix4fv(
             this._uViewProjection, false, this._camera.viewProjection);
+        this._gl.uniformMatrix4fv(
+            this._uViewProjectionInverse,
+            false,
+            this._camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();
@@ -211,10 +219,10 @@ export class PointPass extends Initializable {
         this._target = target;
     }
 
-    public set frameSize(size: GLfloat) {
+    public set aspectRatio(aspectRation: GLfloat) {
         this.assertInitialized();
-        this._frameSize = size;
-        this._altered.alter('frameSize');
+        this._aspectRatio = aspectRation;
+        this._altered.alter('aspectRatio');
     }
 
     public set pointSize(size: GLfloat) {

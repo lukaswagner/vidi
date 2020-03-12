@@ -2,26 +2,24 @@ precision lowp float;
 
 #if __VERSION__ == 100
     #define texture(sampler, coord) texture2D(sampler, coord)
-    attribute vec3 a_localPos;
-    attribute vec3 a_globalPos;
+    attribute vec2 a_uv;
+    attribute vec3 a_pos;
     attribute vec3 a_vertexColor;
     attribute float a_variablePointSize;
 #else
     #define varying out
-    layout(location = 0) in vec3 a_localPos;
-    layout(location = 1) in vec3 a_globalPos;
+    layout(location = 0) in vec2 a_uv;
+    layout(location = 1) in vec3 a_pos;
     layout(location = 2) in vec3 a_vertexColor;
     layout(location = 3) in float a_variablePointSize;
 #endif
 
 uniform mat4 u_viewProjection;
-uniform vec3 u_viewport;
+uniform mat4 u_viewProjectionInverse;
 uniform vec2 u_ndcOffset;
-uniform float u_frameSize;
+uniform float u_aspectRatio;
 uniform float u_pointSize;
 uniform float u_variablePointSizeStrength;
-uniform vec3 u_cameraPos;
-uniform vec3 u_cameraUp;
 
 const int COLOR_MODE_SINGLE_COLOR = 0;
 const int COLOR_MODE_POSITION_BASED = 1;
@@ -39,7 +37,8 @@ const float TWO_PI_INV = 0.15915494309;
 
 varying vec3 v_pos;
 varying vec3 v_color;
-varying vec2 v_heightExtents;
+varying vec2 v_uv;
+varying float v_height;
 
 vec3 hsl2rgb(vec3 c)
 {
@@ -71,34 +70,24 @@ vec3 color()
     }
 }
 
-vec2 calcHeightExtents() {
-    vec3 normal = u_cameraPos - v_pos;
-    vec3 perpendicular = normal * u_cameraUp;
-    vec3 screenAlignedUp = normalize(perpendicular * normal);
-    screenAlignedUp *= sign(screenAlignedUp.y);
-
-    vec3 oneOffOnScreen = u_viewport * (v_pos + screenAlignedUp);
-    vec3 centerOnScreen = u_viewport * (v_pos);
-    float edgeRatio = 
-        gl_PointSize / 2.0 / (oneOffOnScreen.y - centerOnScreen.y);
-
-    vec3 edgeVec = screenAlignedUp * edgeRatio;
-    float upper = (v_pos + edgeVec).y;
-    float lower = (v_pos - edgeVec).y;
-    return vec2(upper, lower);
-}
-
 void main()
 {
-    v_pos = a_localPos + a_globalPos;
+    v_pos = a_pos;
     v_color = color();
+    v_uv = a_uv;
 
-    vec4 vertex = u_viewProjection * vec4(v_pos, 1.0);
-    vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;
-    gl_Position = vertex;
-    gl_PointSize =
-        u_frameSize * u_pointSize *
+    vec4 position = u_viewProjection * vec4(v_pos, 1.0);
+
+    // manual clipping - needs optimization
+    if(position.z < 0.1) return;
+
+    vec2 pointSize =
+        vec2(u_pointSize, u_pointSize / u_aspectRatio) *
         mix(1.0, a_variablePointSize, u_variablePointSizeStrength) /
-        gl_Position.z;
-    v_heightExtents = calcHeightExtents();
+        position.z;
+    position.xy = position.xy + a_uv * pointSize * vec2(position.w);
+    position.xy = position.xy + u_ndcOffset * vec2(position.w);
+
+    v_height = (u_viewProjectionInverse * position).y;
+    gl_Position = position;
 }

@@ -232,7 +232,8 @@ export class TopicMapRenderer extends Renderer {
                 this._frameSize[0], this._frameSize[1]);
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
-            this._pointPass.frameSize = this._frameSize[0];
+            this._pointPass.aspectRatio =
+                this._frameSize[1] / this._frameSize[0];
         }
 
         if (this._altered.canvasSize) {

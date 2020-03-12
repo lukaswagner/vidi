@@ -14,16 +14,16 @@ precision lowp int;
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
 uniform bool u_useDiscard;
-uniform float u_cutoffHeight;
+const float u_cutoffHeight = 0.0;
 
 varying vec3 v_pos;
 varying vec3 v_color;
-varying vec2 v_heightExtents;
+varying vec2 v_uv;
+varying float v_height;
 
 void main()
 {
-    vec2 dir = gl_PointCoord * 2.0 + vec2(-1.0);
-    float radius = length(dir);
+    float radius = length(v_uv);
     float edge = 0.95;
     float feather = fwidth(radius) / 2.0;
     float alpha = 1.0 - smoothstep(
@@ -34,9 +34,8 @@ void main()
         alpha = 1.0;
     }
 
-    float height = mix(v_heightExtents.x, v_heightExtents.y, gl_PointCoord.y);
-    vec3 faded = mix(v_color, u_invisColor, 0.8);
-    vec3 color = mix(faded, v_color, step(u_cutoffHeight, height));
+    vec3 faded = mix(v_color, u_invisColor, 0.5);
+    vec3 color = mix(faded, v_color, step(u_cutoffHeight, v_height));
 
     gl_FragColor = vec4(color, alpha);
 }

@@ -17,13 +17,13 @@ export class PointCloudGeometry extends Geometry {
         variablePointSize: false,
     });
 
-    protected _localPositions = new Float32Array([0, 0, 0]);
-    protected _globalPositions = new Float32Array([]);
+    protected _uv = new Float32Array([+1, -1, +1, +1, -1, -1, -1, +1]);
+    protected _positions = new Float32Array([]);
     protected _vertexColors = new Float32Array([]);
     protected _variablePointSize = new Float32Array([]);
 
-    protected _localPosLocation: GLuint = 0;
-    protected _globalPosLocation: GLuint = 1;
+    protected _uvLocation: GLuint = 0;
+    protected _positionLocation: GLuint = 1;
     protected _vertexColorLocation: GLuint = 2;
     protected _variablePointSizeLocation: GLuint = 3;
 
@@ -57,13 +57,13 @@ export class PointCloudGeometry extends Geometry {
      * @param normalLocation - Attribute binding point for vertex normal.
      */
     public initialize(
-        localPosLocation: GLuint = 0,
+        uvLocation: GLuint = 0,
         globalPosLocation: GLuint = 1,
         vertexColorLocation: GLuint = 2,
         variablePointSizeLocation: GLuint = 3,
     ): boolean {
-        this._localPosLocation = localPosLocation;
-        this._globalPosLocation = globalPosLocation;
+        this._uvLocation = uvLocation;
+        this._positionLocation = globalPosLocation;
         this._vertexColorLocation = vertexColorLocation;
         this._variablePointSizeLocation = variablePointSizeLocation;
 
@@ -73,14 +73,14 @@ export class PointCloudGeometry extends Geometry {
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER
         ], [
-            localPosLocation,
+            uvLocation,
             globalPosLocation,
             vertexColorLocation,
             variablePointSizeLocation
         ]);
 
-        this._buffers[0].data(this._localPositions, this._gl.STATIC_DRAW);
-        this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
+        this._buffers[0].data(this._uv, this._gl.STATIC_DRAW);
+        this._buffers[1].data(this._positions, this._gl.STATIC_DRAW);
         this._buffers[2].data(this._vertexColors, this._gl.STATIC_DRAW);
         this._buffers[3].data(
             this._variablePointSizeLocation, this._gl.STATIC_DRAW);
@@ -91,11 +91,11 @@ export class PointCloudGeometry extends Geometry {
     @Initializable.assert_initialized()
     public update(override: boolean = false): void {
         if (override || this._altered.positions) {
-            this._buffers[1].data(this._globalPositions, this._gl.STATIC_DRAW);
+            this._buffers[1].data(this._positions, this._gl.STATIC_DRAW);
         }
 
         if (!this._altered.vertexColors && this._altered.vertexCount) {
-            this._vertexColors = new Float32Array(this._globalPositions.length);
+            this._vertexColors = new Float32Array(this._positions.length);
             this._altered.alter('vertexColors');
         }
 
@@ -105,7 +105,7 @@ export class PointCloudGeometry extends Geometry {
 
         if (!this._altered.variablePointSize && this._altered.vertexCount) {
             this._variablePointSize =
-                new Float32Array(this._globalPositions.length / 3);
+                new Float32Array(this._positions.length / 3);
             this._altered.alter('variablePointSize');
         }
 
@@ -122,9 +122,8 @@ export class PointCloudGeometry extends Geometry {
      */
     public draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.POINTS, 0, 1, this._globalPositions.length / 3);
+            this._gl.TRIANGLE_STRIP, 0, 6, this._positions.length / 3);
     }
-
 
     /**
      * Binds the vertex buffer object (VBO) to an attribute binding point of a
@@ -132,14 +131,14 @@ export class PointCloudGeometry extends Geometry {
      */
     protected bindBuffers(/*indices: Array<GLuint>*/): void {
         this._buffers[0].attribEnable(
-            this._localPosLocation, 3, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._localPosLocation, 0);
+            this._uvLocation, 2, this._gl.FLOAT,
+            false, 8, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(this._uvLocation, 0);
 
         this._buffers[1].attribEnable(
-            this._globalPosLocation, 3, this._gl.FLOAT,
+            this._positionLocation, 3, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._globalPosLocation, 1);
+        this._gl2facade.vertexAttribDivisor(this._positionLocation, 1);
 
         this._buffers[2].attribEnable(
             this._vertexColorLocation, 3, this._gl.FLOAT,
@@ -156,18 +155,18 @@ export class PointCloudGeometry extends Geometry {
      * Unbinds the vertex buffer object (VBO) and disables the binding point.
      */
     protected unbindBuffers(): void {
-        this._buffers[0].attribDisable(this._localPosLocation, true, true);
-        this._buffers[1].attribDisable(this._globalPosLocation, true, true);
+        this._buffers[0].attribDisable(this._uvLocation, true, true);
+        this._buffers[1].attribDisable(this._positionLocation, true, true);
         this._buffers[2].attribDisable(this._vertexColorLocation, true, true);
         this._buffers[3].attribDisable(
             this._variablePointSizeLocation, true, true);
     }
 
     public set positions(positions: Float32Array) {
-        if (positions.length !== this._globalPositions.length) {
+        if (positions.length !== this._positions.length) {
             this._altered.alter('vertexCount');
         }
-        this._globalPositions = positions;
+        this._positions = positions;
         this._altered.alter('positions');
     }
 
