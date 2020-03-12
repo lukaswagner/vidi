@@ -6,6 +6,7 @@
         "blit",
         "coord",
         "devtool",
+        "fwidth",
         "glsl",
         "linebreak",
         "lowp",
@@ -13,6 +14,7 @@
         "msfullscreenchange",
         "readonly",
         "roboto",
+        "smoothstep",
         "uninitialize",
         "uninitializes"
     ]
