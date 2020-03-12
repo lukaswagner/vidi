@@ -11,10 +11,14 @@ precision lowp int;
     layout(location = 0) out vec4 fragColor;
 #endif
 
+const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
+
 uniform bool u_useDiscard;
+uniform float u_cutoffHeight;
 
 varying vec3 v_pos;
 varying vec3 v_color;
+varying vec2 v_heightExtents;
 
 void main()
 {
@@ -30,5 +34,9 @@ void main()
         alpha = 1.0;
     }
 
-    gl_FragColor = vec4(v_color, alpha);
+    float height = mix(v_heightExtents.x, v_heightExtents.y, gl_PointCoord.y);
+    vec3 faded = mix(v_color, u_invisColor, 0.8);
+    vec3 color = mix(faded, v_color, step(u_cutoffHeight, height));
+
+    gl_FragColor = vec4(color, alpha);
 }

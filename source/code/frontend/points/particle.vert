@@ -15,10 +15,13 @@ precision lowp float;
 #endif
 
 uniform mat4 u_viewProjection;
+uniform vec3 u_viewport;
 uniform vec2 u_ndcOffset;
 uniform float u_frameSize;
 uniform float u_pointSize;
 uniform float u_variablePointSizeStrength;
+uniform vec3 u_cameraPos;
+uniform vec3 u_cameraUp;
 
 const int COLOR_MODE_SINGLE_COLOR = 0;
 const int COLOR_MODE_POSITION_BASED = 1;
@@ -36,6 +39,7 @@ const float TWO_PI_INV = 0.15915494309;
 
 varying vec3 v_pos;
 varying vec3 v_color;
+varying vec2 v_heightExtents;
 
 vec3 hsl2rgb(vec3 c)
 {
@@ -67,6 +71,23 @@ vec3 color()
     }
 }
 
+vec2 calcHeightExtents() {
+    vec3 normal = u_cameraPos - v_pos;
+    vec3 perpendicular = normal * u_cameraUp;
+    vec3 screenAlignedUp = normalize(perpendicular * normal);
+    screenAlignedUp *= sign(screenAlignedUp.y);
+
+    vec3 oneOffOnScreen = u_viewport * (v_pos + screenAlignedUp);
+    vec3 centerOnScreen = u_viewport * (v_pos);
+    float edgeRatio = 
+        gl_PointSize / 2.0 / (oneOffOnScreen.y - centerOnScreen.y);
+
+    vec3 edgeVec = screenAlignedUp * edgeRatio;
+    float upper = (v_pos + edgeVec).y;
+    float lower = (v_pos - edgeVec).y;
+    return vec2(upper, lower);
+}
+
 void main()
 {
     v_pos = a_localPos + a_globalPos;
@@ -79,4 +100,5 @@ void main()
         u_frameSize * u_pointSize *
         mix(1.0, a_variablePointSize, u_variablePointSizeStrength) /
         gl_Position.z;
+    v_heightExtents = calcHeightExtents();
 }
