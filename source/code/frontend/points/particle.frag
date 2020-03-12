@@ -34,7 +34,7 @@ void main()
         alpha = 1.0;
     }
 
-    vec3 faded = mix(v_color, u_invisColor, 0.5);
+    vec3 faded = mix(v_color, u_invisColor, 0.7);
     vec3 color = mix(faded, v_color, step(u_cutoffHeight, v_height));
 
     gl_FragColor = vec4(color, alpha);
