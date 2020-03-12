@@ -9,8 +9,7 @@ precision lowp int;
     layout(location = 0) out vec4 fragColor;
 #endif
 
-const vec3 u_innerColor = vec3(0.0, 0.0, 0.0);
-const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
+const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
 const float u_innerIntensity = 1.0;
 const float u_outerIntensity = 0.15;
@@ -68,8 +67,5 @@ void main()
     float grid = 1.0 - (aastep(halfWidth, a.x) * aastep(halfWidth, a.y));
 
     float intensity = distIntensity * grid;
-
-    vec3 color = mix(u_invisColor, u_innerColor, intensity);
-
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(u_color, intensity);
 }

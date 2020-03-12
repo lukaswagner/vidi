@@ -156,6 +156,7 @@ export class TopicMapRenderer extends Renderer {
         this._gridLabelPass.initialize();
         this._gridLabelPass.camera = this._camera;
         this._gridLabelPass.target = this._intermediateFBO;
+        this._gridLabelPass.depthMask = true;
         this._gridLabelPass.loadFont(
             './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
 
@@ -272,14 +273,14 @@ export class TopicMapRenderer extends Renderer {
         ndcOffset[0] = 2.0 * ndcOffset[0] / this._frameSize[0];
         ndcOffset[1] = 2.0 * ndcOffset[1] / this._frameSize[1];
 
-        this._gridPass.ndcOffset = ndcOffset;
-        this._gridPass.frame();
+        this._pointPass.ndcOffset = ndcOffset;
+        this._pointPass.frame();
 
         this._gridLabelPass.ndcOffset = ndcOffset;
         this._gridLabelPass.frame();
 
-        this._pointPass.ndcOffset = ndcOffset;
-        this._pointPass.frame();
+        this._gridPass.ndcOffset = ndcOffset;
+        this._gridPass.frame();
 
         this._accumulatePass.frame(frameNumber);
     }
