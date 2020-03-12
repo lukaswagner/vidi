@@ -6,6 +6,7 @@ import {
     Color,
     Initializable,
     Wizard,
+    vec3,
     viewer
 } from 'webgl-operate';
 
@@ -216,15 +217,20 @@ export class TopicMapApp extends Initializable {
         this._renderer.positions = positions;
         this._renderer.grid = [
             {
-                name: this._data.selectedColumn(0),
-                min: extents[0].min,
-                max: extents[0].max,
-                resolution: 0.25
-            }, {
-                name: this._data.selectedColumn(1),
-                min: extents[1].min,
-                max: extents[1].max,
-                resolution: 0.25
+                firstAxis: {
+                    name: this._data.selectedColumn(0),
+                    direction: vec3.fromValues(1, 0, 0),
+                    extents: extents[0],
+                    subdivisions: 20
+                },
+                secondAxis: {
+                    name: this._data.selectedColumn(1),
+                    direction: vec3.fromValues(0, 0, 1),
+                    extents: extents[1],
+                    subdivisions: 20
+                },
+                normal: vec3.fromValues(0, 1, 0),
+                position: 0
             }
         ];
         this._renderer.updateGrid();

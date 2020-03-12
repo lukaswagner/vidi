@@ -10,8 +10,8 @@ import {
 } from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
 
+import { ExtendedGridInfo } from './gridInfo';
 import { GridGeometry } from './gridGeometry';
-import { GridInfo } from './gridInfo';
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -33,7 +33,7 @@ export class GridPass extends Initializable {
     protected _uNdcOffset: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
-    protected _gridInfo: GridInfo[];
+    protected _gridInfo: ExtendedGridInfo[];
 
     public constructor(context: Context) {
         super();
@@ -114,7 +114,7 @@ export class GridPass extends Initializable {
         this._gl.enable(this._gl.DEPTH_TEST);
     }
 
-    public set gridInfo(gridInfo: GridInfo[]) {
+    public set gridInfo(gridInfo: ExtendedGridInfo[]) {
         this.assertInitialized();
         this._gridInfo = gridInfo;
         this._altered.alter('gridInfo');

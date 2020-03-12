@@ -5,8 +5,9 @@ import {
     mat4,
     quat,
 } from 'webgl-operate';
+
+import { ExtendedGridInfo } from './gridInfo';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
-import { GridInfo } from './gridInfo';
 
 export class GridGeometry extends Geometry {
     protected static readonly FADED_GRID_WIDTH = 1.0;
@@ -109,10 +110,13 @@ export class GridGeometry extends Geometry {
             this._gl.TRIANGLE_STRIP, 0, 4, 1);
     }
 
-    public buildGrid(gridInfo: GridInfo[]): void {
+    public buildGrid(gridInfo: ExtendedGridInfo[]): void {
         // only supports two axes on one plane for now
-        const x = gridInfo[0];
-        const y = gridInfo[1];
+        const grid = gridInfo[0];
+        const x = grid.firstAxis;
+        const y = grid.secondAxis;
+        const xe = x.extents;
+        const ye = y.extents;
 
         const w = GridGeometry.FADED_GRID_WIDTH;
         const ww = w * 2;
@@ -120,17 +124,18 @@ export class GridGeometry extends Geometry {
         const transform = mat4.fromRotationTranslationScale(
             mat4.create(),
             quat.identity(quat.create()),
-            [x.min - w, 0, -y.min + w],
-            [x.max - x.min + ww, 1, y.max - y.min + ww]
+            [xe.min - w, 0, -ye.min + w],
+            [xe.max - xe.min + ww, 1, ye.max - ye.min + ww]
         );
         this._transform = new Float32Array(transform.values());
 
         this._gridInfo = new Float32Array([
-            x.min - w, -y.min + w,
-            x.max + w, -y.max - w,
-            x.min, -y.min,
-            x.max, -y.max,
-            x.resolution, y.resolution
+            xe.min - w, -ye.min + w,
+            xe.max + w, -ye.max - w,
+            xe.min, -ye.min,
+            xe.max, -ye.max,
+            (xe.max - xe.min) / x.subdivisions,
+            (ye.max - ye.min) / y.subdivisions
         ]);
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);

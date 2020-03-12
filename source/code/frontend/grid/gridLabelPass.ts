@@ -8,14 +8,15 @@ import {
     Label,
     LabelRenderPass,
     Position3DLabel,
-    Text
+    Text,
+    vec3
 } from 'webgl-operate';
 
-type LabelInfo = {
+export type LabelInfo = {
     name: string,
-    pos: [number, number, number],
-    dir: [number, number, number],
-    up: [number, number, number]
+    pos: vec3,
+    dir: vec3,
+    up: vec3
 }
 
 export class GridLabelPass extends LabelRenderPass {

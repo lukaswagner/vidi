@@ -22,8 +22,13 @@ import {
 // see https://github.com/microsoft/TypeScript/issues/13135
 import GLfloat2 = tuples.GLfloat2;
 
-import { GridInfo } from './grid/gridInfo';
-import { GridLabelPass } from './grid/gridLabelPass';
+import {
+    ExtendedGridInfo,
+    GridInfo,
+    calculateExtendedGridInfo
+} from './grid/gridInfo';
+
+import { GridLabelPass, LabelInfo } from './grid/gridLabelPass';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
 
@@ -57,23 +62,32 @@ export class TopicMapRenderer extends Renderer {
     }
 
     public updateGrid(): void {
-        this._gridPass.gridInfo = this._gridInfo;
-        const x = this._gridInfo[0];
-        const y = this._gridInfo[1];
-        const labelDist = 0.1;
-        this._gridLabelPass.labelInfo = [
-            {
-                name: x.name,
-                pos: [(x.min + x.max) / 2, 0, -y.min + labelDist],
-                dir: [1, 0, 0],
-                up: [0, 0, -1],
-            }, {
-                name: y.name,
-                pos: [x.min - labelDist, 0, -(y.min + y.max) / 2],
-                dir: [0, 0, 1],
-                up: [1, 0, 0],
-            }
-        ];
+        const extendedGridInfo = new Array<ExtendedGridInfo>();
+        const labels = new Array<LabelInfo>();
+
+        this._gridInfo.forEach((grid) => {
+            const extended = calculateExtendedGridInfo(grid);
+
+            extendedGridInfo.push(extended);
+
+            const firstAxisLabel: LabelInfo = {
+                name: extended.firstAxis.name,
+                dir: extended.firstAxis.direction,
+                pos: extended.firstAxis.labelPosition,
+                up: vec3.scale(vec3.create(), extended.secondAxis.direction, -1)
+            };
+            const secondAxisLabel: LabelInfo = {
+                name: extended.secondAxis.name,
+                dir: extended.secondAxis.direction,
+                pos: extended.secondAxis.labelPosition,
+                up: extended.firstAxis.direction
+            };
+
+            labels.push(firstAxisLabel, secondAxisLabel);
+        });
+
+        this._gridPass.gridInfo = extendedGridInfo;
+        this._gridLabelPass.labelInfo = labels;
         this.invalidate();
     }
 
