@@ -8,7 +8,7 @@ precision lowp float;
     attribute vec2 a_quadUpperBounds;
     attribute vec2 a_dataLowerBounds;
     attribute vec2 a_dataUpperBounds;
-    attribute vec2 a_gridResolution;
+    attribute vec2 a_gridSubdivisions;
 #else
     #define varying out
     layout(location = 0) in vec3 a_position;
@@ -18,7 +18,7 @@ precision lowp float;
     layout(location = 7) in vec2 a_quadUpperBounds;
     layout(location = 8) in vec2 a_dataLowerBounds;
     layout(location = 9) in vec2 a_dataUpperBounds;
-    layout(location = 10) in vec2 a_gridResolution;
+    layout(location = 10) in vec2 a_gridSubdivisions;
 #endif
 
 uniform mat4 u_viewProjection;
@@ -32,12 +32,15 @@ varying vec2 v_quadRange;
 varying vec2 v_dataLowerBounds;
 varying vec2 v_dataUpperBounds;
 varying vec2 v_dataRange;
-varying vec2 v_gridResolution;
+varying vec2 v_gridSubdivisions;
 
 varying vec2 v_dataLowerBoundsUV;
 varying vec2 v_dataUpperBoundsUV;
 varying vec2 v_dataRangeUV;
-varying vec2 v_gridResolutionUV;
+varying vec2 v_gridSubdivisionsUV;
+varying vec2 v_gridSubdivisionsUVInv;
+
+varying vec2 v_gridSubdivisionsScaled;
 
 void main()
 {
@@ -49,12 +52,14 @@ void main()
     v_dataLowerBounds = a_dataLowerBounds;
     v_dataUpperBounds = a_dataUpperBounds;
     v_dataRange = a_dataUpperBounds - a_dataLowerBounds;
-    v_gridResolution = a_gridResolution;
+    v_gridSubdivisions = a_gridSubdivisions;
 
     v_dataLowerBoundsUV = (v_dataLowerBounds - v_quadLowerBounds) / v_quadRange;
     v_dataUpperBoundsUV = (v_dataUpperBounds - v_quadLowerBounds) / v_quadRange;
     v_dataRangeUV = v_dataRange / v_quadRange;
-    v_gridResolutionUV = v_gridResolution / v_quadRange;
+    v_gridSubdivisionsUV = v_gridSubdivisions / v_quadRange;
+    v_gridSubdivisionsUVInv = 1.0 / v_gridSubdivisionsUV;
+    v_gridSubdivisionsScaled = v_gridSubdivisions / v_dataRangeUV;
 
     vec4 vertex = u_viewProjection * a_transform * vec4(a_position, 1.0);
     vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;

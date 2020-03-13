@@ -20,7 +20,7 @@ const float u_outerFeather = 1.1;
 
 const float u_gridWidth = 0.02;
 
-const float u_aaStepScale = 0.5;
+const float u_aaStepScale = 0.7;
 
 varying vec2 v_uv;
 
@@ -30,17 +30,24 @@ varying vec2 v_quadRange;
 varying vec2 v_dataLowerBounds;
 varying vec2 v_dataUpperBounds;
 varying vec2 v_dataRange;
-varying vec2 v_gridResolution;
+varying vec2 v_gridSubdivisions;
 
 varying vec2 v_dataLowerBoundsUV;
 varying vec2 v_dataUpperBoundsUV;
 varying vec2 v_dataRangeUV;
-varying vec2 v_gridResolutionUV;
+varying vec2 v_gridSubdivisionsUV;
+varying vec2 v_gridSubdivisionsUVInv;
 
-float aastep(float t, float value)
-{
-    float afwidth = fwidth(value) * u_aaStepScale;
-    return smoothstep(t - afwidth, t + afwidth, value);
+varying vec2 v_gridSubdivisionsScaled;
+
+float grid() {
+    vec2 scaled = (v_uv - v_dataLowerBoundsUV) * v_gridSubdivisionsScaled;
+    vec2 f = fract(scaled);
+    vec2 df = fwidth(scaled) * u_aaStepScale;
+    vec2 lower = smoothstep(vec2(0.0), df, f);
+    vec2 upper = 1.0 - smoothstep(1.0 - df, vec2(1.0), f);
+    vec2 nearest = min(lower, upper);
+    return 1.0 - min(nearest.x, nearest.y);
 }
 
 void main()
@@ -61,11 +68,6 @@ void main()
     distIntensity = mix(distIntensity, u_outerIntensity, invisOuterMix);
     distIntensity = mix(distIntensity, u_innerIntensity, outerInnerMix);
 
-    vec2 grid2 = fract(v_uv / v_gridResolutionUV);
-    float halfWidth = u_gridWidth * 0.5;
-    vec2 a = 0.5 - abs(grid2 - 0.5);
-    float grid = 1.0 - (aastep(halfWidth, a.x) * aastep(halfWidth, a.y));
-
-    float intensity = distIntensity * grid;
+    float intensity = distIntensity * grid();
     gl_FragColor = vec4(u_color, intensity);
 }

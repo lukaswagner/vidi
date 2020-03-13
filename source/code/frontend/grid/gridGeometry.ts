@@ -33,7 +33,7 @@ export class GridGeometry extends Geometry {
      * vec2 quadUpperBoundsUV
      * vec2 dataLowerBoundsUV
      * vec2 dataUpperBoundsUV
-     * vec2 gridResolutionUV
+     * vec2 gridSubdivisions
      */
     protected _gridInfo = new Float32Array([]);
 
@@ -134,8 +134,8 @@ export class GridGeometry extends Geometry {
             xe.max + w, -ye.max - w,
             xe.min, -ye.min,
             xe.max, -ye.max,
-            (xe.max - xe.min) / x.subdivisions,
-            (ye.max - ye.min) / y.subdivisions
+            x.subdivisions,
+            y.subdivisions
         ]);
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);

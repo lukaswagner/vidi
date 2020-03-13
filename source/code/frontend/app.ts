@@ -215,19 +215,20 @@ export class TopicMapApp extends Initializable {
         const { positions, extents } = this._data.getCoordinates(
             [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);
         this._renderer.positions = positions;
+        const subdivisions = 10;
         this._renderer.grid = [
             {
                 firstAxis: {
                     name: this._data.selectedColumn(0),
                     direction: vec3.fromValues(1, 0, 0),
                     extents: extents[0],
-                    subdivisions: 20
+                    subdivisions: subdivisions
                 },
                 secondAxis: {
                     name: this._data.selectedColumn(1),
                     direction: vec3.fromValues(0, 0, 1),
                     extents: extents[1],
-                    subdivisions: 20
+                    subdivisions: subdivisions
                 },
                 normal: vec3.fromValues(0, 1, 0),
                 position: 0
