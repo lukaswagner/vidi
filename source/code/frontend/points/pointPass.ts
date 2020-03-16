@@ -49,6 +49,7 @@ export class PointPass extends Initializable {
     protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uAspectRatio: WebGLUniformLocation;
+    protected _uCameraHeight: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
     protected _uColorMode: WebGLUniformLocation;
@@ -91,6 +92,7 @@ export class PointPass extends Initializable {
             this._program.uniform('u_viewProjectionInverse');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uAspectRatio = this._program.uniform('u_aspectRatio');
+        this._uCameraHeight = this._program.uniform('u_cameraHeight');
         this._uPointSize = this._program.uniform('u_pointSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
         this._uColorMode = this._program.uniform('u_colorMode');
@@ -114,6 +116,7 @@ export class PointPass extends Initializable {
         this._uViewProjectionInverse = undefined;
         this._uNdcOffset = undefined;
         this._uAspectRatio = undefined;
+        this._uCameraHeight = undefined;
         this._uPointSize = undefined;
         this._uUseDiscard = undefined;
         this._uColorMode = undefined;
@@ -196,6 +199,7 @@ export class PointPass extends Initializable {
             false,
             this._camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
+        this._gl.uniform1f(this._uCameraHeight, this._camera.eye[1]);
 
         this._target.bind();
 
