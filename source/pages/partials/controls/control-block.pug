@@ -1,0 +1,7 @@
+include control-header.pug
+mixin control-block(hid, cid, title, show=false)
+    .card
+        +control-header(hid, cid, title)
+        .collapse(id=cid, class= show ? 'show' : '')
+            .card-body
+                block

@@ -1,0 +1,23 @@
+include control-block.pug
+include control-element.pug
+include control-select.pug
+include control-input-slider.pug
+
+.control-panel
+    .form
+        +control-block('data-header', 'data-group', 'Data', true)
+            +control-select('data-select', 'Dataset')
+            //- +control-element('data-input', 'Custom dataset')
+            //-     input#data-input.form-control(type='file')
+            +control-select('x-axis', 'X axis')
+            +control-select('y-axis', 'Y axis')
+            +control-select('z-axis', 'Z axis')
+        +control-block('size-header', 'size-group', 'Size')
+            +control-input-slider('scale', 'Scale')
+            +control-input-slider('point-size', 'Point size')
+            +control-input-slider('variable-point-size-strength', 'Variable point size strength')
+            +control-select('variable-point-size-column', 'Column for variable point size')
+        +control-block('color-header', 'color-group', 'Color')
+            +control-select('color-mode', 'Color mode')
+            +control-select('color-mapping', 'Mapping for position-based color')
+            +control-select('color-column', 'Column for per-point color')

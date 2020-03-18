@@ -52,34 +52,26 @@ input.slider::-webkit-slider-thumb {
     -webkit-appearance: none;
 }
 
-.neg-margin {
-    margin-top: -2em;
-    margin-bottom: -1em;
+body {
+    overflow: hidden;
 }
 
-.canvas-fade {
-    --light-with-alpha: rgba(248, 249, 250, 0);
+.body {
+    position: relative;
+    height: calc(100% - 56px);
 }
 
-.canvas-fade::before,.canvas-fade::after {
-    display: block;
-    content: "";
+.control-panel {
     position: absolute;
-    z-index: 1;
-    left: 0;
-    pointer-events: none;
-    width: 100%;
-    height: 2em;
-}
-
-.canvas-fade::before {
-    top: 0;
-    background-image: linear-gradient(
-        to bottom, var(--light), var(--light-with-alpha));
-}
-
-.canvas-fade::after {
+    right: 0;
     bottom: 0;
-    background-image: linear-gradient(
-        to top, var(--light), var(--light-with-alpha));
+    height: 100%;
+    min-width: 250px;
+    width: 350px;
+    overflow-y: auto;
+}
+
+canvas {
+    width: 100%!important;
+    height: 100%!important;
 }

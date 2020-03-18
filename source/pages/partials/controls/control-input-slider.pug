@@ -1,0 +1,6 @@
+include control-element.pug
+mixin control-input-slider(id, title)
+    +control-element(id+'-input', title)
+        .row.m-0
+            input.col-3.form-control(id=id+'-input')
+            input.col.ml-2.slider(type='range',id=id+'-range')

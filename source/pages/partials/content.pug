@@ -1,6 +1,6 @@
-include canvas.pug
-.content.container
-    include controls.pug
+.body
+    include canvas.pug
+    include controls\controls.pug
 script.
     window.addEventListener('load', function(event) {
         const canvasId = 'webgl-canvas';
