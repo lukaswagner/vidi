@@ -3,7 +3,7 @@ include control-element.pug
 include control-select.pug
 include control-input-slider.pug
 
-.control-panel
+.control-panel#controls(style='width: 0px;')
     .form
         +control-block('data-header', 'data-group', 'Data', true)
             +control-select('data-select', 'Dataset')
@@ -21,3 +21,15 @@ include control-input-slider.pug
             +control-select('color-mode', 'Color mode')
             +control-select('color-mapping', 'Mapping for position-based color')
             +control-select('color-column', 'Column for per-point color')
+
+script.
+    let controlWidth = '350px';
+    let controlToggle = document.getElementById('control-toggle');
+    let controls = document.getElementById('controls');
+    controlToggle.addEventListener('click', () => {
+        if(controls.style.width === '0px') {
+            controls.style.width = controlWidth;
+        } else {
+            controls.style.width = '0px';
+        }
+    });
