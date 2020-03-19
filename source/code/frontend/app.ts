@@ -79,10 +79,12 @@ export class TopicMapApp extends Initializable {
         this._canvas.element.addEventListener('wheel', (e) => {
             const base = 1.15;
             const exp = -Math.sign(e.deltaY);
-            this._controls.scale.value = Math.max(
-                this._controls.scale.value * (base ** exp),
-                this._controls.scale.step);
-            this._renderer.scale = this._controls.scale.value;
+            this._controls.scale.setValue(
+                Math.max(
+                    this._controls.scale.value * (base ** exp),
+                    this._controls.scale.step
+                )
+            );
             e.preventDefault();
         }, { capture: true });
 
@@ -109,7 +111,6 @@ export class TopicMapApp extends Initializable {
         };
 
         const psc = TopicMapApp.POINT_SIZE_CONTROL;
-        this._renderer.pointSize = Number(psc.default);
         this._controls.pointSize.setOptions(
             psc.default, psc.min, psc.max, psc.step);
 
@@ -119,7 +120,6 @@ export class TopicMapApp extends Initializable {
         };
 
         const sc = TopicMapApp.SCALE_CONTROL;
-        this._renderer.scale = sc.default;
         this._controls.scale.setOptions(
             sc.default, sc.min, sc.max, sc.step);
 
@@ -134,16 +134,14 @@ export class TopicMapApp extends Initializable {
         };
 
         this._controls.colorMode.fromDict(ColorMode);
-        this._renderer.colorMode = ColorModeDefault;
-        this._controls.colorMode.value = ColorModeDefault.toString();
+        this._controls.colorMode.setValue(ColorModeDefault.toString());
 
         this._controls.colorMapping.handler = (m) => {
             this._renderer.colorMapping = Number(m);
         };
 
         this._controls.colorMapping.fromDict(ColorMapping);
-        this._renderer.colorMapping = ColorMappingDefault;
-        this._controls.colorMapping.value = ColorMappingDefault.toString();
+        this._controls.colorMapping.setValue(ColorMappingDefault.toString());
 
         this._controls.colorColumn.handler = this.updateColors.bind(this);
 
@@ -153,7 +151,6 @@ export class TopicMapApp extends Initializable {
         };
 
         const vsc = TopicMapApp.VARIABLE_POINT_SIZE_CONTROL;
-        this._renderer.variablePointSizeStrength = Number(vsc.default);
         this._controls.variablePointSizeStrength.setOptions(
             vsc.default, vsc.min, vsc.max, vsc.step);
 
@@ -165,7 +162,6 @@ export class TopicMapApp extends Initializable {
         fetch('/ls').then((res) => {
             res.json().then((j) => {
                 this._controls.data.setOptions(j as string[]);
-                this.load(this._controls.data.value);
             });
         });
     }
@@ -187,8 +183,10 @@ export class TopicMapApp extends Initializable {
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].setOptions(numberIds, numberLabels);
-            this._controls.axes[i].element.value = this._data.selectedColumn(i);
+            this._controls.axes[i].setOptions(
+                numberIds, numberLabels, false);
+            this._controls.axes[i].setValue(
+                this._data.selectedColumn(i), false);
         }
         this.updatePositions();
 
@@ -197,14 +195,10 @@ export class TopicMapApp extends Initializable {
         const colorIds = ['__NONE__'].concat(colorColumnNames);
         const colorLabels = ['None'].concat(colorColumnNames);
         this._controls.colorColumn.setOptions(colorIds, colorLabels);
-        this._controls.colorColumn.element.value = colorIds[0];
-        this.updateColors(colorIds[0]);
 
         // set up variable point size controls
         this._controls.variablePointSizeColumn.setOptions(
             numberIds, numberLabels);
-        this._controls.variablePointSizeColumn.element.value = numberIds[0];
-        this.updateVariablePointSize(numberIds[0]);
     }
 
     protected updatePositions(updatedAxis: number = -1): void {

@@ -1,8 +1,17 @@
+import { ControlBase } from './base';
 import { Dict } from '../util/dict';
-import { UiBase } from './base';
 
-export class Select extends UiBase {
-    public setOptions(ids: string[], labels?: string[]): void {
+export class Select extends ControlBase<string> {
+    public constructor(id: string) {
+        super(id);
+        this._element.addEventListener('change', () => {
+            this._value = this.element.value;
+        });
+    }
+
+    public setOptions(
+        ids: string[], labels?: string[], invokeHandler = true
+    ): void {
         if (labels === undefined || labels.length != ids.length) {
             labels = ids;
         }
@@ -18,28 +27,28 @@ export class Select extends UiBase {
             o.text = labels[i];
             element.options.add(o);
         }
+
+        this.setValue(ids[0], invokeHandler);
     }
 
-    public fromDict(options: Dict<any, any>): void {
+    public fromDict(options: Dict<any, any>, invokeHandler = true): void {
         this.setOptions(
             options.map((m) => m[0].toString()),
             options.map((m) => m[1].toString()),
+            invokeHandler
         );
     }
 
-    public get element(): HTMLSelectElement {
+    protected applyValue(): void {
+        this.element.value = this._value;
+    }
+
+    protected get element(): HTMLSelectElement {
         return this._element as HTMLSelectElement;
     }
 
-    public get value(): string {
-        return this.element.value;
-    }
-
-    public set value(v: string) {
-        this.element.value = v;
-    }
-
     public set handler(f: (v: string) => void) {
+        this.setHandler(f);
         this._element.addEventListener('change', () => f(this.value));
     }
 }
