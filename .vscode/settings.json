@@ -5,6 +5,7 @@
         "Initializable",
         "blit",
         "coord",
+        "datasets",
         "devtool",
         "fwidth",
         "glsl",

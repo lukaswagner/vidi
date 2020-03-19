@@ -1,11 +1,13 @@
 include control-block.pug
 include control-element.pug
 include control-select.pug
+include control-select-button.pug
 include control-input-slider.pug
 
 .control-panel#controls(style='width: 0px;')
     .form
         +control-block('data-header', 'data-group', 'Data', true)
+            +control-select-button('preset', 'Presets', 'Apply')
             +control-select('data-select', 'Dataset')
             //- +control-element('data-input', 'Custom dataset')
             //-     input#data-input.form-control(type='file')

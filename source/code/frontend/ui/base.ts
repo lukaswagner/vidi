@@ -17,7 +17,7 @@ export abstract class ControlBase<T> {
             this._default = v;
         }
         this.applyValue();
-        if (invokeHandler) {
+        if (invokeHandler && this._handler !== undefined) {
             this._handler(v);
         }
     }
@@ -27,11 +27,7 @@ export abstract class ControlBase<T> {
     }
 
     public reset(invokeHandler = true): void {
-        this._value = this._default;
-        this.applyValue();
-        if (invokeHandler) {
-            this._handler(this._value);
-        }
+        this.setValue(this._default, invokeHandler);
     }
 
     protected setHandler(f: (v: T) => void): void {

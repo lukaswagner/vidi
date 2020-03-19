@@ -21,11 +21,15 @@ import {
 } from './points/colorMode';
 
 import {
+    Controls,
+    Preset
+} from './controls';
+
+import {
     Data,
     DataType
 } from './data';
 
-import { Controls } from './controls';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
@@ -37,7 +41,7 @@ export class TopicMapApp extends Initializable {
     };
 
     private static readonly SCALE_CONTROL = {
-        default: 2.0,
+        default: 1.5,
         min: 0.2,
         max: 10.0,
         step: 0.01
@@ -46,13 +50,14 @@ export class TopicMapApp extends Initializable {
     private static readonly VARIABLE_POINT_SIZE_CONTROL = {
         default: 0,
         min: 0,
-        max: 2,
+        max: 1,
         step: 0.01
     };
 
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
+    private _datasets: { name: string, path: string }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -90,6 +95,7 @@ export class TopicMapApp extends Initializable {
 
         this.initControls();
         this.fetchAvailable();
+        this.fetchPresets();
 
         return true;
     }
@@ -135,12 +141,14 @@ export class TopicMapApp extends Initializable {
 
         this._controls.colorMode.fromDict(ColorMode);
         this._controls.colorMode.setValue(ColorModeDefault.toString());
+        this._controls.colorMode.setDefault(ColorModeDefault.toString());
 
         this._controls.colorMapping.handler = (m) => {
             this._renderer.colorMapping = Number(m);
         };
 
         this._controls.colorMapping.fromDict(ColorMapping);
+        this._controls.colorMapping.setDefault(ColorMappingDefault.toString());
         this._controls.colorMapping.setValue(ColorMappingDefault.toString());
 
         this._controls.colorColumn.handler = this.updateColors.bind(this);
@@ -161,18 +169,44 @@ export class TopicMapApp extends Initializable {
     protected fetchAvailable(): void {
         fetch('/ls').then((res) => {
             res.json().then((j) => {
-                this._controls.data.setOptions(j as string[]);
+                this._datasets = j;
+                this._controls.data.setOptions(
+                    this._datasets.map((d) => d.name));
             });
         });
     }
 
-    protected load(path: string): void {
-        console.log('loading', path);
-        fetch('data/' + path).then((r) => {
-            r.text().then((csv) => {
-                this.prepareData(csv);
+    protected fetchPresets(): void {
+        fetch('/data/presets.json').then((res) => {
+            res.json().then((presets: Preset[]) => {
+                this._controls.presetButton.handler = () => {
+                    const selected = this._controls.presets.value;
+                    const preset = presets.find((p) => p.name === selected);
+                    if (preset.data !== undefined) {
+                        this._controls.data.setValue(preset.data, false);
+                        this.load(preset.data).then(() => {
+                            this._controls.applyPreset(preset);
+                        });
+                    } else {
+                        this._controls.applyPreset(preset);
+                    }
+                };
+
+                this._controls.presets.setOptions(presets.map((p) => p.name));
             });
         });
+    }
+
+    protected load(name: string): Promise<void> {
+        const path = this._datasets.find((d) => d.name === name)?.path;
+        if (path === undefined) {
+            console.log('can\'t load', name, '- path unknown');
+            return;
+        }
+        console.log('loading', name, 'from', path);
+        return fetch(path)
+            .then((r) => r.text())
+            .then((csv) => this.prepareData(csv));
     }
 
     protected prepareData(csv: string): void {
