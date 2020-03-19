@@ -34,6 +34,7 @@ export class Data {
         let result: Column<Content>;
         columnNames.forEach((column, i) => {
             const type = this.inferType(firstLine[i]);
+            console.log('interpreting column', column, 'as', DataType[type]);
             switch (type) {
                 case DataType.Number:
                     result = {
@@ -230,7 +231,8 @@ export class Data {
             return DataType.Number;
         }
 
-        if (Color.hex2rgba(input)[3] !== 0) {
+        const col = Color.hex2rgba(input);
+        if (col[0] !== 0 && col[1] !== 0 && col[2] !== 0 && col[3] !== 0) {
             return DataType.Color;
         }
 
