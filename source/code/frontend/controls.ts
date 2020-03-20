@@ -1,4 +1,5 @@
 import { Button } from './ui/button';
+import { File } from './ui/file';
 import { InputSlider } from './ui/inputSlider';
 import { Select } from './ui/select';
 
@@ -18,6 +19,7 @@ export class Controls {
     public presets: Select;
     public presetButton: Button;
     public data: Select;
+    public customData: File;
     public pointSize: InputSlider;
     public scale: InputSlider;
     public axes: Select[];
@@ -31,6 +33,7 @@ export class Controls {
         this.presets = new Select('preset-select');
         this.presetButton = new Button('preset-button');
         this.data = new Select('data-select');
+        this.customData = new File('custom-data');
         this.pointSize = new InputSlider('point-size');
         this.scale = new InputSlider('scale');
         this.axes = [

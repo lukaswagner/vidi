@@ -111,6 +111,9 @@ export class TopicMapApp extends Initializable {
         // data
         this._controls.data.handler = this.load.bind(this);
 
+        // custom data
+        this._controls.customData.handler = this.loadCustom.bind(this);
+
         // point size
         this._controls.pointSize.handler = (v: number) => {
             this._renderer.pointSize = v;
@@ -206,6 +209,13 @@ export class TopicMapApp extends Initializable {
         console.log('loading', name, 'from', path);
         return fetch(path)
             .then((r) => r.text())
+            .then((csv) => this.prepareData(csv));
+    }
+
+    protected loadCustom(files: FileList): Promise<void> {
+        const file = files[0];
+        console.log('loading custom file', file.name);
+        return file.text()
             .then((csv) => this.prepareData(csv));
     }
 
