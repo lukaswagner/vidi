@@ -3,12 +3,14 @@ include control-element.pug
 include control-select.pug
 include control-select-button.pug
 include control-input-slider.pug
+include control-file-button.pug
 
 .control-panel#controls(style='width: 0px;')
     .form
         +control-block('data-header', 'data-group', 'Data', true)
             +control-select-button('preset', 'Presets', 'Apply')
             +control-select('data-select', 'Dataset')
+            +control-file-button('custom-data', 'Custom dataset', 'Upload')
             //- +control-element('data-input', 'Custom dataset')
             //-     input#data-input.form-control(type='file')
             +control-select('x-axis', 'X axis')
