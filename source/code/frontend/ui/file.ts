@@ -1,4 +1,4 @@
-export class File {
+export class FileInput {
     protected _id: string;
     protected _element: HTMLInputElement;
 
