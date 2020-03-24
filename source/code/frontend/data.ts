@@ -232,7 +232,7 @@ export class Data {
         }
 
         const col = Color.hex2rgba(input);
-        if (col[0] !== 0 && col[1] !== 0 && col[2] !== 0 && col[3] !== 0) {
+        if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
             return DataType.Color;
         }
 
