@@ -9,6 +9,17 @@ const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
 
+const auth = JSON.parse(fs.readFileSync('./credentials.json'));
+app.use((req, res, next) => {
+    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+    const [user, pass] = Buffer.from(b64auth, 'base64').toString().split(':');
+    if (user && pass && user === auth.user && pass === auth.password) {
+        return next();
+    }
+    res.set('WWW-Authenticate', 'Basic realm="401"');
+    res.status(401).send('Authentication required.');
+});
+
 app.use('/data', express.static(dataDir));
 app.use('/', express.static('build'));
 
