@@ -1,0 +1,17 @@
+.control-panel#info(style='width: 0px;')
+    .form
+        +control-block('browser-support-header', 'browser-support-group', 'Browser Support', true)
+            p Requires WebGL2 support!
+            p Google Chrome
+            ul
+                li Rendering and styling work
+                li Tested on Windows and Linux
+            p Mozilla Firefox
+            ul
+                li Rendering works
+                li Slider style broken, but functional
+                li Tested on Windows and Linux
+        +control-block('acknowledgements-header', 'acknowledgements-group', 'Acknowledgements', true)
+            ul
+                li Built using #[a(href='https://webgl-operate.org/') webgl-operate]
+                li Uses icons from #[a(href='https://fontawesome.com/') Font Awesome]

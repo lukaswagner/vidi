@@ -1,0 +1,23 @@
+
+script.
+    let sidebarWidth = '350px';
+    let controlToggle = document.getElementById('control-toggle');
+    let infoToggle = document.getElementById('info-toggle');
+    let controls = document.getElementById('controls');
+    let info = document.getElementById('info');
+    controlToggle.addEventListener('click', () => {
+        if(controls.style.width === '0px') {
+            controls.style.width = sidebarWidth;
+            info.style.width = '0px';
+        } else {
+            controls.style.width = '0px';
+        }
+    });
+    infoToggle.addEventListener('click', () => {
+        if(info.style.width === '0px') {
+            info.style.width = sidebarWidth;
+            controls.style.width = '0px';
+        } else {
+            info.style.width = '0px';
+        }
+    });

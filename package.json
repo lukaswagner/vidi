@@ -9,6 +9,8 @@
   "author": "Lukas Wagner",
   "license": "MIT",
   "devDependencies": {
+    "@fortawesome/fontawesome-svg-core": "^1.2.28",
+    "@fortawesome/free-solid-svg-icons": "^5.13.0",
     "@types/gl-matrix": "^2.4.5",
     "@types/webpack": "^4.41.6",
     "@typescript-eslint/eslint-plugin": "^2.22.0",

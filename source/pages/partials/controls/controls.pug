@@ -25,15 +25,3 @@ include control-file-button.pug
             +control-select('color-mode', 'Color mode')
             +control-select('color-mapping', 'Mapping for position-based color')
             +control-select('color-column', 'Column for per-point color')
-
-script.
-    let controlWidth = '350px';
-    let controlToggle = document.getElementById('control-toggle');
-    let controls = document.getElementById('controls');
-    controlToggle.addEventListener('click', () => {
-        if(controls.style.width === '0px') {
-            controls.style.width = controlWidth;
-        } else {
-            controls.style.width = '0px';
-        }
-    });
