@@ -122,7 +122,7 @@ export class PointCloudGeometry extends Geometry {
      */
     public draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 6, this._positions.length / 3);
+            this._gl.TRIANGLE_STRIP, 0, 4, this._positions.length / 3);
     }
 
     /**
