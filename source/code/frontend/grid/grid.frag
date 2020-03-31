@@ -70,4 +70,5 @@ void main()
 
     float intensity = distIntensity * grid();
     gl_FragColor = vec4(u_color, intensity);
+    // gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

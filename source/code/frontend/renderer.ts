@@ -183,6 +183,9 @@ export class TopicMapRenderer extends Renderer {
         document.addEventListener('msfullscreenchange', uud);
         this._pointPass.useDiscard = true;
 
+        // enable culling
+        gl.enable(gl.CULL_FACE);
+
         return true;
     }
 
@@ -277,7 +280,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.frame();
 
         this._gridLabelPass.ndcOffset = ndcOffset;
-        this._gridLabelPass.frame();
+        // this._gridLabelPass.frame();
 
         this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();

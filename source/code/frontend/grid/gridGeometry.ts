@@ -4,25 +4,26 @@ import {
     Geometry,
     mat4,
     quat,
+    vec3,
 } from 'webgl-operate';
 
 import { ExtendedGridInfo } from './gridInfo';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
-    protected static readonly FADED_GRID_WIDTH = 1.0;
+    protected static readonly FADED_GRID_WIDTH = 0.0;
 
     protected _quadVertices = new Float32Array([
-        0, 0, 0,
-        1, 0, 0,
-        0, 0, -1,
-        1, 0, -1
+        +1, -1, 0,
+        +1, +1, 0,
+        -1, -1, 0,
+        -1, +1, 0
     ]);
     protected _uvCoordinates = new Float32Array([
-        0, 0,
         1, 0,
-        0, 1,
-        1, 1
+        1, 1,
+        0, 0,
+        0, 1
     ]);
 
     protected _transform = new Float32Array([]);
@@ -107,36 +108,105 @@ export class GridGeometry extends Geometry {
      */
     public draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 4, 1);
+            this._gl.TRIANGLE_STRIP, 0, 4, 6);
     }
 
     public buildGrid(gridInfo: ExtendedGridInfo[]): void {
-        // only supports two axes on one plane for now
-        const grid = gridInfo[0];
-        const x = grid.firstAxis;
-        const y = grid.secondAxis;
-        const xe = x.extents;
-        const ye = y.extents;
+        const transformTemp = new Float32Array(gridInfo.length * 16);
+        const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 
-        const w = GridGeometry.FADED_GRID_WIDTH;
-        const ww = w * 2;
+        gridInfo.forEach((grid, i) => {
+            // console.log(grid);
+            const x = grid.firstAxis;
+            const y = grid.secondAxis;
+            const xe = x.extents;
+            const ye = y.extents;
 
-        const transform = mat4.fromRotationTranslationScale(
-            mat4.create(),
-            quat.identity(quat.create()),
-            [xe.min - w, 0, -ye.min + w],
-            [xe.max - xe.min + ww, 1, ye.max - ye.min + ww]
-        );
-        this._transform = new Float32Array(transform.values());
+            const w = GridGeometry.FADED_GRID_WIDTH;
+            const ww = w * 2;
 
-        this._gridInfo = new Float32Array([
-            xe.min - w, -ye.min + w,
-            xe.max + w, -ye.max - w,
-            xe.min, -ye.min,
-            xe.max, -ye.max,
-            x.subdivisions,
-            y.subdivisions
-        ]);
+            const center = vec3.fromValues(
+                xe.center,
+                ye.center,
+                grid.position
+            );
+
+            const targetNormal = vec3.clone(grid.normal);
+            if(grid.backFace) {
+                vec3.scale(targetNormal, targetNormal, -1);
+                // vec3.scale(center, center, -1);
+                const mul = vec3.clone(targetNormal);
+                vec3.scaleAndAdd(mul, [1,1,1], mul, 2);
+                vec3.multiply(center, center, mul);
+            }
+
+            
+
+            const rotation = quat.rotationTo(
+                quat.create(),
+                vec3.fromValues(0, 0, 1),
+                targetNormal
+            );
+
+            const extents = vec3.fromValues(
+                (xe.max - xe.min + ww) * 0.5,
+                (ye.max - ye.min + ww) * 0.5,
+                1
+            );
+
+            console.log('c', center, 'n', targetNormal, 'e', extents);
+
+            // const extents = vec3.fromValues(
+            //     1,
+            //     1,
+            //     1
+            // );
+
+            // const scaledTrans = vec3.create();
+            // vec3.multiply(scaledTrans, center, extents);
+
+            const m = mat4.create();
+
+            const rot = mat4.fromQuat(mat4.create(), rotation);
+            mat4.multiply(m, m, rot);
+
+            mat4.translate(m, m, center);
+            mat4.scale(m, m, extents);
+
+            // const combined = mat4.fromRotationTranslationScale(
+            //     mat4.create(),
+            //     rotation,
+            //     center,
+            //     extents
+            // );
+
+            [
+                vec3.fromValues(+1, -1, 0),
+                vec3.fromValues(+1, +1, 0),
+                vec3.fromValues(-1, -1, 0),
+                vec3.fromValues(-1, +1, 0)
+            ].forEach((v) => {
+                console.log(
+                    v,
+                    vec3.transformMat4(vec3.create(), v, m)
+                );
+            });
+
+            const gridInfo = new Float32Array([
+                xe.min - w, -ye.min + w,
+                xe.max + w, -ye.max - w,
+                xe.min, -ye.min,
+                xe.max, -ye.max,
+                x.subdivisions,
+                y.subdivisions
+            ]);
+
+            transformTemp.set(m, i * 16);
+            gridInfoTemp.set(gridInfo, i * 10);
+        });
+        
+        this._transform = transformTemp;
+        this._gridInfo = gridInfoTemp;
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
         this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);

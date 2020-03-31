@@ -76,9 +76,10 @@ export class GridLabelPass extends LabelRenderPass {
 
     @Initializable.assert_initialized()
     public frame(): void {
-        this._gl.disable(this._gl.CULL_FACE);
+        // text is actually rendered on the back face
+        this._gl.cullFace(this._gl.FRONT);
         super.frame();
-        this._gl.enable(this._gl.CULL_FACE);
+        this._gl.cullFace(this._gl.BACK);
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.BLEND);
     }

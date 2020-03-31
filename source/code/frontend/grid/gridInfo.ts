@@ -11,7 +11,8 @@ export type GridInfo = {
     firstAxis: AxisInfo,
     secondAxis: AxisInfo,
     normal: vec3,
-    position: number
+    position: number,
+    backFace: boolean
 }
 
 export type ExtendedAxisInfo = {
@@ -27,7 +28,8 @@ export type ExtendedGridInfo = {
     firstAxis: ExtendedAxisInfo,
     secondAxis: ExtendedAxisInfo,
     normal: vec3,
-    position: number
+    position: number,
+    backFace: boolean
 }
 
 type ExtendedExtents = {
@@ -119,6 +121,7 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
             labelPosition: secondLabelPosition
         },
         normal: grid.normal,
-        position: grid.position
+        position: grid.position,
+        backFace: grid.backFace
     };
 }

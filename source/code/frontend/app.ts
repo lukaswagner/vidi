@@ -7,7 +7,6 @@ import {
     Color,
     Initializable,
     Wizard,
-    vec3,
     viewer
 } from 'webgl-operate';
 
@@ -31,6 +30,7 @@ import {
     DataType
 } from './data';
 
+import { GridHelper } from './grid/helper';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
@@ -252,27 +252,14 @@ export class TopicMapApp extends Initializable {
                 updatedAxis, this._controls.axes[updatedAxis].value);
         }
         const { positions, extents } = this._data.getCoordinates(
-            [{ min: -2, max: 2 }, { min: -2, max: 2 }, { min: -2, max: 2 }]);
+            [{ min: -1, max: 1 }, { min: -1, max: 1 }, { min: -1, max: 1 }]);
         this._renderer.positions = positions;
-        const subdivisions = 10;
-        this._renderer.grid = [
-            {
-                firstAxis: {
-                    name: this._data.selectedColumn(0),
-                    direction: vec3.fromValues(1, 0, 0),
-                    extents: extents[0],
-                    subdivisions: subdivisions
-                },
-                secondAxis: {
-                    name: this._data.selectedColumn(1),
-                    direction: vec3.fromValues(0, 0, 1),
-                    extents: extents[1],
-                    subdivisions: subdivisions
-                },
-                normal: vec3.fromValues(0, 1, 0),
-                position: 0
-            }
-        ];
+        const subdivisions = 12;
+        this._renderer.grid = GridHelper.buildGrid(
+            [0, 1, 2].map((i) => this._data.selectedColumn(i)),
+            extents,
+            subdivisions
+        );
         this._renderer.updateGrid();
     }
 
