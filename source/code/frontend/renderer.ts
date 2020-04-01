@@ -29,6 +29,7 @@ import {
 } from './grid/gridInfo';
 
 import { GridLabelPass, LabelInfo } from './grid/gridLabelPass';
+import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
 
@@ -37,6 +38,7 @@ export class TopicMapRenderer extends Renderer {
     protected _camera: Camera;
     protected _navigation: Navigation;
     protected _gridInfo: GridInfo[];
+    protected _gridOffsetHelper: GridOffsetHelper;
 
     // intermediate rendering for aa
     protected _depthRenderbuffer: Renderbuffer;
@@ -88,6 +90,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.gridInfo = extendedGridInfo;
         this._gridLabelPass.labelInfo = labels;
+        this._gridOffsetHelper.gridInfo = extendedGridInfo;
         this.invalidate();
     }
 
@@ -159,6 +162,11 @@ export class TopicMapRenderer extends Renderer {
         this._gridLabelPass.depthMask = true;
         this._gridLabelPass.loadFont(
             './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
+
+        this._gridOffsetHelper = new GridOffsetHelper(
+            this._gridPass, this._gridLabelPass);
+        this._gridOffsetHelper.camera = this._camera;
+        this._gridOffsetHelper.initialize();
 
         // set up output
         this._defaultFBO = new DefaultFramebuffer(context, 'DefaultFBO');
@@ -255,6 +263,7 @@ export class TopicMapRenderer extends Renderer {
         }
 
         this._pointPass.update();
+        this._gridOffsetHelper.update();
         this._gridPass.update();
         this._gridLabelPass.update();
         this._accumulatePass.update();

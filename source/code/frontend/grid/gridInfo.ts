@@ -11,8 +11,7 @@ export type GridInfo = {
     firstAxis: AxisInfo,
     secondAxis: AxisInfo,
     normal: vec3,
-    position: number,
-    backFace: boolean
+    offsets: [number, number]
 }
 
 export type ExtendedAxisInfo = {
@@ -28,8 +27,7 @@ export type ExtendedGridInfo = {
     firstAxis: ExtendedAxisInfo,
     secondAxis: ExtendedAxisInfo,
     normal: vec3,
-    position: number,
-    backFace: boolean
+    offsets: [number, number]
 }
 
 type ExtendedExtents = {
@@ -84,16 +82,18 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
     const first = grid.firstAxis;
     const second = grid.secondAxis;
 
-    const normPos = vec3.scale(
-        vec3.create(), grid.normal, grid.position);
+    // const normPos = vec3.scale(
+    //     vec3.create(), grid.normal, grid.position);
 
     const firstExtendedExtents = calcExtendedExtents(first);
     const secondExtendedExtents = calcExtendedExtents(second);
 
-    const firstLabelPosition = calcLabelPosition(
-        second, firstExtendedExtents, secondExtendedExtents, normPos, -1);
-    const secondLabelPosition = calcLabelPosition(
-        first, secondExtendedExtents, firstExtendedExtents, normPos, 1);
+    // const firstLabelPosition = calcLabelPosition(
+    //     second, firstExtendedExtents, secondExtendedExtents, normPos, -1);
+    // const secondLabelPosition = calcLabelPosition(
+    //     first, secondExtendedExtents, firstExtendedExtents, normPos, 1);
+    const firstLabelPosition = vec3.create();
+    const secondLabelPosition = vec3.create();
 
     return {
         firstAxis: {
@@ -121,7 +121,6 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
             labelPosition: secondLabelPosition
         },
         normal: grid.normal,
-        position: grid.position,
-        backFace: grid.backFace
+        offsets: grid.offsets
     };
 }

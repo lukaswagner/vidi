@@ -1,7 +1,9 @@
 import {
     Buffer,
+    ChangeLookup,
     Context,
     Geometry,
+    Initializable,
     mat4,
     quat,
     vec3,
@@ -12,6 +14,11 @@ import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
     protected static readonly FADED_GRID_WIDTH = 0.0;
+
+    protected readonly _altered = Object.assign(new ChangeLookup(), {
+        any: false,
+        offsets: false,
+    });
 
     protected _quadVertices = new Float32Array([
         +1, -1, 0,
@@ -26,7 +33,10 @@ export class GridGeometry extends Geometry {
         0, 1
     ]);
 
+    protected _numGrids = 0;
+
     protected _transform = new Float32Array([]);
+    protected _offset = new Float32Array([]);
 
     /**
      * gridInfo structure:
@@ -41,7 +51,8 @@ export class GridGeometry extends Geometry {
     protected _vertexLocation: GLuint = 0;
     protected _uvLocation: GLuint = 1;
     protected _transformLocation: GLuint = 2;
-    protected _gridInfoLocation: GLuint = 6;
+    protected _offsetLocation: GLuint = 6;
+    protected _gridInfoLocation: GLuint = 7;
 
     protected _gl: WebGLRenderingContext;
     protected _gl2facade: GL2Facade;
@@ -62,6 +73,7 @@ export class GridGeometry extends Geometry {
             new Buffer(context),
             new Buffer(context),
             new Buffer(context),
+            new Buffer(context),
             new Buffer(context)
         );
     }
@@ -76,14 +88,17 @@ export class GridGeometry extends Geometry {
         localPosLocation: GLuint = 0,
         uvLocation: GLuint = 1,
         transformLocation: GLuint = 2,
-        gridInfoLocation: GLuint = 6
+        offsetLocation: GLuint = 6,
+        gridInfoLocation: GLuint = 7
     ): boolean {
         this._vertexLocation = localPosLocation;
         this._uvLocation = uvLocation;
         this._transformLocation = transformLocation;
+        this._offsetLocation = offsetLocation;
         this._gridInfoLocation = gridInfoLocation;
 
         const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
@@ -92,15 +107,26 @@ export class GridGeometry extends Geometry {
             this._vertexLocation,
             this._uvLocation,
             this._transformLocation,
+            this._offsetLocation,
             this._gridInfoLocation,
         ]);
 
         this._buffers[0].data(this._quadVertices, this._gl.STATIC_DRAW);
         this._buffers[1].data(this._uvCoordinates, this._gl.STATIC_DRAW);
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
+        this._buffers[4].data(this._gridInfo, this._gl.STATIC_DRAW);
 
         return valid;
+    }
+
+    @Initializable.assert_initialized()
+    public update(override: boolean = false): void {
+        if (override || this._altered.offsets) {
+            this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
+        }
+
+        this._altered.reset();
     }
 
     /**
@@ -108,15 +134,15 @@ export class GridGeometry extends Geometry {
      */
     public draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 4, 6);
+            this._gl.TRIANGLE_STRIP, 0, 4, this._numGrids);
     }
 
     public buildGrid(gridInfo: ExtendedGridInfo[]): void {
         const transformTemp = new Float32Array(gridInfo.length * 16);
+        const offsetTemp = new Float32Array(gridInfo.length);
         const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 
         gridInfo.forEach((grid, i) => {
-            // console.log(grid);
             const x = grid.firstAxis;
             const y = grid.secondAxis;
             const xe = x.extents;
@@ -128,24 +154,13 @@ export class GridGeometry extends Geometry {
             const center = vec3.fromValues(
                 xe.center,
                 ye.center,
-                grid.position
+                0
             );
-
-            const targetNormal = vec3.clone(grid.normal);
-            if(grid.backFace) {
-                vec3.scale(targetNormal, targetNormal, -1);
-                // vec3.scale(center, center, -1);
-                const mul = vec3.clone(targetNormal);
-                vec3.scaleAndAdd(mul, [1,1,1], mul, 2);
-                vec3.multiply(center, center, mul);
-            }
-
-            
 
             const rotation = quat.rotationTo(
                 quat.create(),
                 vec3.fromValues(0, 0, 1),
-                targetNormal
+                grid.normal
             );
 
             const extents = vec3.fromValues(
@@ -154,43 +169,20 @@ export class GridGeometry extends Geometry {
                 1
             );
 
-            console.log('c', center, 'n', targetNormal, 'e', extents);
+            // const m = mat4.create();
 
-            // const extents = vec3.fromValues(
-            //     1,
-            //     1,
-            //     1
-            // );
+            // const rot = mat4.fromQuat(mat4.create(), rotation);
+            // mat4.multiply(m, m, rot);
 
-            // const scaledTrans = vec3.create();
-            // vec3.multiply(scaledTrans, center, extents);
+            // mat4.translate(m, m, center);
+            // mat4.scale(m, m, extents);
 
-            const m = mat4.create();
-
-            const rot = mat4.fromQuat(mat4.create(), rotation);
-            mat4.multiply(m, m, rot);
-
-            mat4.translate(m, m, center);
-            mat4.scale(m, m, extents);
-
-            // const combined = mat4.fromRotationTranslationScale(
-            //     mat4.create(),
-            //     rotation,
-            //     center,
-            //     extents
-            // );
-
-            [
-                vec3.fromValues(+1, -1, 0),
-                vec3.fromValues(+1, +1, 0),
-                vec3.fromValues(-1, -1, 0),
-                vec3.fromValues(-1, +1, 0)
-            ].forEach((v) => {
-                console.log(
-                    v,
-                    vec3.transformMat4(vec3.create(), v, m)
-                );
-            });
+            const m = mat4.fromRotationTranslationScale(
+                mat4.create(),
+                rotation,
+                center,
+                extents
+            );
 
             const gridInfo = new Float32Array([
                 xe.min - w, -ye.min + w,
@@ -202,14 +194,18 @@ export class GridGeometry extends Geometry {
             ]);
 
             transformTemp.set(m, i * 16);
+            offsetTemp[i] = grid.offsets[0];
             gridInfoTemp.set(gridInfo, i * 10);
         });
-        
+
+        this._numGrids = gridInfo.length;
         this._transform = transformTemp;
+        this._offset = offsetTemp;
         this._gridInfo = gridInfoTemp;
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._gridInfo, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
+        this._buffers[4].data(this._gridInfo, this._gl.STATIC_DRAW);
     }
 
     /**
@@ -222,6 +218,7 @@ export class GridGeometry extends Geometry {
         const vl = this._vertexLocation;
         const uvl = this._uvLocation;
         const tl = this._transformLocation;
+        const ol = this._offsetLocation;
         const gil = this._gridInfoLocation;
 
         b[0].attribEnable(vl, 3, f, false, 0, 0, true, false);
@@ -239,11 +236,14 @@ export class GridGeometry extends Geometry {
         this._gl2facade.vertexAttribDivisor(tl + 2, 1);
         this._gl2facade.vertexAttribDivisor(tl + 3, 1);
 
-        b[3].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
-        b[3].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
-        b[3].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
-        b[3].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
-        b[3].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
+        b[3].attribEnable(ol, 1, f, false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(ol, 1);
+
+        b[4].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
+        b[4].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
+        b[4].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
+        b[4].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
+        b[4].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
         this._gl2facade.vertexAttribDivisor(gil + 0, 1);
         this._gl2facade.vertexAttribDivisor(gil + 1, 1);
         this._gl2facade.vertexAttribDivisor(gil + 2, 1);
@@ -259,6 +259,7 @@ export class GridGeometry extends Geometry {
         const vl = this._vertexLocation;
         const uvl = this._uvLocation;
         const tl = this._transformLocation;
+        const ol = this._offsetLocation;
         const gil = this._gridInfoLocation;
 
         b[0].attribDisable(vl, true, true);
@@ -266,11 +267,18 @@ export class GridGeometry extends Geometry {
         b[2].attribDisable(tl + 0, true, false);
         b[2].attribDisable(tl + 1, false, false);
         b[2].attribDisable(tl + 2, false, false);
-        b[2].attribDisable(tl + 3, false, true);
-        b[3].attribDisable(gil + 0, true, false);
-        b[3].attribDisable(gil + 1, false, false);
-        b[3].attribDisable(gil + 2, false, false);
-        b[3].attribDisable(gil + 3, false, false);
-        b[3].attribDisable(gil + 4, false, true);
+        b[2].attribDisable(tl + 3, false, false);
+        b[2].attribDisable(tl + 4, false, true);
+        b[3].attribDisable(ol, true, true);
+        b[4].attribDisable(gil + 0, true, false);
+        b[4].attribDisable(gil + 1, false, false);
+        b[4].attribDisable(gil + 2, false, false);
+        b[4].attribDisable(gil + 3, false, false);
+        b[4].attribDisable(gil + 4, false, true);
+    }
+
+    public set offsets(offsets: number[]) {
+        this._offset = new Float32Array(offsets);
+        this._altered.alter('offsets');
     }
 }

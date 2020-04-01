@@ -4,6 +4,7 @@ precision lowp float;
     attribute vec3 a_position;
     attribute vec2 a_uv;
     attribute mat4 a_transform;
+    attribute float a_offset;
     attribute vec2 a_quadLowerBounds;
     attribute vec2 a_quadUpperBounds;
     attribute vec2 a_dataLowerBounds;
@@ -14,11 +15,12 @@ precision lowp float;
     layout(location = 0) in vec3 a_position;
     layout(location = 1) in vec2 a_uv;
     layout(location = 2) in mat4 a_transform;
-    layout(location = 6) in vec2 a_quadLowerBounds;
-    layout(location = 7) in vec2 a_quadUpperBounds;
-    layout(location = 8) in vec2 a_dataLowerBounds;
-    layout(location = 9) in vec2 a_dataUpperBounds;
-    layout(location = 10) in vec2 a_gridSubdivisions;
+    layout(location = 6) in float a_offset;
+    layout(location = 7) in vec2 a_quadLowerBounds;
+    layout(location = 8) in vec2 a_quadUpperBounds;
+    layout(location = 9) in vec2 a_dataLowerBounds;
+    layout(location = 10) in vec2 a_dataUpperBounds;
+    layout(location = 11) in vec2 a_gridSubdivisions;
 #endif
 
 uniform mat4 u_viewProjection;
@@ -61,7 +63,8 @@ void main()
     v_gridSubdivisionsUVInv = 1.0 / v_gridSubdivisionsUV;
     v_gridSubdivisionsScaled = v_gridSubdivisions / v_dataRangeUV;
 
-    vec4 vertex = u_viewProjection * a_transform * vec4(a_position, 1.0);
+    vec4 offsetted = vec4(a_position.x, a_position.y, a_offset, 1.0);
+    vec4 vertex = u_viewProjection * a_transform * offsetted;
     vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;
     gl_Position = vertex;
 }

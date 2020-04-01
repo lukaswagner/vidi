@@ -30,7 +30,7 @@ import {
     DataType
 } from './data';
 
-import { GridHelper } from './grid/helper';
+import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
@@ -258,7 +258,8 @@ export class TopicMapApp extends Initializable {
         this._renderer.grid = GridHelper.buildGrid(
             [0, 1, 2].map((i) => this._data.selectedColumn(i)),
             extents,
-            subdivisions
+            subdivisions,
+            false
         );
         this._renderer.updateGrid();
     }

@@ -39,7 +39,6 @@ export class GridLabelPass extends LabelRenderPass {
         super(context);
         this._context = context;
         this._gl = context.gl;
-
     }
 
     public loadFont(font: string, invalidate: (force?: boolean) => void): void {

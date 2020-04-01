@@ -16,7 +16,7 @@ import { GridGeometry } from './gridGeometry';
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
-        gridInfo: false,
+        gridInfo: false
     });
 
     protected _context: Context;
@@ -82,6 +82,8 @@ export class GridPass extends Initializable {
             this._geometry.buildGrid(this._gridInfo);
         }
 
+        this._geometry.update();
+
         this._altered.reset();
     }
 
@@ -98,7 +100,7 @@ export class GridPass extends Initializable {
         this._gl.depthFunc(this._gl.LESS);
         this._gl.enable(this._gl.BLEND);
 
-        // this._gl.disable(this._gl.CULL_FACE);
+        this._gl.disable(this._gl.CULL_FACE);
 
         this._program.bind();
 
@@ -114,6 +116,8 @@ export class GridPass extends Initializable {
 
         this._program.unbind();
 
+        this._gl.enable(this._gl.CULL_FACE);
+
         this._gl.disable(this._gl.BLEND);
     }
 
@@ -121,6 +125,11 @@ export class GridPass extends Initializable {
         this.assertInitialized();
         this._gridInfo = gridInfo;
         this._altered.alter('gridInfo');
+    }
+
+    public set gridOffsets(offsets: number[]) {
+        this.assertInitialized();
+        this._geometry.offsets = offsets;
     }
 
     public set target(target: Framebuffer) {

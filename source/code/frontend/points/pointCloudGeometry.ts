@@ -8,7 +8,6 @@ import {
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class PointCloudGeometry extends Geometry {
-
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         positions: false,
