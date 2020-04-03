@@ -139,7 +139,6 @@ export class GridGeometry extends Geometry {
 
     public buildGrid(gridInfo: ExtendedGridInfo[]): void {
         const transformTemp = new Float32Array(gridInfo.length * 16);
-        const offsetTemp = new Float32Array(gridInfo.length);
         const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 
         gridInfo.forEach((grid, i) => {
@@ -169,14 +168,6 @@ export class GridGeometry extends Geometry {
                 1
             );
 
-            // const m = mat4.create();
-
-            // const rot = mat4.fromQuat(mat4.create(), rotation);
-            // mat4.multiply(m, m, rot);
-
-            // mat4.translate(m, m, center);
-            // mat4.scale(m, m, extents);
-
             const m = mat4.fromRotationTranslationScale(
                 mat4.create(),
                 rotation,
@@ -194,13 +185,11 @@ export class GridGeometry extends Geometry {
             ]);
 
             transformTemp.set(m, i * 16);
-            offsetTemp[i] = grid.offsets[0];
             gridInfoTemp.set(gridInfo, i * 10);
         });
 
         this._numGrids = gridInfo.length;
         this._transform = transformTemp;
-        this._offset = offsetTemp;
         this._gridInfo = gridInfoTemp;
 
         this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
@@ -278,7 +267,7 @@ export class GridGeometry extends Geometry {
     }
 
     public set offsets(offsets: number[]) {
-        this._offset = new Float32Array(offsets);
+        this._offset = Float32Array.from(offsets);
         this._altered.alter('offsets');
     }
 }

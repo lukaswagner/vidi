@@ -69,23 +69,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridInfo.forEach((grid) => {
             const extended = calculateExtendedGridInfo(grid);
-
             extendedGridInfo.push(extended);
-
-            const firstAxisLabel: LabelInfo = {
-                name: extended.firstAxis.name,
-                dir: extended.firstAxis.direction,
-                pos: extended.firstAxis.labelPosition,
-                up: vec3.scale(vec3.create(), extended.secondAxis.direction, -1)
-            };
-            const secondAxisLabel: LabelInfo = {
-                name: extended.secondAxis.name,
-                dir: extended.secondAxis.direction,
-                pos: extended.secondAxis.labelPosition,
-                up: extended.firstAxis.direction
-            };
-
-            labels.push(firstAxisLabel, secondAxisLabel);
         });
 
         this._gridPass.gridInfo = extendedGridInfo;

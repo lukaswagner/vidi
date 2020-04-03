@@ -90,7 +90,7 @@ export class GridLabelPass extends LabelRenderPass {
             const l = new Position3DLabel(new Text(i.name), Label.Type.Static);
             l.fontFace = this._fontFace;
             l.fontSize = 0.15;
-            l.lineAnchor = Label.LineAnchor.Top;
+            l.lineAnchor = Label.LineAnchor.Center;
             l.alignment = Label.Alignment.Center;
             l.position = i.pos;
             l.direction = i.dir;

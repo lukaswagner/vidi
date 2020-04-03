@@ -19,8 +19,7 @@ export type ExtendedAxisInfo = {
     direction: vec3,
     extents: { min: number, max: number, center: number },
     extentPositions: { min: vec3, max: vec3, center: vec3 },
-    subdivisions: number,
-    labelPosition: vec3
+    subdivisions: number
 }
 
 export type ExtendedGridInfo = {
@@ -50,50 +49,12 @@ function calcExtendedExtents(self: AxisInfo): ExtendedExtents {
     };
 }
 
-const labelOffset = 0.1;
-function calcLabelPosition(
-    other: AxisInfo,
-    selfExtents: ExtendedExtents, otherExtents: ExtendedExtents,
-    normPos: vec3,
-    invertFactor: number
-): vec3 {
-    const offset = vec3.scale(
-        vec3.create(), other.direction, -labelOffset);
-    const pos = vec3.add(
-        vec3.create(),
-        vec3.add(
-            vec3.create(),
-            selfExtents.extentPositions.center,
-            normPos),
-        vec3.scale(
-            vec3.create(),
-            vec3.add(
-                vec3.create(),
-                offset,
-                otherExtents.extentPositions.min
-            ),
-            invertFactor
-        )
-    );
-    return pos;
-}
-
 export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
     const first = grid.firstAxis;
     const second = grid.secondAxis;
 
-    // const normPos = vec3.scale(
-    //     vec3.create(), grid.normal, grid.position);
-
     const firstExtendedExtents = calcExtendedExtents(first);
     const secondExtendedExtents = calcExtendedExtents(second);
-
-    // const firstLabelPosition = calcLabelPosition(
-    //     second, firstExtendedExtents, secondExtendedExtents, normPos, -1);
-    // const secondLabelPosition = calcLabelPosition(
-    //     first, secondExtendedExtents, firstExtendedExtents, normPos, 1);
-    const firstLabelPosition = vec3.create();
-    const secondLabelPosition = vec3.create();
 
     return {
         firstAxis: {
@@ -105,8 +66,7 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
                 center: firstExtendedExtents.center
             },
             extentPositions: firstExtendedExtents.extentPositions,
-            subdivisions: first.subdivisions,
-            labelPosition: firstLabelPosition
+            subdivisions: first.subdivisions
         },
         secondAxis: {
             name: second.name,
@@ -117,8 +77,7 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
                 center: secondExtendedExtents.center
             },
             extentPositions: secondExtendedExtents.extentPositions,
-            subdivisions: second.subdivisions,
-            labelPosition: secondLabelPosition
+            subdivisions: second.subdivisions
         },
         normal: grid.normal,
         offsets: grid.offsets
