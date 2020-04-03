@@ -38,7 +38,7 @@ const float TWO_PI_INV = 0.15915494309;
 varying vec3 v_pos;
 varying vec3 v_color;
 varying vec2 v_uv;
-varying float v_height;
+varying vec3 v_fragPos;
 
 vec3 hsl2rgb(vec3 c)
 {
@@ -76,7 +76,7 @@ void main()
     v_color = color();
     v_uv = a_uv;
 
-    vec4 position = u_viewProjection * vec4(v_pos, 1.0);
+    vec4 position = u_viewProjection * vec4(a_pos, 1.0);
 
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
@@ -88,6 +88,6 @@ void main()
     position.xy = position.xy + a_uv * pointSize * vec2(position.w);
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 
-    v_height = (u_viewProjectionInverse * position).y;
+    v_fragPos = (u_viewProjectionInverse * position).xyz;
     gl_Position = position;
 }

@@ -164,7 +164,7 @@ export class TopicMapRenderer extends Renderer {
             './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
 
         this._gridOffsetHelper = new GridOffsetHelper(
-            this._gridPass, this._gridLabelPass);
+            this._gridPass, this._gridLabelPass, this._pointPass);
         this._gridOffsetHelper.camera = this._camera;
         this._gridOffsetHelper.initialize();
 
@@ -230,6 +230,7 @@ export class TopicMapRenderer extends Renderer {
         this._navigation.update();
         return this._altered.any ||
             this._camera.altered ||
+            this._gridOffsetHelper.altered ||
             this._pointPass.altered ||
             this._gridPass.altered ||
             this._gridLabelPass.altered;
@@ -262,8 +263,8 @@ export class TopicMapRenderer extends Renderer {
                 new AntiAliasingKernel(this._multiFrameNumber);
         }
 
-        this._pointPass.update();
         this._gridOffsetHelper.update();
+        this._pointPass.update();
         this._gridPass.update();
         this._gridLabelPass.update();
         this._accumulatePass.update();
@@ -289,7 +290,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.frame();
 
         this._gridLabelPass.ndcOffset = ndcOffset;
-        // this._gridLabelPass.frame();
+        this._gridLabelPass.frame();
 
         this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();
@@ -315,6 +316,7 @@ export class TopicMapRenderer extends Renderer {
 
     public set grid(gridInfo: GridInfo[]) {
         this._gridInfo = gridInfo;
+        this.invalidate();
     }
 
     public set pointSize(size: number) {

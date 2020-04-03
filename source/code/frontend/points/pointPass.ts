@@ -9,6 +9,7 @@ import {
     tuples,
 } from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
+import GLfloat3 = tuples.GLfloat3;
 
 import { PointCloudGeometry } from './pointCloudGeometry';
 
@@ -20,6 +21,7 @@ export class PointPass extends Initializable {
         any: false,
         positions: false,
         aspectRatio: false,
+        cutoffPosition: false,
         pointSize: false,
         useDiscard: false,
         colorMode: false,
@@ -36,6 +38,8 @@ export class PointPass extends Initializable {
     protected _camera: Camera;
 
     protected _aspectRatio: GLfloat;
+    protected _cutoffPosition: number[];
+    protected _cutoffPositionMask: number[];
     protected _pointSize: GLfloat = PointPass.DEFAULT_POINT_SIZE;
     protected _useDiscard: boolean;
     protected _colorMode: number;
@@ -49,7 +53,9 @@ export class PointPass extends Initializable {
     protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uAspectRatio: WebGLUniformLocation;
-    protected _uCameraHeight: WebGLUniformLocation;
+    protected _uCameraPosition: WebGLUniformLocation;
+    protected _uCutoffPosition: WebGLUniformLocation;
+    protected _uCutoffPositionMask: WebGLUniformLocation;
     protected _uPointSize: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
     protected _uColorMode: WebGLUniformLocation;
@@ -92,7 +98,10 @@ export class PointPass extends Initializable {
             this._program.uniform('u_viewProjectionInverse');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uAspectRatio = this._program.uniform('u_aspectRatio');
-        this._uCameraHeight = this._program.uniform('u_cameraHeight');
+        this._uCameraPosition = this._program.uniform('u_cameraPosition');
+        this._uCutoffPosition = this._program.uniform('u_cutoffPosition');
+        this._uCutoffPositionMask =
+            this._program.uniform('u_cutoffPositionMask');
         this._uPointSize = this._program.uniform('u_pointSize');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
         this._uColorMode = this._program.uniform('u_colorMode');
@@ -116,7 +125,9 @@ export class PointPass extends Initializable {
         this._uViewProjectionInverse = undefined;
         this._uNdcOffset = undefined;
         this._uAspectRatio = undefined;
-        this._uCameraHeight = undefined;
+        this._uCameraPosition = undefined;
+        this._uCutoffPosition = undefined;
+        this._uCutoffPositionMask = undefined;
         this._uPointSize = undefined;
         this._uUseDiscard = undefined;
         this._uColorMode = undefined;
@@ -142,6 +153,12 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.aspectRatio) {
             this._gl.uniform1f(this._uAspectRatio, this._aspectRatio);
+        }
+
+        if (override || this._altered.cutoffPosition) {
+            this._gl.uniform3fv(this._uCutoffPosition, this._cutoffPosition);
+            this._gl.uniform3fv(
+                this._uCutoffPositionMask, this._cutoffPositionMask);
         }
 
         if (override || this._altered.pointSize) {
@@ -199,7 +216,7 @@ export class PointPass extends Initializable {
             false,
             this._camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
-        this._gl.uniform1f(this._uCameraHeight, this._camera.eye[1]);
+        this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
 
         this._target.bind();
 
@@ -227,6 +244,15 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._aspectRatio = aspectRation;
         this._altered.alter('aspectRatio');
+    }
+
+    public set cutoffPosition(
+        cutoffPosition: { value: number, mask: number }[]
+    ) {
+        this.assertInitialized();
+        this._cutoffPosition = cutoffPosition.map((c) => c.value);
+        this._cutoffPositionMask = cutoffPosition.map((c) => c.mask);
+        this._altered.alter('cutoffPosition');
     }
 
     public set pointSize(size: GLfloat) {

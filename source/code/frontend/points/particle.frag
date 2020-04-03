@@ -14,13 +14,14 @@ precision lowp int;
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
 uniform bool u_useDiscard;
-uniform float u_cameraHeight;
-const float u_cutoffHeight = 0.0;
+uniform vec3 u_cameraPosition;
+uniform vec3 u_cutoffPosition;
+uniform vec3 u_cutoffPositionMask;
 
 varying vec3 v_pos;
 varying vec3 v_color;
 varying vec2 v_uv;
-varying float v_height;
+varying vec3 v_fragPos;
 
 void main()
 {
@@ -36,11 +37,13 @@ void main()
     }
 
     vec3 faded = mix(v_color, u_invisColor, 0.7);
-    float fadeFactor = mix(
-        step(v_height, u_cutoffHeight),
-        step(u_cutoffHeight, v_height),
-        step(u_cutoffHeight, u_cameraHeight)
+    vec3 fadeVec = mix(
+        step(v_fragPos, u_cutoffPosition),
+        step(u_cutoffPosition, v_fragPos),
+        step(u_cutoffPosition, u_cameraPosition)
     );
+    vec3 fadeMask = step(u_cutoffPositionMask, fadeVec * u_cutoffPositionMask);
+    float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
     gl_FragColor = vec4(color, alpha);

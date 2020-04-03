@@ -99,7 +99,6 @@ export class GridPass extends Initializable {
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.depthFunc(this._gl.LESS);
         this._gl.enable(this._gl.BLEND);
-
         this._gl.disable(this._gl.CULL_FACE);
 
         this._program.bind();
@@ -116,9 +115,8 @@ export class GridPass extends Initializable {
 
         this._program.unbind();
 
-        this._gl.enable(this._gl.CULL_FACE);
-
         this._gl.disable(this._gl.BLEND);
+        this._gl.enable(this._gl.CULL_FACE);
     }
 
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {

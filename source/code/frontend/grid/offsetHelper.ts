@@ -7,6 +7,7 @@ import {
 import { ExtendedGridInfo } from './gridInfo';
 import { GridLabelPass } from './gridLabelPass';
 import { GridPass } from './gridPass';
+import { PointPass } from '../points/pointPass';
 
 export class GridOffsetHelper extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -20,15 +21,19 @@ export class GridOffsetHelper extends Initializable {
 
     protected _gridPass: GridPass;
     protected _gridLabelPass: GridLabelPass;
+    protected _pointPass: PointPass;
 
     protected _normals: vec3[];
     protected _offsets: [number, number][];
     protected _lastIndices: number[];
 
-    public constructor(gridPass: GridPass, gridLabelPass: GridLabelPass) {
+    public constructor(
+        gridPass: GridPass, gridLabelPass: GridLabelPass, pointPass: PointPass
+    ) {
         super();
         this._gridPass = gridPass;
         this._gridLabelPass = gridLabelPass;
+        this._pointPass = pointPass;
     }
 
     @Initializable.initialize()
@@ -72,11 +77,24 @@ export class GridOffsetHelper extends Initializable {
             return dist[0] > dist[1] ? 0 : 1;
         });
         const changed = indices.reduce(
-            (acc, index, i) => acc || index === this._lastIndices[i], false);
+            (acc, index, i) => acc || index !== this._lastIndices[i], false);
         this._lastIndices = indices;
         if(changed) {
             const offsets = indices.map((index, i) => this._offsets[i][index]);
             this._gridPass.gridOffsets = offsets;
+            if(offsets.length === 1) {
+                this._pointPass.cutoffPosition = [
+                    { value: 0, mask : 0 },
+                    { value: offsets[0], mask : 1 },
+                    { value: 0, mask : 0 },
+                ];
+            } else {
+                this._pointPass.cutoffPosition = [
+                    { value: -offsets[2], mask: 1 },
+                    { value: offsets[0], mask: 1 },
+                    { value: offsets[1], mask: 1 },
+                ];
+            }
         }
     }
 
@@ -91,5 +109,9 @@ export class GridOffsetHelper extends Initializable {
         }
         this._camera = camera;
         this._altered.alter('camera');
+    }
+
+    public get altered(): boolean {
+        return this._altered.any;
     }
 }

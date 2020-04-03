@@ -1,5 +1,6 @@
 import { 
-    GridInfo, AxisInfo,
+    AxisInfo,
+    GridInfo,
 } from './gridInfo';
 import { vec3 } from 'webgl-operate';
 
