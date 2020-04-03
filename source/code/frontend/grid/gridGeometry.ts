@@ -13,7 +13,7 @@ import { ExtendedGridInfo } from './gridInfo';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
-    protected static readonly FADED_GRID_WIDTH = 0.0;
+    protected static readonly FADED_GRID_WIDTH = 1.0;
 
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,

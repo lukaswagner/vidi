@@ -9,7 +9,6 @@ import {
     tuples,
 } from 'webgl-operate';
 import GLfloat2 = tuples.GLfloat2;
-import GLfloat3 = tuples.GLfloat3;
 
 import { PointCloudGeometry } from './pointCloudGeometry';
 
