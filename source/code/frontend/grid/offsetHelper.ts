@@ -1,3 +1,7 @@
+import { 
+    AxisInfo,
+    ExtendedGridInfo,
+} from './gridInfo';
 import {
     Camera,
     ChangeLookup,
@@ -9,7 +13,6 @@ import {
     LabelInfo,
     LabelSet
 } from './gridLabelPass';
-import { ExtendedGridInfo, AxisInfo } from './gridInfo';
 import { GridPass } from './gridPass';
 import { PointPass } from '../points/pointPass';
 
