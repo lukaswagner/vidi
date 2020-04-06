@@ -28,7 +28,7 @@ import {
     calculateExtendedGridInfo
 } from './grid/gridInfo';
 
-import { GridLabelPass, LabelInfo } from './grid/gridLabelPass';
+import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
@@ -65,7 +65,6 @@ export class TopicMapRenderer extends Renderer {
 
     public updateGrid(): void {
         const extendedGridInfo = new Array<ExtendedGridInfo>();
-        const labels = new Array<LabelInfo>();
 
         this._gridInfo.forEach((grid) => {
             const extended = calculateExtendedGridInfo(grid);
@@ -73,7 +72,6 @@ export class TopicMapRenderer extends Renderer {
         });
 
         this._gridPass.gridInfo = extendedGridInfo;
-        this._gridLabelPass.labelInfo = labels;
         this._gridOffsetHelper.gridInfo = extendedGridInfo;
         this.invalidate();
     }

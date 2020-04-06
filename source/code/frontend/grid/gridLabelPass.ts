@@ -19,9 +19,15 @@ export type LabelInfo = {
     up: vec3
 }
 
+export type LabelSet = {
+    labels: LabelInfo[],
+    useNearest: boolean,
+}
+
 export class GridLabelPass extends LabelRenderPass {
     protected readonly _labelsAltered = Object.assign(new ChangeLookup(), {
         any: false,
+        sets: false,
         labels: false,
         fontFace: false,
     });
@@ -33,6 +39,8 @@ export class GridLabelPass extends LabelRenderPass {
     protected _target: Framebuffer;
     protected _camera: Camera;
 
+    protected _labelSets: LabelSet[] = [];
+    protected _lastIndices: number[];
     protected _labelInfo: LabelInfo[];
 
     public constructor(context: Context) {
@@ -50,13 +58,17 @@ export class GridLabelPass extends LabelRenderPass {
             });
     }
 
-    public set labelInfo(labelInfo: LabelInfo[]) {
-        this._labelInfo = labelInfo;
-        this._labelsAltered.alter('labels');
+    public set labelInfo(labels: LabelSet[]) {
+        this._labelSets = labels;
+        this._lastIndices = new Array<number>(labels.length).fill(-1);
+        this._labelsAltered.alter('sets');
     }
 
     @Initializable.assert_initialized()
     public update(override: boolean = false): void {
+        if (override || this._labelsAltered.sets || this._camera.altered) {
+            this.updateLabels();
+        }
         if (override || this._labelsAltered.labels) {
             this.setupLabels();
         }
@@ -81,6 +93,31 @@ export class GridLabelPass extends LabelRenderPass {
         this._gl.cullFace(this._gl.BACK);
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.BLEND);
+    }
+
+    protected updateLabels(): void {
+        const indices = this._labelSets.map((s) => {
+            const distances = s.labels.map((l) => {
+                return vec3.dist(l.pos, this._camera.eye);
+            });
+            let index: number;
+            let distance: number;
+            distances.forEach((d, i) => {
+                if(distance === undefined || s.useNearest != d > distance) {
+                    index = i;
+                    distance = d;
+                }
+            });
+            return index;
+        });
+        const changed = indices.reduce(
+            (acc, index, i) => acc || index !== this._lastIndices[i], false);
+        this._lastIndices = indices;
+        if(changed) {
+            this._labelInfo =
+                this._labelSets.map((s, i) => s.labels[indices[i]]);
+            this._labelsAltered.alter('labels');
+        }
     }
 
     protected setupLabels(): void {

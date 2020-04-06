@@ -6,9 +6,10 @@ import {
 } from 'webgl-operate';
 import {
     GridLabelPass,
-    LabelInfo
+    LabelInfo,
+    LabelSet
 } from './gridLabelPass';
-import { ExtendedGridInfo } from './gridInfo';
+import { ExtendedGridInfo, AxisInfo } from './gridInfo';
 import { GridPass } from './gridPass';
 import { PointPass } from '../points/pointPass';
 
@@ -114,135 +115,116 @@ export class GridOffsetHelper extends Initializable {
     }
 
     protected updateLabels(offsets: number[]): void {
-        const labels = new Array<LabelInfo>();
+        console.log('ul');
+        const labels = new Array<LabelSet>();
 
         const base = this._gridInfo[0];
 
-        const firstDir = vec3.clone(base.firstAxis.direction);
-        const firstPos = vec3.scaleAndAdd(
-            vec3.create(),
-            vec3.fromValues(0, offsets[0], 0),
-            base.secondAxis.direction,
-            base.secondAxis.extents.min - this.labelOffset);
-        const firstPosAlternative = vec3.scaleAndAdd(
-            vec3.create(),
-            vec3.fromValues(0, offsets[0], 0),
-            base.secondAxis.direction,
-            base.secondAxis.extents.max + this.labelOffset);
-        const firstUseAlternative =
-            vec3.dist(this._camera.eye, firstPos) >
-            vec3.dist(this._camera.eye, firstPosAlternative);
-        const firstUnderPlane = this._camera.eye[1] < firstPos[1];
-        const firstUp = vec3.clone(base.secondAxis.direction);
-        if(firstUseAlternative) {
-            vec3.copy(firstPos, firstPosAlternative);
-            vec3.scale(firstDir, firstDir, -1);
-            vec3.scale(firstUp, firstUp, -1);
-        }
-        if(firstUnderPlane) {
-            vec3.scale(firstUp, firstUp, -1);
-        }
+        const firstOptionA = this.buildLabelInfo(
+            base.firstAxis, base.secondAxis, 1, [0, offsets[0], 0], true, 1
+        );
 
-        const firstAxisLabel: LabelInfo = {
-            name: base.firstAxis.name,
-            dir: firstDir,
-            pos: firstPos,
-            up: firstUp
-        };
+        const firstOptionB = this.buildLabelInfo(
+            base.firstAxis, base.secondAxis, -1, [0, offsets[0], 0], false, -1
+        );
 
-        const secondDir =
-            vec3.scale(vec3.create(), base.secondAxis.direction, -1);
-        const secondPos = vec3.scaleAndAdd(
-            vec3.create(),
-            vec3.fromValues(0, offsets[0], 0),
-            base.firstAxis.direction,
-            base.firstAxis.extents.min - this.labelOffset);
-        const secondPosAlternative = vec3.scaleAndAdd(
-            vec3.create(),
-            vec3.fromValues(0, offsets[0], 0),
-            base.firstAxis.direction,
-            base.firstAxis.extents.max + this.labelOffset);
-        const secondUseAlternative =
-            vec3.dist(this._camera.eye, secondPos) >
-            vec3.dist(this._camera.eye, secondPosAlternative);
-        const secondUnderPlane = this._camera.eye[1] < secondPos[1];
-        const secondUp = vec3.clone(base.firstAxis.direction);
-        if(secondUseAlternative) {
-            vec3.copy(secondPos, secondPosAlternative);
-            vec3.scale(secondDir, secondDir, -1);
-            vec3.scale(secondUp, secondUp, -1);
-        }
-        if(secondUnderPlane) {
-            vec3.scale(secondUp, secondUp, -1);
+        const secondOptionA = this.buildLabelInfo(
+            base.secondAxis, base.firstAxis, -1, [0, offsets[0], 0], true, 1
+        );
+
+        const secondOptionB = this.buildLabelInfo(
+            base.secondAxis, base.firstAxis, 1, [0, offsets[0], 0], false, -1
+        );
+
+        const firstGridBackface = offsets[0] > this._camera.eye[1];
+        if(firstGridBackface) {
+            vec3.scale(firstOptionA.up, firstOptionA.up, -1);
+            vec3.scale(firstOptionB.up, firstOptionB.up, -1);
+            vec3.scale(secondOptionA.up, secondOptionA.up, -1);
+            vec3.scale(secondOptionB.up, secondOptionB.up, -1);
         }
 
-        const secondAxisLabel: LabelInfo = {
-            name: base.secondAxis.name,
-            dir: secondDir,
-            pos: secondPos,
-            up: secondUp
-        };
-
-        labels.push(firstAxisLabel, secondAxisLabel);
+        labels.push({
+            labels: [firstOptionA, firstOptionB],
+            useNearest: true,
+        }, {
+            labels: [secondOptionA, secondOptionB],
+            useNearest: true,
+        });
 
         if(offsets.length > 1) {
             const sg = this._gridInfo[1];
             const tg = this._gridInfo[2];
-            const secondGridLeft = vec3.scaleAndAdd(
-                vec3.create(),
-                vec3.fromValues(0, 0, offsets[1]),
-                sg.firstAxis.direction,
-                sg.firstAxis.extents.min - this.labelOffset);
-            const secondGridRight = vec3.scaleAndAdd(
-                vec3.create(),
-                vec3.fromValues(0, 0, offsets[1]),
-                sg.firstAxis.direction,
-                sg.firstAxis.extents.max + this.labelOffset);
-            const thirdGridLeft = vec3.scaleAndAdd(
-                vec3.create(),
-                vec3.fromValues(-offsets[2], 0, 0),
-                tg.firstAxis.direction,
-                tg.firstAxis.extents.max + this.labelOffset);
-            const thirdGridRight = vec3.scaleAndAdd(
-                vec3.create(),
-                vec3.fromValues(-offsets[2], 0, 0),
-                tg.firstAxis.direction,
-                tg.firstAxis.extents.min - this.labelOffset);
 
-            const distSGL = vec3.dist(this._camera.eye, secondGridLeft);
-            const distSGR = vec3.dist(this._camera.eye, secondGridRight);
-            const distTGL = vec3.dist(this._camera.eye, thirdGridLeft);
-            const distTGR = vec3.dist(this._camera.eye, thirdGridRight);
+            const secondGridLeft = this.buildLabelInfo(
+                sg.secondAxis, sg.firstAxis, -1, [0, 0, offsets[1]], true, 1
+            );
 
-            const [ leftCloserSG, closerSG, otherSG, distSG ] =
-                distSGL < distSGR ?
-                    [ true, secondGridLeft, secondGridRight, distSGL ] :
-                    [ false, secondGridRight, secondGridLeft, distSGR ];
-            const [ leftCloserTG, closerTG, otherTG, distTG ] =
-                distTGL < distTGR ?
-                    [ true, thirdGridLeft, thirdGridRight, distTGL ] :
-                    [ false, thirdGridRight, thirdGridLeft, distTGR ];
+            const secondGridRight = this.buildLabelInfo(
+                sg.secondAxis, sg.firstAxis, 1, [0, 0, offsets[1]], false, -1
+            );
 
-            const [ pos, other, leftCloser ] =
-                distSG > distTG ?
-                    [ closerSG, otherSG, leftCloserSG ] :
-                    [ closerTG, otherTG, leftCloserTG ];
+            const secondGridBackface = offsets[1] > this._camera.eye[2];
+            if(secondGridBackface) {
+                vec3.scale(secondGridLeft.dir, secondGridLeft.dir, -1);
+                vec3.scale(secondGridRight.dir, secondGridRight.dir, -1);
+            }
 
-            const up = vec3.normalize(
-                vec3.create(),vec3.subtract(vec3.create(), other, pos));
-            const dir = vec3.fromValues(0, leftCloser ? -1 : 1, 0);
+            const thirdGridLeft = this.buildLabelInfo(
+                tg.secondAxis, tg.firstAxis, -1, [-offsets[2], 0, 0], false, -1
+            );
 
-            const thirdAxisLabel: LabelInfo = {
-                name: sg.secondAxis.name,
-                dir: dir,
-                pos: pos,
-                up: up
-            };
+            const thirdGridRight = this.buildLabelInfo(
+                tg.secondAxis, tg.firstAxis, 1, [-offsets[2], 0, 0], true, 1
+            );
 
-            labels.push(thirdAxisLabel);
+            const thirdGridBackface = -offsets[2] < this._camera.eye[0];
+            if(thirdGridBackface) {
+                vec3.scale(thirdGridLeft.dir, thirdGridLeft.dir, -1);
+                vec3.scale(thirdGridRight.dir, thirdGridRight.dir, -1);
+            }
+
+            const thirdOptionA = (
+                vec3.dist(secondGridLeft.pos, this._camera.eye) <
+                vec3.dist(secondGridRight.pos, this._camera.eye) ?
+                    secondGridLeft : secondGridRight
+            );
+
+            const thirdOptionB = (
+                vec3.dist(thirdGridLeft.pos, this._camera.eye) <
+                vec3.dist(thirdGridRight.pos, this._camera.eye) ?
+                    thirdGridLeft : thirdGridRight
+            );
+
+            labels.push({
+                labels: [thirdOptionA, thirdOptionB],
+                useNearest: false,
+            });
         }
 
         this._gridLabelPass.labelInfo = labels;
+    }
+
+    protected buildLabelInfo(
+        firstAxis: AxisInfo,
+        secondAxis: AxisInfo,
+        dirFactor: number,
+        offset: [number, number, number],
+        min: boolean,
+        upFactor: number,
+    ): LabelInfo {
+        return {
+            name: firstAxis.name,
+            dir: vec3.scale(vec3.create(), firstAxis.direction, dirFactor),
+            pos: vec3.scaleAndAdd(
+                vec3.create(),
+                vec3.clone(offset),
+                secondAxis.direction,
+                min ?
+                    (secondAxis.extents.min - this.labelOffset) :
+                    (secondAxis.extents.max + this.labelOffset)),
+            up: vec3.scale(vec3.create(), secondAxis.direction, upFactor),
+        };
     }
 
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {
