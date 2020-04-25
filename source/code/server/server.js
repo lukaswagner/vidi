@@ -4,10 +4,19 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 
-const dataDir = 'data';
+const argv = require('yargs')
+    .option('data', {
+        type: 'string',
+        default: 'data'
+    })
+    .argv;
+
+const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
+
+console.log(dataDir);
 
 const auth = JSON.parse(fs.readFileSync('./credentials.json'));
 app.use((req, res, next) => {

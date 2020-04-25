@@ -35,7 +35,8 @@
     "webpack-glsl-loader": "^1.0.1"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "yargs": "^15.3.1"
   },
   "scripts": {
     "build": "webpack",
