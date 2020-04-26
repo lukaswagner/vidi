@@ -48,9 +48,13 @@ app.get('/ls', (req, res) => {
             res.send(e.message);
         }
         res.send(d.map((f) => {
+            const wholePath = path.join(datasetDir, f);
+            const relativeToBase = path.relative(dataDir, wholePath);
+            const alwaysWithSlash = relativeToBase.replace(path.sep, '/');
+            const withPrefix = '/data/' + alwaysWithSlash;
             return {
                 name: path.basename(f, path.extname(f)),
-                path: path.join(datasetDir, f)
+                path: withPrefix
             };
         }));
     });
