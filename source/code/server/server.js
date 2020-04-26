@@ -6,8 +6,14 @@ const path = require('path');
 
 const argv = require('yargs')
     .option('data', {
+        alias: 'd',
         type: 'string',
         default: 'data'
+    })
+    .option('credentials', {
+        alias: 'c',
+        type: 'string',
+        default: 'credentials.json'
     })
     .argv;
 
@@ -18,7 +24,7 @@ const app = express();
 
 console.log(dataDir);
 
-const auth = JSON.parse(fs.readFileSync('./credentials.json'));
+const auth = JSON.parse(fs.readFileSync(argv.credentials));
 app.use((req, res, next) => {
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
     const [user, pass] = Buffer.from(b64auth, 'base64').toString().split(':');
