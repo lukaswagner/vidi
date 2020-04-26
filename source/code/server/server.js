@@ -17,14 +17,17 @@ const argv = require('yargs')
     })
     .argv;
 
+const credentials = argv.credentials;
 const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
 
-console.log(dataDir);
+console.log('credentials file:', credentials);
+console.log('data dir:', dataDir);
+console.log('available files:\n -', fs.readdirSync(datasetDir).join('\n - '));
 
-const auth = JSON.parse(fs.readFileSync(argv.credentials));
+const auth = JSON.parse(fs.readFileSync(credentials));
 app.use((req, res, next) => {
     const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
     const [user, pass] = Buffer.from(b64auth, 'base64').toString().split(':');
