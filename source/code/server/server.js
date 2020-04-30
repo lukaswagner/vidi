@@ -27,16 +27,22 @@ console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
 console.log('available files:\n -', fs.readdirSync(datasetDir).join('\n - '));
 
-const auth = JSON.parse(fs.readFileSync(credentials));
-app.use((req, res, next) => {
-    const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
-    const [user, pass] = Buffer.from(b64auth, 'base64').toString().split(':');
-    if (user && pass && user === auth.user && pass === auth.password) {
-        return next();
-    }
-    res.set('WWW-Authenticate', 'Basic realm="401"');
-    res.status(401).send('Authentication required.');
-});
+if(fs.existsSync(credentials)) {
+    const auth = JSON.parse(fs.readFileSync(credentials));
+    app.use((req, res, next) => {
+        const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+        const [user, pass] =
+            Buffer.from(b64auth, 'base64').toString().split(':');
+        if (user && pass && user === auth.user && pass === auth.password) {
+            return next();
+        }
+        res.set('WWW-Authenticate', 'Basic realm="401"');
+        res.status(401).send('Authentication required.');
+    });
+} else {
+    console.log(
+        'Could not find credentials file. Disabling password protection.');
+}
 
 app.use('/data', express.static(dataDir));
 app.use('/', express.static('build'));
