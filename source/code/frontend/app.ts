@@ -58,7 +58,7 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string, path: string }[];
+    private _datasets: { name: string, path: string, size: number }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -209,19 +209,18 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected load(name: string): Promise<void> {
-        const path = this._datasets.find((d) => d.name === name)?.path;
-        if (path === undefined) {
-            console.log('can\'t load', name, '- path unknown');
+    protected load(name: string): void {
+        const file = this._datasets.find((d) => d.name === name);
+        if (file === undefined) {
+            console.log('can\'t load', name, '- file unknown');
             return;
         }
-        console.log('loading', name, 'from', path);
-        return fetch(path)
-            .then((r) => r.text())
-            .then((data) => this.prepareData(data));
+        console.log('loading', name, 'from', file.path);
+        fetch(file.path)
+            .then((response) => this.prepareData(response.body, file.size));
     }
 
-    protected loadCustom(): Promise<void> {
+    protected loadCustom(): void {
         const file = this._controls.customData.files[0];
         let delimiter = this._controls.customDataDelimiterSelect.value;
         if (delimiter === 'custom') {
@@ -229,14 +228,18 @@ export class TopicMapApp extends Initializable {
         }
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
-        return file.text()
-            .then((data) => this.prepareData(data, delimiter, includesHeader));
+        this.prepareData(file.stream(), file.size, delimiter, includesHeader);
     }
 
     protected prepareData(
-        data: string, delimiter = ',', includesHeader = true
+        data: ReadableStream<Uint8Array>,
+        size: number,
+        delimiter = ',',
+        includesHeader = true
     ): void {
-        this._data = new Data(data, delimiter, includesHeader);
+        this._data = new Data(data, size, delimiter, includesHeader, () => {
+            console.log('done');
+        });
 
         // set up axis controls
         const numberColumnNames = this._data.getColumnNames(DataType.Number);

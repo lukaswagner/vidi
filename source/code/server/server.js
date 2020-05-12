@@ -27,7 +27,7 @@ console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
 console.log('available files:\n -', fs.readdirSync(datasetDir).join('\n - '));
 
-if(fs.existsSync(credentials)) {
+if (fs.existsSync(credentials)) {
     const auth = JSON.parse(fs.readFileSync(credentials));
     app.use((req, res, next) => {
         const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
@@ -60,7 +60,8 @@ app.get('/ls', (req, res) => {
             const withPrefix = '/data/' + alwaysWithSlash;
             return {
                 name: path.basename(f, path.extname(f)),
-                path: withPrefix
+                path: withPrefix,
+                size: fs.statSync(wholePath).size
             };
         }));
     });
