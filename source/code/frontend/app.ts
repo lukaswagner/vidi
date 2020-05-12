@@ -110,10 +110,17 @@ export class TopicMapApp extends Initializable {
         this._controls = new Controls();
 
         // data
-        this._controls.data.handler = this.load.bind(this);
+        this._controls.dataButton.handler = () => {
+            this.load(this._controls.data.value);
+        };
 
         // custom data
-        this._controls.customData.handler = this.loadCustom.bind(this);
+        this._controls.customDataDelimiterSelect.setOptions(
+            [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
+        this._controls.customDataIncludesHeader.setValue(true);
+        this._controls.customDataIncludesHeader.setDefault(true);
+        this._controls.customDataUploadButton.handler =
+            this.loadCustom.bind(this);
 
         // point size
         this._controls.pointSize.handler = (v: number) => {
@@ -176,6 +183,7 @@ export class TopicMapApp extends Initializable {
                 this._datasets = j;
                 this._controls.data.setOptions(
                     this._datasets.map((d) => d.name));
+                this.load(this._controls.data.value);
             });
         });
     }
@@ -210,18 +218,25 @@ export class TopicMapApp extends Initializable {
         console.log('loading', name, 'from', path);
         return fetch(path)
             .then((r) => r.text())
-            .then((csv) => this.prepareData(csv));
+            .then((data) => this.prepareData(data));
     }
 
-    protected loadCustom(files: FileList): Promise<void> {
-        const file = files[0];
+    protected loadCustom(): Promise<void> {
+        const file = this._controls.customData.files[0];
+        let delimiter = this._controls.customDataDelimiterSelect.value;
+        if (delimiter === 'custom') {
+            delimiter = this._controls.customDataDelimiterInput.value;
+        }
+        const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
         return file.text()
-            .then((csv) => this.prepareData(csv));
+            .then((data) => this.prepareData(data, delimiter, includesHeader));
     }
 
-    protected prepareData(csv: string): void {
-        this._data = new Data(csv);
+    protected prepareData(
+        data: string, delimiter = ',', includesHeader = true
+    ): void {
+        this._data = new Data(data, delimiter, includesHeader);
 
         // set up axis controls
         const numberColumnNames = this._data.getColumnNames(DataType.Number);

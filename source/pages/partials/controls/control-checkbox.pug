@@ -1,0 +1,6 @@
+include control-element.pug
+mixin control-checkbox(id, title, label)
+    +control-element(id+'-checkbox', title)
+        .row.m-0
+            input.col-auto.form-control(id=id+'-checkbox', type='checkbox')
+            .col.button-label(id=id+'-label')= label

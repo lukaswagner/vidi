@@ -23,14 +23,18 @@ export class Data {
 
     protected _selectedColumns: number[];
 
-    public constructor(csv: string) {
+    public constructor(
+        data: string, delimiter = ',', includesHeader = true
+    ) {
         // prepare data
-        let lines = csv.split(/\r\n|\n/);
+        let lines = data.split(/\r\n|\n/);
         lines = lines.filter((s: string) => s.trim() !== '');
 
         // get headers and create columns - try to detect value type
-        const columnNames = lines.shift().split(',');
-        const firstLine = lines[0].split(',');
+        const columnNames = includesHeader ?
+            lines.shift().split(delimiter) :
+            lines[0].split(delimiter).map((c, i) => i.toString());
+        const firstLine = lines[0].split(delimiter);
         let result: Column<Content>;
         columnNames.forEach((column, i) => {
             const type = this.inferType(firstLine[i]);
@@ -72,7 +76,7 @@ export class Data {
 
         // read values into columns
         lines.forEach((line) => {
-            const values = line.split(',');
+            const values = line.split(delimiter);
             values.forEach((value, i) => {
                 const column = this._columns[i];
                 switch (column.type) {
@@ -231,9 +235,11 @@ export class Data {
             return DataType.Number;
         }
 
-        const col = Color.hex2rgba(input);
-        if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
-            return DataType.Color;
+        if (input.startsWith('#')) {
+            const col = Color.hex2rgba(input);
+            if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
+                return DataType.Color;
+            }
         }
 
         return DataType.String;
@@ -252,12 +258,12 @@ export class Data {
         });
 
         const matchMatches = matches[0].map((x) => {
+            const yMatches = matches[1].filter((y) => x.name === y.name);
+            const zMatches = matches[2].filter((z) => x.name === z.name);
             return [
                 x.index,
-                matches[1].filter((y) => x.name === y.name)[0].index,
-                initZ ?
-                    matches[2].filter((y) => x.name === y.name)[0].index :
-                    -1
+                yMatches.length > 0 ? yMatches[0].index : -1,
+                initZ && zMatches.length > 0 ? zMatches[0].index : -1
             ];
         });
 

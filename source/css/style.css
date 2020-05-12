@@ -52,6 +52,11 @@ input.slider::-webkit-slider-thumb {
     -webkit-appearance: none;
 }
 
+input[type='checkbox'] {
+    width: 38px;
+    height: 38px;
+}
+
 body {
     overflow: hidden;
 }

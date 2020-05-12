@@ -1,4 +1,4 @@
-import { 
+import {
     AxisInfo,
     ExtendedGridInfo,
 } from './gridInfo';
@@ -56,7 +56,7 @@ export class GridOffsetHelper extends Initializable {
 
     @Initializable.assert_initialized()
     public update(override: boolean = false): void {
-        if(this._gridInfo === undefined) {
+        if (this._gridInfo === undefined) {
             this._altered.reset();
             return;
         }
@@ -84,27 +84,27 @@ export class GridOffsetHelper extends Initializable {
                 (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
             this._camera.eye[2] > 0 ? 0 : 1,
             this._camera.eye[0] < 0 ? 0 : 1
-        ]: [
-            (this._camera.eye[1] >
-                (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-            (this._camera.eye[2] >
-                (this._offsets[1][0] + this._offsets[1][1]) / 2) ? 0 : 1,
-            (this._camera.eye[0] <
-                (this._offsets[2][0] + this._offsets[2][1]) / 2) ? 0 : 1
-        ];
+        ] : [
+                (this._camera.eye[1] >
+                    (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
+                (this._camera.eye[2] >
+                    (this._offsets[1][0] + this._offsets[1][1]) / 2) ? 0 : 1,
+                (this._camera.eye[0] <
+                    (this._offsets[2][0] + this._offsets[2][1]) / 2) ? 0 : 1
+            ];
         const changed = indices.reduce(
             (acc, index, i) => acc || index !== this._lastIndices[i], false);
         this._lastIndices = indices;
-        if(changed || override) {
+        if (changed || override) {
             const offsets = indices
                 .slice(0, this._normals.length)
                 .map((index, i) => this._offsets[i][index]);
             this._gridPass.gridOffsets = offsets;
-            if(offsets.length === 1) {
+            if (offsets.length === 1) {
                 this._pointPass.cutoffPosition = [
-                    { value: 0, mask : 0 },
-                    { value: offsets[0], mask : 1 },
-                    { value: 0, mask : 0 },
+                    { value: 0, mask: 0 },
+                    { value: offsets[0], mask: 1 },
+                    { value: 0, mask: 0 },
                 ];
             } else {
                 this._pointPass.cutoffPosition = [
@@ -118,7 +118,6 @@ export class GridOffsetHelper extends Initializable {
     }
 
     protected updateLabels(offsets: number[]): void {
-        console.log('ul');
         const labels = new Array<LabelSet>();
 
         const base = this._gridInfo[0];
@@ -140,7 +139,7 @@ export class GridOffsetHelper extends Initializable {
         );
 
         const firstGridBackface = offsets[0] > this._camera.eye[1];
-        if(firstGridBackface) {
+        if (firstGridBackface) {
             vec3.scale(firstOptionA.up, firstOptionA.up, -1);
             vec3.scale(firstOptionB.up, firstOptionB.up, -1);
             vec3.scale(secondOptionA.up, secondOptionA.up, -1);
@@ -155,7 +154,7 @@ export class GridOffsetHelper extends Initializable {
             useNearest: true,
         });
 
-        if(offsets.length > 1) {
+        if (offsets.length > 1) {
             const sg = this._gridInfo[1];
             const tg = this._gridInfo[2];
 
@@ -168,7 +167,7 @@ export class GridOffsetHelper extends Initializable {
             );
 
             const secondGridBackface = offsets[1] > this._camera.eye[2];
-            if(secondGridBackface) {
+            if (secondGridBackface) {
                 vec3.scale(secondGridLeft.dir, secondGridLeft.dir, -1);
                 vec3.scale(secondGridRight.dir, secondGridRight.dir, -1);
             }
@@ -182,20 +181,20 @@ export class GridOffsetHelper extends Initializable {
             );
 
             const thirdGridBackface = -offsets[2] < this._camera.eye[0];
-            if(thirdGridBackface) {
+            if (thirdGridBackface) {
                 vec3.scale(thirdGridLeft.dir, thirdGridLeft.dir, -1);
                 vec3.scale(thirdGridRight.dir, thirdGridRight.dir, -1);
             }
 
             const thirdOptionA = (
                 vec3.dist(secondGridLeft.pos, this._camera.eye) <
-                vec3.dist(secondGridRight.pos, this._camera.eye) ?
+                    vec3.dist(secondGridRight.pos, this._camera.eye) ?
                     secondGridLeft : secondGridRight
             );
 
             const thirdOptionB = (
                 vec3.dist(thirdGridLeft.pos, this._camera.eye) <
-                vec3.dist(thirdGridRight.pos, this._camera.eye) ?
+                    vec3.dist(thirdGridRight.pos, this._camera.eye) ?
                     thirdGridLeft : thirdGridRight
             );
 

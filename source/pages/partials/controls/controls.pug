@@ -4,15 +4,22 @@ include control-select.pug
 include control-select-button.pug
 include control-input-slider.pug
 include control-file-button.pug
+include control-select-input.pug
+include control-button.pug
+include control-checkbox.pug
 
-.control-panel#controls(style='width: 0px;')
+.control-panel#controls(style='width: 350px;')
     .form
         +control-block('data-header', 'data-group', 'Data', true)
             +control-select-button('preset', 'Presets', 'Apply')
-            +control-select('data-select', 'Dataset')
-            +control-file-button('custom-data', 'Custom dataset', 'Upload')
-            //- +control-element('data-input', 'Custom dataset')
-            //-     input#data-input.form-control(type='file')
+            hr
+            +control-select-button('data', 'Dataset', 'Load')
+            hr
+            +control-file-button('custom-data', 'Choose custom dataset', 'Select')
+            +control-select-input('custom-data-delimiter', 'Delimiter')
+            +control-checkbox('custom-data-header', 'Header', 'File includes header row')
+            +control-button('custom-data-upload', 'Load custom dataset', 'Load')
+            hr
             +control-select('x-axis', 'X axis')
             +control-select('y-axis', 'Y axis')
             +control-select('z-axis', 'Z axis')
