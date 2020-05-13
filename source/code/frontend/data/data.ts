@@ -1,24 +1,11 @@
 import { Color } from 'webgl-operate';
 import { GLclampf4 } from 'webgl-operate/lib/tuples';
+import { Column, DataType, ColumnContent } from './column';
 
-export enum DataType {
-    Number,
-    Color,
-    String
-}
 
-type Content = Number | GLclampf4 | String;
-
-type Column<T> = {
-    name: string;
-    type: DataType;
-    data: Array<T>;
-    min: T;
-    max: T;
-}
 
 export class Data {
-    protected _columns = Array<Column<Content>>();
+    protected _columns = Array<Column<ColumnContent>>();
     protected _rowCount: number;
 
     protected _selectedColumns: number[];

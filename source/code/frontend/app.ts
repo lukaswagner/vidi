@@ -25,13 +25,11 @@ import {
     Preset
 } from './controls';
 
-import {
-    Data,
-    DataType
-} from './data';
-
+import { Data } from './data/data';
+import { DataType } from './data/column';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
+import { DSVLoader } from './data/dsvLoader';
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -237,6 +235,16 @@ export class TopicMapApp extends Initializable {
         delimiter = ',',
         includesHeader = true
     ): void {
+        const loader = new DSVLoader();
+        loader.stream = data;
+        loader.size = size;
+        loader.delimiter = delimiter;
+        loader.includesHeader = includesHeader;
+        loader.load().then((columns) => {
+            console.log(`loaded ${columns.length} columns`);
+        });
+        return;
+
         this._data = new Data(data, size, delimiter, includesHeader, () => {
             console.log('done');
         });
