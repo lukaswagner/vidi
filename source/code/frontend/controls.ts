@@ -58,20 +58,21 @@ export class Controls {
         this.customDataUploadButton = new Button('custom-data-upload-button');
 
         this.axes = [
-            new Select('x-axis'),
-            new Select('y-axis'),
-            new Select('z-axis')
+            new Select('x-axis-select'),
+            new Select('y-axis-select'),
+            new Select('z-axis-select')
         ];
 
         this.scale = new InputSlider('scale');
         this.pointSize = new InputSlider('point-size');
         this.variablePointSizeStrength =
             new InputSlider('variable-point-size-strength');
-        this.variablePointSizeColumn = new Select('variable-point-size-column');
+        this.variablePointSizeColumn =
+            new Select('variable-point-size-column-select');
 
-        this.colorMode = new Select('color-mode');
-        this.colorMapping = new Select('color-mapping');
-        this.colorColumn = new Select('color-column');
+        this.colorMode = new Select('color-mode-select');
+        this.colorMapping = new Select('color-mapping-select');
+        this.colorColumn = new Select('color-column-select');
     }
 
     public applyPreset(preset: Preset): void {
