@@ -21,15 +21,20 @@ import {
 } from './points/colorMode';
 
 import {
+    Column,
+    ColumnContent,
+    DataType
+} from './data/column';
+
+import {
     Controls,
     Preset
 } from './controls';
 
+import { DSVLoader } from './data/dsvLoader';
 import { Data } from './data/data';
-import { DataType } from './data/column';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
-import { DSVLoader } from './data/dsvLoader';
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -207,14 +212,14 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected load(name: string): void {
+    protected load(name: string): Promise<void> {
         const file = this._datasets.find((d) => d.name === name);
         if (file === undefined) {
             console.log('can\'t load', name, '- file unknown');
             return;
         }
         console.log('loading', name, 'from', file.path);
-        fetch(file.path)
+        return fetch(file.path)
             .then((response) => this.prepareData(response.body, file.size));
     }
 
@@ -229,25 +234,8 @@ export class TopicMapApp extends Initializable {
         this.prepareData(file.stream(), file.size, delimiter, includesHeader);
     }
 
-    protected prepareData(
-        data: ReadableStream<Uint8Array>,
-        size: number,
-        delimiter = ',',
-        includesHeader = true
-    ): void {
-        const loader = new DSVLoader();
-        loader.stream = data;
-        loader.size = size;
-        loader.delimiter = delimiter;
-        loader.includesHeader = includesHeader;
-        loader.load().then((columns) => {
-            console.log(`loaded ${columns.length} columns`);
-        });
-        return;
-
-        this._data = new Data(data, size, delimiter, includesHeader, () => {
-            console.log('done');
-        });
+    protected dataReady(columns: Array<Column<ColumnContent>>): void {
+        this._data = new Data(columns);
 
         // set up axis controls
         const numberColumnNames = this._data.getColumnNames(DataType.Number);
@@ -270,6 +258,24 @@ export class TopicMapApp extends Initializable {
         // set up variable point size controls
         this._controls.variablePointSizeColumn.setOptions(
             numberIds, numberLabels);
+    }
+
+    protected prepareData(
+        data: ReadableStream<Uint8Array>,
+        size: number,
+        delimiter = ',',
+        includesHeader = true
+    ): void {
+        const loader = new DSVLoader();
+        loader.stream = data;
+        loader.size = size;
+        loader.delimiter = delimiter;
+        loader.includesHeader = includesHeader;
+        loader.load().then((columns) => {
+            console.log(
+                `loaded ${columns.length} columns / ${columns[0].data.length} cells`);
+            this.dataReady(columns);
+        });
     }
 
     protected updatePositions(updatedAxis: number = -1): void {

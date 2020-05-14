@@ -2,8 +2,6 @@ import { Color } from 'webgl-operate';
 import { GLclampf4 } from 'webgl-operate/lib/tuples';
 import { Column, DataType, ColumnContent } from './column';
 
-
-
 export class Data {
     protected _columns = Array<Column<ColumnContent>>();
     protected _rowCount: number;
@@ -11,167 +9,11 @@ export class Data {
     protected _selectedColumns: number[];
 
     public constructor(
-        data: ReadableStream<Uint8Array>,
-        size: number,
-        delimiter: string,
-        includesHeader: boolean,
-        loadedCallback: () => void
+        columns: Array<Column<ColumnContent>>
     ) {
-        let count = 0;
-        const resolution = 20;
-
-        const processingComplete = (): void => {
-            console.log(`Processed ${lineCount} lines.`);
-            loadedCallback();
-        };
-
-        const processHeader = (header: string, firstLine: string): void => {
-            // prepare header
-        };
-
-        let lineCount = 0;
-        let header: string;
-        const processLine = (line: string): void => {
-            lineCount++;
-            if (lineCount === 1) {
-                header = line;
-                return;
-            }
-            if (lineCount === 1) {
-                processHeader(header, line);
-            }
-            // actual processing
-        };
-
-        let remainder = '';
-        const processChunk = (chunk: string): void => {
-            let start = 0;
-            let newLine: number;
-
-            while ((newLine = chunk.indexOf('\n', start)) !== -1) {
-                const hasReturn = chunk.charAt(newLine - 1) === '\r';
-                processLine(
-                    remainder + chunk.substring(
-                        0, newLine - (hasReturn ? 1 : 0)));
-                remainder = '';
-                start = newLine + 1;
-            }
-
-            remainder = chunk.substring(start);
-        };
-
-        const decoder = new TextDecoder();
-        const read = (
-            reader: ReadableStreamDefaultReader<Uint8Array>,
-            result: ReadableStreamReadResult<Uint8Array>
-        ): void => {
-            if (result.done) {
-                processingComplete();
-                return;
-            }
-
-            count += result.value.length;
-
-            processChunk(decoder.decode(
-                result.value.buffer,
-                { stream: count < size }
-            ));
-
-            const progress = Math.round(count / size * resolution);
-            const done = '#'.repeat(progress);
-            const remaining = '.'.repeat(resolution - progress);
-            console.log(`[${done}${remaining}] ${count} / ${size}`);
-            reader.read().then(callback);
-        };
-
-        const reader = data.getReader();
-        const callback = read.bind(this, reader);
-
-        reader.read().then(callback);
-
-        // // prepare data
-        // let lines = data.split(/\r\n|\n/);
-        // lines = lines.filter((s: string) => s.trim() !== '');
-
-        // // get headers and create columns - try to detect value type
-        // const columnNames = includesHeader ?
-        //     lines.shift().split(delimiter) :
-        //     lines[0].split(delimiter).map((c, i) => i.toString());
-        // const firstLine = lines[0].split(delimiter);
-        // let result: Column<Content>;
-        // columnNames.forEach((column, i) => {
-        //     const type = this.inferType(firstLine[i]);
-        //     console.log('interpreting column', column, 'as', DataType[type]);
-        //     switch (type) {
-        //         case DataType.Number:
-        //             result = {
-        //                 name: column,
-        //                 type: type,
-        //                 data: new Array<Number>(),
-        //                 min: Number.MAX_VALUE,
-        //                 max: Number.MIN_VALUE
-        //             } as Column<Number>;
-        //             break;
-        //         case DataType.Color:
-        //             result = {
-        //                 name: column,
-        //                 type: type,
-        //                 data: new Array<GLclampf4>(),
-        //                 min: [0, 0, 0, 0],
-        //                 max: [0, 0, 0, 0]
-        //             } as Column<GLclampf4>;
-        //             break;
-        //         case DataType.String:
-        //             result = {
-        //                 name: column,
-        //                 type: type,
-        //                 data: new Array<String>(),
-        //                 min: '',
-        //                 max: ''
-        //             } as Column<String>;
-        //             break;
-        //     }
-        //     this._columns.push(result);
-        // });
-
-        // // store number of rows
-        // this._rowCount = lines.length;
-
-        // // read values into columns
-        // lines.forEach((line) => {
-        //     const values = line.split(delimiter);
-        //     values.forEach((value, i) => {
-        //         const column = this._columns[i];
-        //         switch (column.type) {
-        //             case DataType.Number:
-        //                 column.data.push(Number(value));
-        //                 break;
-        //             case DataType.Color:
-        //                 column.data.push(Color.hex2rgba(value));
-        //                 break;
-        //             case DataType.String:
-        //                 column.data.push(value);
-        //                 break;
-        //         }
-        //     });
-        // });
-
-        // // calculate min/max
-        // this._columns.forEach((c) => {
-        //     if (c.type !== DataType.Number) {
-        //         return;
-        //     }
-        //     let min = Number.MAX_VALUE;
-        //     let max = Number.MIN_VALUE;
-        //     c.data.forEach((n: number) => {
-        //         if (n < min) min = n;
-        //         if (n > max) max = n;
-        //     });
-        //     c.min = min;
-        //     c.max = max;
-        // });
-
-        // this.initSelectedColumns(false);
+        this._columns = columns;
+        this._rowCount = columns[0].data.length;
+        this.initSelectedColumns(false);
     }
 
     public getColumnNames(type: DataType): string[] {
@@ -291,21 +133,6 @@ export class Data {
             pointSize[i] = Math.log(data[i] as number);
         }
         return pointSize;
-    }
-
-    protected inferType(input: string): DataType {
-        if (!Number.isNaN(Number(input))) {
-            return DataType.Number;
-        }
-
-        if (input.startsWith('#')) {
-            const col = Color.hex2rgba(input);
-            if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
-                return DataType.Color;
-            }
-        }
-
-        return DataType.String;
     }
 
     protected initSelectedColumns(initZ: boolean): void {

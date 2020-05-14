@@ -1,5 +1,6 @@
-import { Column, ColumnContent } from "./column";
+import { Column, ColumnContent, inferType, DataType, emptyColumn } from "./column";
 import { Progress, ProgressStep } from "../util/progress";
+import { Color } from "webgl-operate";
 
 export class DSVLoader {
     protected _delimiter = ',';
@@ -14,23 +15,8 @@ export class DSVLoader {
     protected _lines = new Array<string>();
 
     protected _data = new Array<Column<ColumnContent>>();
-
-    // protected processHeader(header: string, firstLine: string): void {
-    //     // prepare header
-    // };
-
-
-    // protected processLine(line: string): void {
-    //     this._lineCount++;
-    //     if (this._lineCount === 1) {
-    //         this._header = line;
-    //         return;
-    //     }
-    //     if (this._lineCount === 1) {
-    //         this.processHeader(this._header, line);
-    //     }
-    //     // actual processing
-    // };
+    protected _readStep: ProgressStep;
+    protected _processStep: ProgressStep;
 
     protected processChunk(chunk: string): void {
         let start = 0;
@@ -40,7 +26,7 @@ export class DSVLoader {
             const hasReturn = chunk.charAt(newLine - 1) === '\r';
             this._lines.push(
                 this._remainder +
-                chunk.substring(0, newLine - (hasReturn ? 1 : 0)));
+                chunk.substring(start, newLine - (hasReturn ? 1 : 0)));
             this._remainder = '';
             start = newLine + 1;
         }
@@ -48,14 +34,8 @@ export class DSVLoader {
         this._remainder = chunk.substring(start);
     };
 
-    public load(): Promise<Array<Column<ColumnContent>>> {
-        this._decoder = new TextDecoder();
+    protected read(): Promise<void> {
         const reader = this._stream.getReader();
-
-        const loadStep = new ProgressStep(this._size, 1);
-        const processStep = new ProgressStep(1, 1);
-        this._progress = new Progress([loadStep, processStep]);
-
         return new Promise((resolve) => {
             const readChunk = (
                 result: ReadableStreamReadResult<Uint8Array>
@@ -80,6 +60,134 @@ export class DSVLoader {
 
             const callback = readChunk.bind(this);
             reader.read().then(callback);
+        });
+    }
+
+    protected cellEnd(line: string, index: number): {
+        end: boolean, skip: number
+    } {
+        const char = line.charAt(index);
+        switch (char) {
+            case this._delimiter:
+            case '\n':
+                return { end: true, skip: 1 }
+            case '\r':
+                if (line.charAt(index + 1) === '\n') {
+                    return { end: true, skip: 2 }
+                }
+            default:
+                return { end: false, skip: 0 }
+        }
+    }
+
+    protected parseLine(line: string): Array<string> {
+        const cells = new Array<string>();
+
+        let start = 0;
+        let quote = false;
+        let quoteActive = false;
+
+        const push = (end: number): void => {
+            cells.push(line.substring(
+                quote ? start + 1 : start,
+                quote ? end - 1 : end));
+        }
+
+        for (let i = 0; i < line.length; i++) {
+            const char = line.charAt(i);
+            if (char === '"') {
+                quoteActive = !quoteActive;
+                quote = true;
+                continue;
+            }
+            if (quoteActive) {
+                continue;
+            };
+            const { end, skip } = this.cellEnd(line, i);
+            if (end) {
+                push(i);
+                start = i + skip;
+                quote = false;
+            }
+        }
+        push(undefined);
+
+        return cells;
+    }
+
+    protected prepareColumns(): void {
+        const header = this.parseLine(this._lines[0]);
+        const firstLine = this.parseLine(this._lines[1]);
+
+        header.map((header, index) => {
+            const data = firstLine[index];
+            const type = inferType(data);
+            this._data.push(emptyColumn(header, type, this._lines.length));
+        });
+    }
+
+    protected fillColumns(): void {
+        for (let i = 0; i < this._lines.length - 1; i++) {
+            const cells = this.parseLine(this._lines[i] + 1);
+            cells.forEach((cell, ci) => {
+                const column = this._data[ci];
+                switch (column.type) {
+                    case DataType.Number:
+                        column.data[i] = Number(cell);
+                        break;
+                    case DataType.Color:
+                        column.data[i] = Number(Color.hex2rgba(cell));
+                        break;
+                    case DataType.String:
+                        column.data[i] = Number(cell);
+                        break;
+                }
+            });
+            this._progress.progress(1, true);
+        }
+    }
+
+    protected calcMinMax(): void {
+        this._data.forEach((c) => {
+            if (c.type !== DataType.Number) {
+                return;
+            }
+            let min = Number.MAX_VALUE;
+            let max = Number.MIN_VALUE;
+            c.data.forEach((n: number) => {
+                if (n < min) min = n;
+                if (n > max) max = n;
+            });
+            c.min = min;
+            c.max = max;
+            this._progress.progress(1, true);
+        });
+    }
+
+    protected process(): Promise<void> {
+        return new Promise((resolve) => {
+            this.prepareColumns();
+            this._processStep.total =
+                this._lines.length - 1 + this._data.length;
+            this.fillColumns();
+            this.calcMinMax();
+            resolve();
+        });
+    }
+
+    public load(): Promise<Array<Column<ColumnContent>>> {
+        this._decoder = new TextDecoder();
+
+        this._readStep = new ProgressStep(this._size, 1);
+        this._processStep = new ProgressStep(1, 1);
+        this._progress = new Progress([this._readStep, this._processStep]);
+
+        return new Promise((resolve) => {
+            this.read()
+                .then(() => {
+                    this.process();
+                })
+                .then(() => resolve(this._data));
         });
     }
 
