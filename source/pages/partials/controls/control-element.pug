@@ -1,6 +1,6 @@
 mixin control-element(cid, title, customRow=false)
     div(class=attributes.class)
-        label(for=cid)= title
+        label(id=cid+'-label', for=cid)= title
         if(customRow)
             block
         else

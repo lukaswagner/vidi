@@ -4,6 +4,7 @@ import { FileInput } from './ui/file';
 import { Input } from './ui/input';
 import { InputSlider } from './ui/inputSlider';
 import { Select } from './ui/select';
+import { Progress } from './ui/progress';
 
 export interface Preset {
     name: string;
@@ -23,12 +24,14 @@ export class Controls {
 
     public data: Select;
     public dataButton: Button;
+    public dataProgress: Progress;
 
     public customData: FileInput;
     public customDataDelimiterSelect: Select;
     public customDataDelimiterInput: Input;
     public customDataIncludesHeader: Checkbox;
     public customDataUploadButton: Button;
+    public customDataProgress: Progress;
 
     public axes: Select[];
 
@@ -47,6 +50,7 @@ export class Controls {
 
         this.data = new Select('data-select');
         this.dataButton = new Button('data-button');
+        this.dataProgress = new Progress('data-progress');
 
         this.customData = new FileInput('custom-data');
         this.customDataDelimiterSelect =
@@ -56,6 +60,7 @@ export class Controls {
         this.customDataIncludesHeader =
             new Checkbox('custom-data-header-checkbox');
         this.customDataUploadButton = new Button('custom-data-upload-button');
+        this.customDataProgress = new Progress('custom-data-progress');
 
         this.axes = [
             new Select('x-axis-select'),

@@ -90,3 +90,8 @@ canvas {
     vertical-align: middle;
     padding: .375rem .75rem;
 }
+
+.progress {
+    height: 38px!important;
+    width: 100%
+}

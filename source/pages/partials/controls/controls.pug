@@ -7,6 +7,7 @@ include elements/control-label.pug
 include elements/control-slider.pug
 include elements/control-input.pug
 include elements/control-checkbox.pug
+include elements/progress-bar.pug
 
 .control-panel#controls(style='width: 350px;')
     .form
@@ -18,6 +19,9 @@ include elements/control-checkbox.pug
             +control-element('data-select', 'Dataset')
                 +control-select('data').col
                 +control-button('data', 'Load').col-3.ml-2
+            .mt-2.d-none#data-progress-wrapper
+                +control-element('data-progress-bar', 'Loading')
+                    +progress-bar('data').col
             hr
             +control-element('custom-data-button', 'Choose custom dataset').mb-2
                 +control-file('custom-data', 'Select').col-3
@@ -30,6 +34,9 @@ include elements/control-checkbox.pug
                 +control-label('custom-data-header', 'File includes header row').col
             +control-element('custom-data-upload', 'Load custom dataset')
                 +control-button('custom-data-upload', 'Load').col-3
+            .mt-2.d-none#custom-data-progress-wrapper
+                +control-element('custom-data-progress-bar', 'Loading')
+                    +progress-bar('custom-data').col
             hr
             +control-element('x-axis-select', 'Data mapping', true)
                 .row.mx-0

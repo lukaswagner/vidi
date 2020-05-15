@@ -34,6 +34,7 @@ import {
 import { DSVLoader } from './data/dsvLoader';
 import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
+import { Progress } from './ui/progress';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
@@ -220,7 +221,8 @@ export class TopicMapApp extends Initializable {
         }
         console.log('loading', name, 'from', file.path);
         return fetch(file.path)
-            .then((response) => this.prepareData(response.body, file.size));
+            .then((response) => this.prepareData(
+                response.body, file.size, this._controls.dataProgress));
     }
 
     protected loadCustom(): void {
@@ -231,7 +233,12 @@ export class TopicMapApp extends Initializable {
         }
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
-        this.prepareData(file.stream(), file.size, delimiter, includesHeader);
+        this.prepareData(
+            file.stream(),
+            file.size,
+            this._controls.customDataProgress,
+            delimiter,
+            includesHeader);
     }
 
     protected dataReady(columns: Array<Column<ColumnContent>>): void {
@@ -263,18 +270,21 @@ export class TopicMapApp extends Initializable {
     protected prepareData(
         data: ReadableStream<Uint8Array>,
         size: number,
+        progress: Progress,
         delimiter = ',',
-        includesHeader = true
+        includesHeader = true,
     ): void {
         const loader = new DSVLoader();
         loader.stream = data;
         loader.size = size;
         loader.delimiter = delimiter;
         loader.includesHeader = includesHeader;
-        loader.load().then((columns) => {
+        progress.visible = true;
+        loader.load(progress).then((columns) => {
             console.log(
                 `loaded ${columns.length} columns / ${columns[0].data.length} cells`);
             this.dataReady(columns);
+            progress.visible = false;
         });
     }
 

@@ -1,5 +1,5 @@
 import { Column, ColumnContent, inferType, DataType, emptyColumn } from "./column";
-import { Progress, ProgressStep } from "../util/progress";
+import { Progress, ProgressStep } from "../ui/progress";
 import { Color } from "webgl-operate";
 
 export class DSVLoader {
@@ -53,7 +53,7 @@ export class DSVLoader {
                     { stream: this._charCount < this._size }
                 ));
 
-                this._progress.progress(result.value.length, true);
+                this._progress.progress(result.value.length);
 
                 reader.read().then(callback);
             }
@@ -143,7 +143,7 @@ export class DSVLoader {
                         break;
                 }
             });
-            this._progress.progress(1, true);
+            this._progress.progress(1);
         }
     }
 
@@ -160,7 +160,7 @@ export class DSVLoader {
             });
             c.min = min;
             c.max = max;
-            this._progress.progress(1, true);
+            this._progress.progress(1);
         });
     }
 
@@ -175,18 +175,17 @@ export class DSVLoader {
         });
     }
 
-    public load(): Promise<Array<Column<ColumnContent>>> {
+    public load(progress: Progress): Promise<Array<Column<ColumnContent>>> {
         this._decoder = new TextDecoder();
 
+        this._progress = progress;
         this._readStep = new ProgressStep(this._size, 1);
         this._processStep = new ProgressStep(1, 1);
-        this._progress = new Progress([this._readStep, this._processStep]);
+        this._progress.steps = [this._readStep, this._processStep];
 
         return new Promise((resolve) => {
             this.read()
-                .then(() => {
-                    this.process();
-                })
+                .then(() => this.process())
                 .then(() => resolve(this._data));
         });
     }
