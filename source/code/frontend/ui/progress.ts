@@ -36,6 +36,7 @@ export class Progress extends ControlBase<void> {
         this._totalWeight = this._steps
             .map((s) => s.weight)
             .reduce((prev, val) => prev + val);
+        this._currentStep = 0;
     }
 
     public get steps(): Array<ProgressStep> {

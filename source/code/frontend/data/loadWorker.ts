@@ -44,7 +44,7 @@ function load(
     loader.includesHeader = includesHeader;
     loader.load(setProgressSteps, setProgressStepTotal, progress).then((columns) => {
         console.log(
-            `loaded ${columns.length} columns / ${columns[0].data.length} cells`);
+            `loaded ${columns.length} columns / ${columns[0].length} cells`);
         const d: LoadWorkerMessageData = {
             type: LoadWorkerMessageType.Finished,
             data: columns
@@ -72,7 +72,7 @@ function loadFromFile(data: LoadFromFileData): void {
     );
 }
 
-self.addEventListener('message', (m) => {
+self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as LoadWorkerMessageData;
     console.log(`Received ${LoadWorkerMessageType[message.type]} message.`);
 

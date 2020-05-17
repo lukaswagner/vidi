@@ -1,5 +1,13 @@
-import { Column, ColumnContent, inferType, DataType, emptyColumn } from "./column";
-import { Progress, ProgressStep } from "../ui/progress";
+import {
+    inferType,
+    DataType,
+    columnFromType,
+    FloatColumn,
+    Column,
+    ColorColumn,
+    StringColumn
+} from "./column";
+import { ProgressStep } from "../ui/progress";
 import { Color } from "webgl-operate";
 
 export class DSVLoader {
@@ -13,7 +21,7 @@ export class DSVLoader {
     protected _charCount = 0;
     protected _lines = new Array<string>();
 
-    protected _data = new Array<Column<ColumnContent>>();
+    protected _data = new Array<Column>();
     protected _progress: (a: number) => void;
     protected _setProgressStepTotal: (index: number, total: number) => void;
 
@@ -42,8 +50,7 @@ export class DSVLoader {
                 if (result.done) {
                     console.log(
                         `Loaded ${this._lines.length} lines (${this._size} bytes).`);
-                    resolve();
-                    return;
+                    return resolve();
                 }
                 this._charCount += result.value.length;
 
@@ -121,24 +128,25 @@ export class DSVLoader {
         header.map((header, index) => {
             const data = firstLine[index];
             const type = inferType(data);
-            this._data.push(emptyColumn(header, type, this._lines.length));
+            this._data.push(
+                columnFromType(header, type, this._lines.length - 1));
         });
     }
 
     protected fillColumns(): void {
         for (let i = 0; i < this._lines.length - 1; i++) {
-            const cells = this.parseLine(this._lines[i] + 1);
+            const cells = this.parseLine(this._lines[i + 1]);
             cells.forEach((cell, ci) => {
                 const column = this._data[ci];
                 switch (column.type) {
-                    case DataType.Number:
-                        column.data[i] = Number(cell);
+                    case DataType.Float:
+                        (column as FloatColumn).set(i, Number(cell));
                         break;
                     case DataType.Color:
-                        column.data[i] = Number(Color.hex2rgba(cell));
+                        (column as ColorColumn).set(i, Color.hex2rgba(cell));
                         break;
                     case DataType.String:
-                        column.data[i] = Number(cell);
+                        (column as StringColumn).set(i, cell);
                         break;
                 }
             });
@@ -148,17 +156,9 @@ export class DSVLoader {
 
     protected calcMinMax(): void {
         this._data.forEach((c) => {
-            if (c.type !== DataType.Number) {
-                return;
+            if (c.type === DataType.Float) {
+                (c as FloatColumn).calcMinMax();
             }
-            let min = Number.MAX_VALUE;
-            let max = Number.MIN_VALUE;
-            c.data.forEach((n: number) => {
-                if (n < min) min = n;
-                if (n > max) max = n;
-            });
-            c.min = min;
-            c.max = max;
             this._progress(1);
         });
     }
@@ -178,7 +178,7 @@ export class DSVLoader {
         setProgressSteps: (s: Array<ProgressStep>) => void,
         setProgressStepTotal: (index: number, total: number) => void,
         progress: (a: number) => void
-    ): Promise<Array<Column<ColumnContent>>> {
+    ): Promise<Array<Column>> {
         this._decoder = new TextDecoder();
 
         this._setProgressStepTotal = setProgressStepTotal;

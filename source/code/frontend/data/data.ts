@@ -1,18 +1,22 @@
-import { Color } from 'webgl-operate';
-import { GLclampf4 } from 'webgl-operate/lib/tuples';
-import { Column, DataType, ColumnContent } from './column';
+import {
+    Column,
+    DataType,
+    FloatColumn,
+    ColorColumn,
+    BaseColumn
+} from './column';
 
 export class Data {
-    protected _columns = Array<Column<ColumnContent>>();
+    protected _columns = Array<Column>();
     protected _rowCount: number;
 
     protected _selectedColumns: number[];
 
     public constructor(
-        columns: Array<Column<ColumnContent>>
+        columns: Array<Column>
     ) {
         this._columns = columns;
-        this._rowCount = columns[0].data.length;
+        this._rowCount = columns[0].length;
         this.initSelectedColumns(false);
     }
 
@@ -54,7 +58,7 @@ export class Data {
             // fetch the min/max values
             const e = this._selectedColumns.map((ci) => {
                 if (ci === -1) return { min: -1, max: 1 };
-                const c = this._columns[ci] as Column<number>;
+                const c = this._columns[ci] as FloatColumn;
                 return { min: c.min, max: c.max };
             });
             // ensure range exists for each axis
@@ -77,8 +81,8 @@ export class Data {
         const sc = this._selectedColumns;
         const get = sc.map((i) => {
             if (i === -1) return () => 0;
-            const data = (this._columns[i] as Column<number>).data;
-            return (i: number) => data[i];
+            const col = this._columns[i] as FloatColumn;
+            return col.get.bind(col);
         });
 
         const positions = new Float32Array(this._rowCount * 3);
@@ -93,7 +97,7 @@ export class Data {
         const extents = this._selectedColumns.map((ci, ai) => {
             if (ci === -1) return { min: -1, max: 1 };
             if (ai < range.length) return range[ai];
-            const c = this._columns[ci] as Column<number>;
+            const c = this._columns[ci] as FloatColumn;
             return { min: c.min, max: c.max };
         });
 
@@ -109,9 +113,9 @@ export class Data {
         ) {
             return colors;
         }
-        const data = this._columns[columnIndex].data;
+        const col = this._columns[columnIndex] as ColorColumn;
         for (let i = 0; i < this._rowCount; i++) {
-            const c = data[i] as GLclampf4;
+            const c = col.get(i);
             colors[i * 3 + 0] = c[0];
             colors[i * 3 + 1] = c[1];
             colors[i * 3 + 2] = c[2];
@@ -122,15 +126,14 @@ export class Data {
     public getVariablePointSize(column: string): Float32Array {
         const pointSize = new Float32Array(this._rowCount);
         const columnIndex = this.getColumnIndex(column);
-        if (
-            columnIndex === -1 ||
-            this._columns[columnIndex].type !== DataType.Number
+        if (columnIndex === -1 ||
+            this._columns[columnIndex].type !== DataType.Float
         ) {
             return pointSize.fill(1);
         }
-        const data = this._columns[columnIndex].data;
+        const col = this._columns[columnIndex] as FloatColumn;
         for (let i = 0; i < this._rowCount; i++) {
-            pointSize[i] = Math.log(data[i] as number);
+            pointSize[i] = Math.log(col.get(i));
         }
         return pointSize;
     }

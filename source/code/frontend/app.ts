@@ -21,9 +21,11 @@ import {
 } from './points/colorMode';
 
 import {
+    BaseColumn,
     Column,
-    ColumnContent,
-    DataType
+    DataType,
+    FloatColumn,
+    rebuildColumn,
 } from './data/column';
 
 import {
@@ -293,11 +295,15 @@ export class TopicMapApp extends Initializable {
         worker.postMessage(d);
     }
 
-    protected dataReady(columns: Array<Column<ColumnContent>>): void {
+    protected dataReady(passedData: Array<any>): void {
+        // functions are removed during message serialization
+        // this means the objects have to be rebuild
+        const columns = passedData.map((c) => rebuildColumn(c));
+
         this._data = new Data(columns);
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Number);
+        const numberColumnNames = this._data.getColumnNames(DataType.Float);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {

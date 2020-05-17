@@ -1,5 +1,5 @@
-import { Progress, ProgressStep } from "../ui/progress";
-import { ColumnContent, Column } from "./column";
+import { ProgressStep } from "../ui/progress";
+import { Column } from "./column";
 
 export enum LoadWorkerMessageType {
     LoadFromUrl,
@@ -32,7 +32,7 @@ export type SetProgressStepTotalData = {
 
 export type ProgressData = number;
 
-export type FinishedData = Array<Column<ColumnContent>>;
+export type FinishedData = Array<Column>;
 
 export type LoadWorkerMessageData = {
     type: LoadWorkerMessageType,
