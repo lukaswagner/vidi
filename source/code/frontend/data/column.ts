@@ -43,7 +43,7 @@ export abstract class BaseColumn<T> {
     public abstract get(index: number): T;
     public abstract set(index: number, value: T): void;
 
-    public abstract get transferable(): Array<any>;
+    public abstract get transferable(): Array<Transferable>;
 }
 
 export class FloatColumn extends BaseColumn<number> {
@@ -77,8 +77,8 @@ export class FloatColumn extends BaseColumn<number> {
         this._data[index] = value;
     }
 
-    public get transferable(): Array<any> {
-        return [this._data];
+    public get transferable(): Array<Transferable> {
+        return [this._data.buffer];
     }
 }
 
@@ -100,8 +100,8 @@ export class ColorColumn extends BaseColumn<GLclampf4> {
         this._data.set(value, index * 4);
     }
 
-    public get transferable(): Array<any> {
-        return [this._data];
+    public get transferable(): Array<Transferable> {
+        return [this._data.buffer];
     }
 }
 
@@ -117,7 +117,7 @@ export class StringColumn extends BaseColumn<string> {
     public set(index: number, value: string): void {
     }
 
-    public get transferable(): Array<any> {
+    public get transferable(): Array<Transferable> {
         return [];
     }
 }

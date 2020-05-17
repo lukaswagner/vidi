@@ -243,6 +243,7 @@ export class TopicMapApp extends Initializable {
                     break;
                 case LoadWorkerMessageType.Finished:
                     this.dataReady(message.data as FinishedData);
+                    // console.log('recevied result at ', Date.now());
                     progress.visible = false;
                     worker.terminate();
                     break;
