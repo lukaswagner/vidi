@@ -38,6 +38,10 @@ export class Progress extends ControlBase<void> {
             .reduce((prev, val) => prev + val);
     }
 
+    public get steps(): Array<ProgressStep> {
+        return this._steps;
+    }
+
     public set visible(visible: boolean) {
         if (visible) {
             this._wrapperElement.classList.remove('d-none');

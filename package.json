@@ -32,7 +32,8 @@
     "webgl-operate": "^0.6.1",
     "webpack": "^4.41.3",
     "webpack-cli": "^3.3.10",
-    "webpack-glsl-loader": "^1.0.1"
+    "webpack-glsl-loader": "^1.0.1",
+    "worker-loader": "^2.0.0"
   },
   "dependencies": {
     "express": "^4.17.1",

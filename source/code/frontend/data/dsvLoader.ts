@@ -8,15 +8,14 @@ export class DSVLoader {
     protected _stream: ReadableStream<Uint8Array>;
     protected _size: number;
 
-    protected _progress: Progress;
     protected _decoder: TextDecoder;
     protected _remainder = '';
     protected _charCount = 0;
     protected _lines = new Array<string>();
 
     protected _data = new Array<Column<ColumnContent>>();
-    protected _readStep: ProgressStep;
-    protected _processStep: ProgressStep;
+    protected _progress: (a: number) => void;
+    protected _setProgressStepTotal: (index: number, total: number) => void;
 
     protected processChunk(chunk: string): void {
         let start = 0;
@@ -53,7 +52,7 @@ export class DSVLoader {
                     { stream: this._charCount < this._size }
                 ));
 
-                this._progress.progress(result.value.length);
+                this._progress(result.value.length);
 
                 reader.read().then(callback);
             }
@@ -143,7 +142,7 @@ export class DSVLoader {
                         break;
                 }
             });
-            this._progress.progress(1);
+            this._progress(1);
         }
     }
 
@@ -160,28 +159,35 @@ export class DSVLoader {
             });
             c.min = min;
             c.max = max;
-            this._progress.progress(1);
+            this._progress(1);
         });
     }
 
     protected process(): Promise<void> {
         return new Promise((resolve) => {
             this.prepareColumns();
-            this._processStep.total =
-                this._lines.length - 1 + this._data.length;
+            this._setProgressStepTotal(
+                1, this._lines.length - 1 + this._data.length);
             this.fillColumns();
             this.calcMinMax();
             resolve();
         });
     }
 
-    public load(progress: Progress): Promise<Array<Column<ColumnContent>>> {
+    public load(
+        setProgressSteps: (s: Array<ProgressStep>) => void,
+        setProgressStepTotal: (index: number, total: number) => void,
+        progress: (a: number) => void
+    ): Promise<Array<Column<ColumnContent>>> {
         this._decoder = new TextDecoder();
 
+        this._setProgressStepTotal = setProgressStepTotal;
         this._progress = progress;
-        this._readStep = new ProgressStep(this._size, 1);
-        this._processStep = new ProgressStep(1, 1);
-        this._progress.steps = [this._readStep, this._processStep];
+
+        setProgressSteps([
+            new ProgressStep(this._size, 1),
+            new ProgressStep(1, 1)
+        ]);
 
         return new Promise((resolve) => {
             this.read()

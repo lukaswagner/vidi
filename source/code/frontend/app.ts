@@ -31,12 +31,21 @@ import {
     Preset
 } from './controls';
 
-import { DSVLoader } from './data/dsvLoader';
+import {
+    FinishedData,
+    LoadWorkerMessageData,
+    LoadWorkerMessageType,
+    ProgressData,
+    SetProgressStepTotalData,
+    SetProgressStepsData,
+} from './data/loadWorkerMessages';
+
+
 import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
+import LoadWorker from 'worker-loader!./data/loadWorker';
 import { Progress } from './ui/progress';
 import { TopicMapRenderer } from './renderer';
-
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
@@ -213,6 +222,35 @@ export class TopicMapApp extends Initializable {
         });
     }
 
+    protected setupLoadWorker(progress: Progress): LoadWorker {
+        progress.visible = true;
+        const worker = new LoadWorker();
+        worker.onmessage = (m: MessageEvent) => {
+            const message = m.data as LoadWorkerMessageData;
+            switch (message.type) {
+                case LoadWorkerMessageType.SetProgressSteps:
+                    progress.steps = message.data as SetProgressStepsData;
+                    break;
+                case LoadWorkerMessageType.SetProgressStepTotal: {
+                    const data = message.data as SetProgressStepTotalData;
+                    progress.steps[data.index].total = data.total;
+                    break;
+                }
+                case LoadWorkerMessageType.Progress:
+                    progress.progress(message.data as ProgressData);
+                    break;
+                case LoadWorkerMessageType.Finished:
+                    this.dataReady(message.data as FinishedData);
+                    progress.visible = false;
+                    worker.terminate();
+                    break;
+                default:
+                    break;
+            }
+        };
+        return worker;
+    }
+
     protected load(name: string): Promise<void> {
         const file = this._datasets.find((d) => d.name === name);
         if (file === undefined) {
@@ -220,9 +258,18 @@ export class TopicMapApp extends Initializable {
             return;
         }
         console.log('loading', name, 'from', file.path);
-        return fetch(file.path)
-            .then((response) => this.prepareData(
-                response.body, file.size, this._controls.dataProgress));
+
+        const worker = this.setupLoadWorker(this._controls.dataProgress);
+        const d: LoadWorkerMessageData = {
+            type: LoadWorkerMessageType.LoadFromUrl,
+            data: {
+                url: file.path,
+                size: file.size,
+                delimiter: ',',
+                includesHeader: true
+            }
+        };
+        worker.postMessage(d);
     }
 
     protected loadCustom(): void {
@@ -233,12 +280,17 @@ export class TopicMapApp extends Initializable {
         }
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
-        this.prepareData(
-            file.stream(),
-            file.size,
-            this._controls.customDataProgress,
-            delimiter,
-            includesHeader);
+
+        const worker = this.setupLoadWorker(this._controls.customDataProgress);
+        const d: LoadWorkerMessageData = {
+            type: LoadWorkerMessageType.LoadFromFile,
+            data: {
+                file,
+                delimiter,
+                includesHeader
+            }
+        };
+        worker.postMessage(d);
     }
 
     protected dataReady(columns: Array<Column<ColumnContent>>): void {
@@ -265,27 +317,6 @@ export class TopicMapApp extends Initializable {
         // set up variable point size controls
         this._controls.variablePointSizeColumn.setOptions(
             numberIds, numberLabels);
-    }
-
-    protected prepareData(
-        data: ReadableStream<Uint8Array>,
-        size: number,
-        progress: Progress,
-        delimiter = ',',
-        includesHeader = true,
-    ): void {
-        const loader = new DSVLoader();
-        loader.stream = data;
-        loader.size = size;
-        loader.delimiter = delimiter;
-        loader.includesHeader = includesHeader;
-        progress.visible = true;
-        loader.load(progress).then((columns) => {
-            console.log(
-                `loaded ${columns.length} columns / ${columns[0].data.length} cells`);
-            this.dataReady(columns);
-            progress.visible = false;
-        });
     }
 
     protected updatePositions(updatedAxis: number = -1): void {
