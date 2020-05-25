@@ -51,7 +51,6 @@ function load(
         };
         let transfer: Array<Transferable> = [];
         columns.forEach((c) => transfer.push(...c.transferable));
-        // console.log('sending result at ', Date.now());
         postMessage(d, { transfer });
     });
 }

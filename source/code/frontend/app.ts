@@ -21,14 +21,14 @@ import {
 } from './points/colorMode';
 
 import {
-    Controls,
-    Preset
-} from './controls';
-
-import {
     DataType,
     rebuildColumn,
 } from './data/column';
+
+import {
+    Controls,
+    Preset
+} from './controls';
 
 import {
     FinishedData,
@@ -240,7 +240,6 @@ export class TopicMapApp extends Initializable {
                     break;
                 case LoadWorkerMessageType.Finished:
                     this.dataReady(message.data as FinishedData);
-                    // console.log('recevied result at ', Date.now());
                     progress.visible = false;
                     worker.terminate();
                     break;
