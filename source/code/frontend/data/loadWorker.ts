@@ -4,7 +4,7 @@ import {
     LoadFromUrlData,
     LoadFromFileData
 } from "./loadWorkerMessages"
-import { DSVLoader } from "./dsvLoader";
+import { SingleThreadedLoader } from "./singleThreadedLoader";
 import { ProgressStep } from "../ui/progress";
 
 function setProgressSteps(steps: Array<ProgressStep>): void {
@@ -37,7 +37,7 @@ function load(
     delimiter = ',',
     includesHeader = true,
 ): void {
-    const loader = new DSVLoader();
+    const loader = new SingleThreadedLoader();
     loader.stream = data;
     loader.size = size;
     loader.delimiter = delimiter;

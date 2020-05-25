@@ -10,7 +10,7 @@ import {
 import { ProgressStep } from "../ui/progress";
 import { Color } from "webgl-operate";
 
-export class DSVLoader {
+export class SingleThreadedLoader {
     protected _delimiter = ',';
     protected _includesHeader = true;
     protected _stream: ReadableStream<Uint8Array>;
