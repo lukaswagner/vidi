@@ -55,7 +55,7 @@ export class GridOffsetHelper extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (this._gridInfo === undefined) {
             this._altered.reset();
             return;
@@ -85,13 +85,13 @@ export class GridOffsetHelper extends Initializable {
             this._camera.eye[2] > 0 ? 0 : 1,
             this._camera.eye[0] < 0 ? 0 : 1
         ] : [
-                (this._camera.eye[1] >
+            (this._camera.eye[1] >
                     (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-                (this._camera.eye[2] >
+            (this._camera.eye[2] >
                     (this._offsets[1][0] + this._offsets[1][1]) / 2) ? 0 : 1,
-                (this._camera.eye[0] <
+            (this._camera.eye[0] <
                     (this._offsets[2][0] + this._offsets[2][1]) / 2) ? 0 : 1
-            ];
+        ];
         const changed = indices.reduce(
             (acc, index, i) => acc || index !== this._lastIndices[i], false);
         this._lastIndices = indices;

@@ -21,17 +21,14 @@ import {
 } from './points/colorMode';
 
 import {
-    BaseColumn,
-    Column,
-    DataType,
-    FloatColumn,
-    rebuildColumn,
-} from './data/column';
-
-import {
     Controls,
     Preset
 } from './controls';
+
+import {
+    DataType,
+    rebuildColumn,
+} from './data/column';
 
 import {
     FinishedData,
@@ -73,7 +70,7 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string, path: string, size: number }[];
+    private _datasets: { name: string; path: string; size: number }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -82,7 +79,7 @@ export class TopicMapApp extends Initializable {
         this._canvas.framePrecision = Wizard.Precision.half;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
-        var bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
+        const bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
         this._canvas.clearColor = new Color([
             Number(bgComponents[1]) / 255,
             Number(bgComponents[2]) / 255,
@@ -296,7 +293,7 @@ export class TopicMapApp extends Initializable {
         worker.postMessage(d);
     }
 
-    protected dataReady(passedData: Array<any>): void {
+    protected dataReady(passedData: Array<unknown>): void {
         // functions are removed during message serialization
         // this means the objects have to be rebuild
         const columns = passedData.map((c) => rebuildColumn(c));
@@ -326,7 +323,7 @@ export class TopicMapApp extends Initializable {
             numberIds, numberLabels);
     }
 
-    protected updatePositions(updatedAxis: number = -1): void {
+    protected updatePositions(updatedAxis = -1): void {
         if (updatedAxis > -1) {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);

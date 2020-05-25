@@ -88,7 +88,7 @@ export class PointCloudGeometry extends Geometry {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.positions) {
             this._buffers[1].data(this._positions, this._gl.STATIC_DRAW);
         }

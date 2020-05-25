@@ -135,7 +135,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.positions) {
             this._geometry.positions = this._positions;
         }
@@ -246,7 +246,7 @@ export class PointPass extends Initializable {
     }
 
     public set cutoffPosition(
-        cutoffPosition: { value: number, mask: number }[]
+        cutoffPosition: { value: number; mask: number }[]
     ) {
         this.assertInitialized();
         this._cutoffPosition = cutoffPosition.map((c) => c.value);

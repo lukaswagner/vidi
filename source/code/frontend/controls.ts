@@ -3,8 +3,8 @@ import { Checkbox } from './ui/checkbox';
 import { FileInput } from './ui/file';
 import { Input } from './ui/input';
 import { InputSlider } from './ui/inputSlider';
-import { Select } from './ui/select';
 import { Progress } from './ui/progress';
+import { Select } from './ui/select';
 
 export interface Preset {
     name: string;

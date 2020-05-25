@@ -13,15 +13,15 @@ import {
 } from 'webgl-operate';
 
 export type LabelInfo = {
-    name: string,
-    pos: vec3,
-    dir: vec3,
-    up: vec3
+    name: string;
+    pos: vec3;
+    dir: vec3;
+    up: vec3;
 }
 
 export type LabelSet = {
-    labels: LabelInfo[],
-    useNearest: boolean,
+    labels: LabelInfo[];
+    useNearest: boolean;
 }
 
 export class GridLabelPass extends LabelRenderPass {
@@ -65,7 +65,7 @@ export class GridLabelPass extends LabelRenderPass {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._labelsAltered.sets || this._camera.altered) {
             this.updateLabels();
         }

@@ -76,7 +76,7 @@ export class Progress extends ControlBase<void> {
             `[${completed}${remaining}] ${percent}%`);
     }
 
-    protected percent(): { ratio: number, percent: string } {
+    protected percent(): { ratio: number; percent: string } {
         const completedRatio = this._steps
             .map((s) => s.progress / s.total * s.weight / this._totalWeight)
             .reduce((prev, val) => prev + val);
