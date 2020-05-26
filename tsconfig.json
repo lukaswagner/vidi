@@ -8,10 +8,9 @@
         "esModuleInterop": true,
         "experimentalDecorators": true,
         "lib": [
-            "webworker",
+            "dom",
             "es5",
-            "scripthost",
-            "dom"
+            "WebWorker"
         ]
     }
 }

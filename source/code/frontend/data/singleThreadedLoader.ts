@@ -13,8 +13,8 @@ import { Color } from "webgl-operate";
 export class SingleThreadedLoader {
     protected _delimiter = ',';
     protected _includesHeader = true;
-    protected _stream: ReadableStream<Uint8Array>;
     protected _size: number;
+    protected _chunks: ArrayBuffer[];
 
     protected _decoder: TextDecoder;
     protected _remainder = '';
@@ -22,12 +22,13 @@ export class SingleThreadedLoader {
     protected _lines = new Array<string>();
 
     protected _data = new Array<Column>();
-    protected _progress: (a: number) => void;
     protected _setProgressStepTotal: (index: number, total: number) => void;
+    protected _progress: (index: number, a: number) => void;
+    protected _setProgress: (index: number, a: number) => void;
 
     protected processChunk(chunk: string): void {
         let start = 0;
-        let newLine: number;
+        let newLine: number; 
 
         while ((newLine = chunk.indexOf('\n', start)) !== -1) {
             const hasReturn = chunk.charAt(newLine - 1) === '\r';
@@ -41,31 +42,24 @@ export class SingleThreadedLoader {
         this._remainder = chunk.substring(start);
     };
 
-    protected read(): Promise<void> {
-        const reader = this._stream.getReader();
-        return new Promise((resolve) => {
-            const readChunk = (
-                result: ReadableStreamReadResult<Uint8Array>
-            ): void => {
-                if (result.done) {
-                    console.log(
-                        `Loaded ${this._lines.length} lines (${this._size} bytes).`);
-                    return resolve();
-                }
-                this._charCount += result.value.length;
-
+    protected parse(): Promise<void> {
+        const progressThreshold = this._chunks.length / 10;
+        let progress = 0;
+        return new Promise<void>((resolve) => {
+            this._chunks.forEach((c, i) => {
                 this.processChunk(this._decoder.decode(
-                    result.value.buffer,
-                    { stream: this._charCount < this._size }
+                    c, { stream: i < this._chunks.length - 1 }
                 ));
-
-                this._progress(result.value.length);
-
-                reader.read().then(callback);
+                progress++;
+                if(progress >= progressThreshold) {
+                    this._progress(1, progress);
+                    progress = 0;
+                }
+            });
+            if(progress > 0) {
+                this._progress(1, progress);
             }
-
-            const callback = readChunk.bind(this);
-            reader.read().then(callback);
+            resolve();
         });
     }
 
@@ -134,6 +128,8 @@ export class SingleThreadedLoader {
     }
 
     protected fillColumns(): void {
+        const progressThreshold = this._lines.length / 10;
+        let progress = 0;
         for (let i = 0; i < this._lines.length - 1; i++) {
             const cells = this.parseLine(this._lines[i + 1]);
             cells.forEach((cell, ci) => {
@@ -150,47 +146,51 @@ export class SingleThreadedLoader {
                         break;
                 }
             });
-            this._progress(1);
+            progress++;
+            if(progress >= progressThreshold) {
+                this._progress(2, progress);
+                progress = 0;
+            }
+        }
+        if(progress > 0) {
+            this._progress(2, progress);
         }
     }
 
     protected calcMinMax(): void {
+        const progressThreshold = this._data.length / 2;
+        let progress = 0;
         this._data.forEach((c) => {
             if (c.type === DataType.Float) {
                 (c as FloatColumn).calcMinMax();
             }
-            this._progress(1);
+            progress++;
+            if(progress >= progressThreshold) {
+                this._progress(2, progress);
+                progress = 0;
+            }
         });
+        if(progress > 0) {
+            this._progress(2, progress);
+        }
     }
 
     protected process(): Promise<void> {
         return new Promise((resolve) => {
             this.prepareColumns();
             this._setProgressStepTotal(
-                1, this._lines.length - 1 + this._data.length);
+                2, this._lines.length - 1 + this._data.length);
             this.fillColumns();
             this.calcMinMax();
             resolve();
         });
     }
 
-    public load(
-        setProgressSteps: (s: Array<ProgressStep>) => void,
-        setProgressStepTotal: (index: number, total: number) => void,
-        progress: (a: number) => void
-    ): Promise<Array<Column>> {
+    public load(): Promise<Array<Column>> {
         this._decoder = new TextDecoder();
 
-        this._setProgressStepTotal = setProgressStepTotal;
-        this._progress = progress;
-
-        setProgressSteps([
-            new ProgressStep(this._size, 1),
-            new ProgressStep(1, 1)
-        ]);
-
         return new Promise((resolve) => {
-            this.read()
+            this.parse()
                 .then(() => this.process())
                 .then(() => resolve(this._data));
         });
@@ -204,11 +204,23 @@ export class SingleThreadedLoader {
         this._includesHeader = includesHeader;
     }
 
-    public set stream(stream: ReadableStream<Uint8Array>) {
-        this._stream = stream;
-    }
-
     public set size(size: number) {
         this._size = size;
+    }
+
+    public set chunks(chunks: ArrayBuffer[]) {
+        this._chunks = chunks;
+    }
+
+    public set setProgressStepTotal(f: (index: number, total: number) => void) {
+        this._setProgressStepTotal = f;
+    }
+
+    public set progress(f: (index: number, progress: number) => void) {
+        this._progress = f;
+    }
+
+    public set setProgress(f: (index: number, progress: number) => void) {
+        this._setProgress = f;
     }
 }

@@ -2,23 +2,17 @@ import { ProgressStep } from "../ui/progress";
 import { Column } from "./column";
 
 export enum LoadWorkerMessageType {
-    LoadFromUrl,
-    LoadFromFile,
+    ProcessBufferChunks,
     SetProgressSteps,
     SetProgressStepTotal,
     Progress,
+    SetProgress,
     Finished
 }
 
-export type LoadFromUrlData = {
-    url: string,
+export type ProcessBufferChunksData = {
+    data: ArrayBuffer[],
     size: number,
-    delimiter: string,
-    includesHeader: boolean,
-}
-
-export type LoadFromFileData = {
-    file: File,
     delimiter: string,
     includesHeader: boolean,
 }
@@ -30,11 +24,19 @@ export type SetProgressStepTotalData = {
     total: number,
 };
 
-export type ProgressData = number;
+export type ProgressData = {
+    index: number,
+    progress: number,
+};
+
+export type SetProgressData = {
+    index: number,
+    progress: number,
+};
 
 export type FinishedData = Array<Column>;
 
 export type LoadWorkerMessageData = {
     type: LoadWorkerMessageType,
-    data: LoadFromUrlData | LoadFromFileData | SetProgressStepsData | SetProgressStepTotalData | ProgressData | FinishedData;
+    data: ProcessBufferChunksData | SetProgressStepsData | SetProgressStepTotalData | ProgressData | SetProgressData | FinishedData;
 }

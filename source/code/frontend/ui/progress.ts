@@ -1,11 +1,13 @@
 import { ControlBase } from './base';
 
 export class ProgressStep {
+    public name: string;
     public total: number;
     public progress = 0;
     public weight: number;
 
-    public constructor(total: number, weight: number) {
+    public constructor(name: string, total: number, weight: number) {
+        this.name = name;
         this.total = total;
         this.weight = weight;
     }
@@ -17,10 +19,12 @@ export class Progress extends ControlBase<void> {
 
     protected _steps: Array<ProgressStep>;
     protected _totalWeight: number;
-    protected _currentStep = 0;
 
     protected _printResolution = 20;
     protected _lastPrint = '';
+    protected _frontElement: HTMLDivElement;
+    protected _backTextElement: HTMLSpanElement;
+    protected _frontTextElement: HTMLDivElement;
 
     public constructor(id: string) {
         super(id + '-bar');
@@ -29,6 +33,12 @@ export class Progress extends ControlBase<void> {
             document.getElementById(id) as HTMLDivElement;
         this._wrapperElement =
             document.getElementById(id + '-wrapper') as HTMLDivElement;
+        this._frontElement =
+            document.getElementById(id + '-bar-front') as HTMLDivElement;
+        this._backTextElement =
+            document.getElementById(id + '-bar-back-text') as HTMLSpanElement;
+        this._frontTextElement =
+            document.getElementById(id + '-bar-front-text') as HTMLDivElement;
     }
 
     public set steps(steps: Array<ProgressStep>) {
@@ -36,7 +46,6 @@ export class Progress extends ControlBase<void> {
         this._totalWeight = this._steps
             .map((s) => s.weight)
             .reduce((prev, val) => prev + val);
-        this._currentStep = 0;
     }
 
     public get steps(): Array<ProgressStep> {
@@ -51,18 +60,7 @@ export class Progress extends ControlBase<void> {
         }
     }
 
-    public progress(amount = 1): void {
-        const current = this._steps[this._currentStep];
-        current.progress += amount;
-        if (current.progress >= current.total) {
-            this._currentStep++;
-        }
-        this.applyValue();
-        this.print();
-    }
-
-    public print(): void {
-        const { ratio, percent } = this.percent();
+    public print(ratio: number, percent: string): void {
         if (percent === this._lastPrint) {
             return;
         }
@@ -76,6 +74,23 @@ export class Progress extends ControlBase<void> {
             `[${completed}${remaining}] ${percent}%`);
     }
 
+    public applyValue(print = false): void {
+        const { ratio, percent } = this.percent();
+        (this._element as HTMLDivElement).style.width = percent + '%';
+        this._frontElement.style.width = percent + '%';
+        const stepName = this.currentStepName;
+        this._backTextElement.innerHTML = stepName;
+        this._frontTextElement.innerHTML = stepName;
+        if(print) {
+            this.print(ratio, percent);
+        }
+    }
+
+    protected get currentStepName(): string {
+        const step = this._steps.find((step) => step.progress < step.total);
+        return step === undefined ? '' : step.name;
+    }
+
     protected percent(): { ratio: number; percent: string } {
         const completedRatio = this._steps
             .map((s) => s.progress / s.total * s.weight / this._totalWeight)
@@ -84,10 +99,5 @@ export class Progress extends ControlBase<void> {
             ratio: completedRatio,
             percent: (completedRatio * 100).toFixed(0)
         };
-    }
-
-    protected applyValue(): void {
-        const { percent } = this.percent();
-        (this._element as HTMLDivElement).style.width = percent + '%';
     }
 }

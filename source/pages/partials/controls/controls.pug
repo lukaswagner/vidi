@@ -34,9 +34,8 @@ include elements/progress-bar.pug
                 +control-label('custom-data-header', 'File includes header row').col
             +control-element('custom-data-upload', 'Load custom dataset')
                 +control-button('custom-data-upload', 'Load').col-3
-            .mt-2.d-none#custom-data-progress-wrapper
-                +control-element('custom-data-progress-bar', 'Loading')
-                    +progress-bar('custom-data').col
+                .d-none.ml-2.p-0.col#custom-data-progress-wrapper
+                    +progress-bar('custom-data').w-100
             hr
             +control-element('x-axis-select', 'Data mapping', true)
                 .row.mx-0
