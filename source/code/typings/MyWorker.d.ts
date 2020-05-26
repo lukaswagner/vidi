@@ -1,7 +1,7 @@
 declare module 'worker-loader!*' {
-    class LoadWorker extends Worker {
+    class MyWorker extends Worker {
         public constructor();
     }
 
-    export default LoadWorker;
+    export default MyWorker;
 }

@@ -8,13 +8,11 @@
         "esModuleInterop": true,
         "experimentalDecorators": true,
         "lib": [
-            "DOM",
+            "WebWorker",
             "ES2020"
         ]
     },
     "include": [
-        "source/code/frontend/*.ts",
-        "source/code/frontend/**/*.ts",
-        "source/code/typings/*.ts"
+        "source/*.ts",
     ]
 }

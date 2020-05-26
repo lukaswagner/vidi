@@ -1,5 +1,5 @@
-import { ProgressStep } from "../ui/progress";
-import { Column } from "./column";
+import { Column } from '../../../frontend/data/column';
+import { ProgressStep } from '../../../frontend/ui/progressStep';
 
 export enum LoadWorkerMessageType {
     ProcessBufferChunks,
@@ -38,5 +38,6 @@ export type FinishedData = Array<Column>;
 
 export type LoadWorkerMessageData = {
     type: LoadWorkerMessageType,
-    data: ProcessBufferChunksData | SetProgressStepsData | SetProgressStepTotalData | ProgressData | SetProgressData | FinishedData;
+    data: ProcessBufferChunksData | SetProgressStepsData |
+    SetProgressStepTotalData | ProgressData | SetProgressData | FinishedData;
 }

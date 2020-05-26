@@ -38,16 +38,13 @@ import {
     SetProgressData,
     SetProgressStepTotalData,
     SetProgressStepsData,
-} from './data/loadWorkerMessages';
-
-import {
-    Progress,
-    ProgressStep,
-} from './ui/progress';
+} from '../worker/loadWorker/source/loadWorkerMessages';
 
 import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
-import LoadWorker from 'worker-loader!./data/loadWorker';
+import LoadWorker from 'worker-loader!../worker/loadWorker/source/loadWorker';
+import { Progress } from './ui/progress';
+import { ProgressStep } from './ui/progressStep';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {

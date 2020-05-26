@@ -1,17 +1,5 @@
 import { ControlBase } from './base';
-
-export class ProgressStep {
-    public name: string;
-    public total: number;
-    public progress = 0;
-    public weight: number;
-
-    public constructor(name: string, total: number, weight: number) {
-        this.name = name;
-        this.total = total;
-        this.weight = weight;
-    }
-}
+import { ProgressStep } from './progressStep';
 
 export class Progress extends ControlBase<void> {
     protected _backgroundElement: HTMLDivElement;

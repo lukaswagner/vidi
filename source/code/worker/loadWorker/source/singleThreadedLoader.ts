@@ -1,14 +1,13 @@
 import {
-    inferType,
-    DataType,
-    columnFromType,
-    FloatColumn,
-    Column,
     ColorColumn,
-    StringColumn
-} from "./column";
-import { ProgressStep } from "../ui/progress";
-import { Color } from "webgl-operate";
+    Column,
+    DataType,
+    FloatColumn,
+    StringColumn,
+    columnFromType,
+    inferType
+} from '../../../frontend/data/column';
+import { Color } from 'webgl-operate';
 
 export class SingleThreadedLoader {
     protected _delimiter = ',';
@@ -26,6 +25,16 @@ export class SingleThreadedLoader {
     protected _progress: (index: number, a: number) => void;
     protected _setProgress: (index: number, a: number) => void;
 
+    public load(): Promise<Array<Column>> {
+        this._decoder = new TextDecoder();
+
+        return new Promise((resolve) => {
+            this.parse()
+                .then(() => this.process())
+                .then(() => resolve(this._data));
+        });
+    }
+
     protected processChunk(chunk: string): void {
         let start = 0;
         let newLine: number; 
@@ -40,7 +49,7 @@ export class SingleThreadedLoader {
         }
 
         this._remainder = chunk.substring(start);
-    };
+    }
 
     protected parse(): Promise<void> {
         const progressThreshold = this._chunks.length / 10;
@@ -70,13 +79,14 @@ export class SingleThreadedLoader {
         switch (char) {
             case this._delimiter:
             case '\n':
-                return { end: true, skip: 1 }
+                return { end: true, skip: 1 };
             case '\r':
                 if (line.charAt(index + 1) === '\n') {
-                    return { end: true, skip: 2 }
+                    return { end: true, skip: 2 };
                 }
+            // eslint-disable-next-line no-fallthrough
             default:
-                return { end: false, skip: 0 }
+                return { end: false, skip: 0 };
         }
     }
 
@@ -91,7 +101,7 @@ export class SingleThreadedLoader {
             cells.push(line.substring(
                 quote ? start + 1 : start,
                 quote ? end - 1 : end));
-        }
+        };
 
         for (let i = 0; i < line.length; i++) {
             const char = line.charAt(i);
@@ -102,7 +112,7 @@ export class SingleThreadedLoader {
             }
             if (quoteActive) {
                 continue;
-            };
+            }
             const { end, skip } = this.cellEnd(line, i);
             if (end) {
                 push(i);
@@ -183,16 +193,6 @@ export class SingleThreadedLoader {
             this.fillColumns();
             this.calcMinMax();
             resolve();
-        });
-    }
-
-    public load(): Promise<Array<Column>> {
-        this._decoder = new TextDecoder();
-
-        return new Promise((resolve) => {
-            this.parse()
-                .then(() => this.process())
-                .then(() => resolve(this._data));
         });
     }
 

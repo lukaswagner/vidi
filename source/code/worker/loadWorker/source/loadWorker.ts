@@ -2,17 +2,8 @@ import {
     LoadWorkerMessageData,
     LoadWorkerMessageType,
     ProcessBufferChunksData
-} from "./loadWorkerMessages"
-import { SingleThreadedLoader } from "./singleThreadedLoader";
-import { ProgressStep } from "../ui/progress";
-
-function setProgressSteps(steps: Array<ProgressStep>): void {
-    const d: LoadWorkerMessageData = {
-        type: LoadWorkerMessageType.SetProgressSteps,
-        data: steps
-    };
-    postMessage(d);
-}
+} from './loadWorkerMessages';
+import { SingleThreadedLoader } from './singleThreadedLoader';
 
 function setProgressStepTotal(index: number, total: number): void {
     const d: LoadWorkerMessageData = {
@@ -54,7 +45,7 @@ function process(data: ProcessBufferChunksData): void {
             type: LoadWorkerMessageType.Finished,
             data: columns
         };
-        let transfer: Array<Transferable> = [];
+        const transfer: Array<Transferable> = [];
         columns.forEach((c) => transfer.push(...c.transferable));
         postMessage(d, { transfer });
     });
