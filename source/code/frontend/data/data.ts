@@ -17,7 +17,7 @@ export class Data {
     ) {
         this._columns = columns;
         this._rowCount = columns[0].length;
-        this.initSelectedColumns(false);
+        this.initSelectedColumns(true);
     }
 
     public getColumnNames(type: DataType): string[] {
@@ -164,7 +164,11 @@ export class Data {
             this._selectedColumns = matchMatches[0];
         } else {
             // fallback: use first columns
-            this._selectedColumns = [0, 1, initZ ? 2 : -1];
+            this._selectedColumns = [
+                this._columns.length > 0 ? 0 : -1,
+                this._columns.length > 1 ? 1 : -1,
+                initZ && this._columns.length > 2 ? 2 : -1
+            ];
         }
     }
 }
