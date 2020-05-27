@@ -105,8 +105,7 @@ export class TopicMapApp extends Initializable {
                     this._controls.scale.step
                 )
             );
-            e.preventDefault();
-        }, { capture: true });
+        }, { capture: true, passive: true });
 
         this.initControls();
         this.fetchAvailable();
