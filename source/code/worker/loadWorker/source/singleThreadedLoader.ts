@@ -8,22 +8,13 @@ import {
     inferType
 } from '../../../frontend/data/column';
 import { Color } from 'webgl-operate';
+import { Loader } from './loader';
 
-export class SingleThreadedLoader {
-    protected _delimiter = ',';
-    protected _includesHeader = true;
-    protected _size: number;
-    protected _chunks: ArrayBuffer[];
-
+export class SingleThreadedLoader extends Loader {
     protected _decoder: TextDecoder;
     protected _remainder = '';
     protected _charCount = 0;
     protected _lines = new Array<string>();
-
-    protected _data = new Array<Column>();
-    protected _setProgressStepTotal: (index: number, total: number) => void;
-    protected _progress: (index: number, a: number) => void;
-    protected _setProgress: (index: number, a: number) => void;
 
     public load(): Promise<Array<Column>> {
         this._decoder = new TextDecoder();
@@ -194,33 +185,5 @@ export class SingleThreadedLoader {
             this.calcMinMax();
             resolve();
         });
-    }
-
-    public set delimiter(delimiter: string) {
-        this._delimiter = delimiter;
-    }
-
-    public set includesHeader(includesHeader: boolean) {
-        this._includesHeader = includesHeader;
-    }
-
-    public set size(size: number) {
-        this._size = size;
-    }
-
-    public set chunks(chunks: ArrayBuffer[]) {
-        this._chunks = chunks;
-    }
-
-    public set setProgressStepTotal(f: (index: number, total: number) => void) {
-        this._setProgressStepTotal = f;
-    }
-
-    public set progress(f: (index: number, progress: number) => void) {
-        this._progress = f;
-    }
-
-    public set setProgress(f: (index: number, progress: number) => void) {
-        this._setProgress = f;
     }
 }
