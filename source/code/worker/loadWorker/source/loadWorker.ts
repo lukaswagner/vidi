@@ -31,8 +31,8 @@ function setProgress(index: number, progress = 1): void {
 }
 
 function process(data: ProcessBufferChunksData): void {
-    // const loader = new SingleThreadedLoader();
-    const loader = new MultiThreadedLoader();
+    const loader = new SingleThreadedLoader();
+    // const loader = new MultiThreadedLoader();
     loader.chunks = data.data;
     loader.size = data.size;
     loader.delimiter = data.delimiter;

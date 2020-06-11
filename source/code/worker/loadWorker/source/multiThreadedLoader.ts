@@ -20,7 +20,7 @@ import SubWorker from
     'worker-loader!../../mtLoadSubWorker/source/mtLoadSubWorker';
 
 export class MultiThreadedLoader extends Loader {
-    private static readonly NUM_WORKERS = 8;
+    private static readonly NUM_WORKERS = 120;
     protected _columnNames: Array<string>;
     protected _columnTypes: Array<DataType>;
 
@@ -105,7 +105,6 @@ export class MultiThreadedLoader extends Loader {
                 type: MtLoadSubWorkerMessageType.ProcessBufferChunks,
             };
 
-            console.log('starting worker', promises.length - 1);
             worker.postMessage(msg, data);
         }
 
@@ -113,12 +112,14 @@ export class MultiThreadedLoader extends Loader {
     }
 
     protected combine(resultChunks: FinishedData[]): void {
+        console.log('rebuild');
         let lines = 0;
         resultChunks.forEach((chunk) => {
             chunk.data = chunk.data.map((c) => rebuildColumn(c));
             lines += chunk.data[0].length;
         });
 
+        console.log('collecting remainders');
         const remainderLines = new Array<string>();
 
         const decoder = new TextDecoder();
@@ -136,6 +137,7 @@ export class MultiThreadedLoader extends Loader {
 
         lines += remainderLines.length;
 
+        console.log('prep data');
         this._data = this._columnNames.map((n, i) => {
             return columnFromType(n, this._columnTypes[i], lines);
         });
@@ -147,6 +149,7 @@ export class MultiThreadedLoader extends Loader {
             }
         });
 
+        console.log('copy');
         let lineIndex = 0;
         resultChunks.forEach((chunk, chunkIndex) => {
             this._data.forEach((c, ci) => {

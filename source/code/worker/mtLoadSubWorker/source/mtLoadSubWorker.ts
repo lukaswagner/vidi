@@ -30,8 +30,6 @@ function process(data: ProcessBufferChunksData): void {
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MtLoadSubWorkerMessageData;
-    console.log(
-        `Received ${MtLoadSubWorkerMessageType[message.type]} message.`);
 
     switch (message.type) {
         case MtLoadSubWorkerMessageType.ProcessBufferChunks:

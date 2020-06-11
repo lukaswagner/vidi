@@ -27,13 +27,7 @@ export class SubLoader extends Loader {
 
         return new Promise((resolve) => {
             this.detectRemainders();
-            // const chunk = new Uint8Array(this._chunks[0]);
-            // console.log('sta:', chunk.subarray(0, 20).join(' '));
-            // console.log('rem:', this._startRemainder.join(' '));
-            // console.log('end:', chunk.subarray(-20).join(' '));
-            // console.log('rem:', this._endRemainder.join(' '));
             this.parse();
-            // console.log('lines:', this._lines.length);
             this.prepareColumns();
             this.fillColumns();
             this.calcMinMax();
@@ -113,7 +107,6 @@ export class SubLoader extends Loader {
                 remainderIndex -= chunk.length;
             } else {
                 const sub = chunk.subarray(chunk.length - remainderIndex - 1);
-                // console.log(this._endRemainder.length, sub.length, remainderIndex, remainderIndex - sub.length);
                 this._endRemainder.set(sub, remainderIndex - sub.length + 1);
                 remainderIndex -= sub.length;
             }
@@ -140,6 +133,8 @@ export class SubLoader extends Loader {
         chunk = new Uint8Array(
             this._chunks[this._endChunk], 0, this._endChar);
         this.parseChunk(chunk, false);
+        // last chunk does not end with newline
+        this._lines.push(this._remainder);
     }
 
     protected parseChunk(
