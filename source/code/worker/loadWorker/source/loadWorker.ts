@@ -42,7 +42,7 @@ function process(data: ProcessBufferChunksData): void {
     loader.setProgress = setProgress;
     loader.load().then((columns) => {
         console.log(
-            `loaded ${columns.length} columns / ${columns[0].length} cells`);
+            `parsed ${columns.length} columns / ${columns[0].length} rows`);
         const d: LoadWorkerMessageData = {
             type: LoadWorkerMessageType.Finished,
             data: columns
@@ -55,7 +55,6 @@ function process(data: ProcessBufferChunksData): void {
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as LoadWorkerMessageData;
-    console.log(`Received ${LoadWorkerMessageType[message.type]} message.`);
 
     switch (message.type) {
         case LoadWorkerMessageType.ProcessBufferChunks:

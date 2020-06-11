@@ -46,6 +46,7 @@ import LoadWorker from 'worker-loader!../worker/loadWorker/source/loadWorker';
 import { Progress } from './ui/progress';
 import { ProgressStep } from './ui/progressStep';
 import { TopicMapRenderer } from './renderer';
+import { CsvSingleThreadedLoader } from './loader/csvSingleThreaderLoader';
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -231,13 +232,24 @@ export class TopicMapApp extends Initializable {
         console.log('loading', name, 'from', file.path);
 
         fetch(file.path).then((res) => {
-            this.loadAndSendToWorker(
-                res.body,
-                file.size,
-                ',',
-                true,
-                this._controls.dataProgress
-            );
+            // this.loadAndSendToWorker(
+            //     res.body,
+            //     file.size,
+            //     ',',
+            //     true,
+            //     this._controls.dataProgress
+            // );
+
+            const loader = new CsvSingleThreadedLoader({
+                stream: res.body,
+                size: file.size,
+                options: {
+                    delimiter: ',',
+                    includesHeader: true
+                },
+                progress: this._controls.customDataProgress
+            });
+            loader.load().then(this.dataReady.bind(this));
         });
     }
 
@@ -250,113 +262,124 @@ export class TopicMapApp extends Initializable {
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
 
-        this.loadAndSendToWorker(
-            file.stream(),
-            file.size,
-            delimiter,
-            includesHeader,
-            this._controls.customDataProgress
-        );
-    }
+        // this.loadAndSendToWorker(
+        //     file.stream(),
+        //     file.size,
+        //     delimiter,
+        //     includesHeader,
+        //     this._controls.customDataProgress
+        // );
 
-    protected loadAndSendToWorker(
-        stream: ReadableStream,
-        size: number,
-        delimiter: string,
-        includesHeader: boolean,
-        progress: Progress
-    ): void {
-        const reader = stream.getReader();
-
-        const res = new Array<ArrayBuffer>();
-        let chars = 0;
-        let chunks = 0;
-
-        // don't show progress bar for small files - would just flash shortly
-        if(size > 5e6) {
-            progress.visible = true;
-        }
-
-        progress.steps = [
-            new ProgressStep('Loading file', size, 5), // loading file to ram
-            new ProgressStep('Decoding text', 100, 25), // decoding to strings
-            new ProgressStep('Parsing data', 100, 70), // parsing data
-        ];
-        progress.applyValue();
-
-        const worker = new LoadWorker();
-        worker.onmessage = (m: MessageEvent) => {
-            const message = m.data as LoadWorkerMessageData;
-            switch (message.type) {
-                case LoadWorkerMessageType.SetProgressSteps:
-                    progress.steps = message.data as SetProgressStepsData;
-                    break;
-                case LoadWorkerMessageType.SetProgressStepTotal: {
-                    const data = message.data as SetProgressStepTotalData;
-                    progress.steps[data.index].total = data.total;
-                    progress.applyValue();
-                    break;
-                }
-                case LoadWorkerMessageType.Progress: {
-                    const data = message.data as ProgressData;
-                    progress.steps[data.index].progress += data.progress;
-                    progress.applyValue();
-                    break;
-                }
-                case LoadWorkerMessageType.SetProgress: {
-                    const data = message.data as SetProgressData;
-                    progress.steps[data.index].progress = data.progress;
-                    progress.applyValue();
-                    break;
-                }
-                case LoadWorkerMessageType.Finished:
-                    console.log(`processing took ${Date.now() - start} milliseconds`);
-                    this.dataReady(message.data as FinishedData);
-                    progress.visible = false;
-                    worker.terminate();
-                    break;
-                default:
-                    break;
-            }
-        };
-
-        const d: LoadWorkerMessageData = {
-            type: LoadWorkerMessageType.ProcessBufferChunks,
-            data: {
-                data: res,
-                size,
+        const loader = new CsvSingleThreadedLoader({
+            stream: file.stream(),
+            size: file.size,
+            options: {
                 delimiter,
                 includesHeader
-            }
-        };
-
-        // it seems this has to be done on the main thread - if used in a worker
-        // in firefox, the loading progress freezes on bigger files
-        let start = Date.now();
-        const readChunk = (
-            result: ReadableStreamReadResult<Uint8Array>
-        ): void => {
-            if (result.done) {
-                console.log(`loaded ${chars} chars in ${chunks} chunks`);
-                console.log(`loading took ${Date.now() - start} milliseconds`);
-                progress.steps[1].total = chunks;
-                start = Date.now();
-                worker.postMessage(d, { transfer: res });
-                return;
-            }
-
-            chars += result.value.length;
-            progress.steps[0].progress = chars;
-            progress.applyValue();
-            chunks++;
-
-            res.push(result.value.buffer);
-
-            reader.read().then(readChunk);
-        };
-
-        reader.read().then(readChunk);
+            },
+            progress: this._controls.customDataProgress
+        });
+        loader.load().then(this.dataReady.bind(this));
     }
+
+    // protected loadAndSendToWorker(
+    //     stream: ReadableStream,
+    //     size: number,
+    //     delimiter: string,
+    //     includesHeader: boolean,
+    //     progress: Progress
+    // ): void {
+    //     const reader = stream.getReader();
+
+    //     const res = new Array<ArrayBuffer>();
+    //     let chars = 0;
+    //     let chunks = 0;
+
+    //     // don't show progress bar for small files - would just flash shortly
+    //     if(size > 5e6) {
+    //         progress.visible = true;
+    //     }
+
+    //     progress.steps = [
+    //         new ProgressStep('Loading file', size, 5), // loading file to ram
+    //         new ProgressStep('Decoding text', 100, 25), // decoding to strings
+    //         new ProgressStep('Parsing data', 100, 70), // parsing data
+    //     ];
+    //     progress.applyValue();
+
+    //     const worker = new LoadWorker();
+    //     worker.onmessage = (m: MessageEvent) => {
+    //         const message = m.data as LoadWorkerMessageData;
+    //         switch (message.type) {
+    //             case LoadWorkerMessageType.SetProgressSteps:
+    //                 progress.steps = message.data as SetProgressStepsData;
+    //                 break;
+    //             case LoadWorkerMessageType.SetProgressStepTotal: {
+    //                 const data = message.data as SetProgressStepTotalData;
+    //                 progress.steps[data.index].total = data.total;
+    //                 progress.applyValue();
+    //                 break;
+    //             }
+    //             case LoadWorkerMessageType.Progress: {
+    //                 const data = message.data as ProgressData;
+    //                 progress.steps[data.index].progress += data.progress;
+    //                 progress.applyValue();
+    //                 break;
+    //             }
+    //             case LoadWorkerMessageType.SetProgress: {
+    //                 const data = message.data as SetProgressData;
+    //                 progress.steps[data.index].progress = data.progress;
+    //                 progress.applyValue();
+    //                 break;
+    //             }
+    //             case LoadWorkerMessageType.Finished:
+    //                 console.log(`processing took ${Date.now() - start} milliseconds`);
+    //                 this.dataReady(message.data as FinishedData);
+    //                 progress.visible = false;
+    //                 worker.terminate();
+    //                 break;
+    //             default:
+    //                 break;
+    //         }
+    //     };
+
+    //     const d: LoadWorkerMessageData = {
+    //         type: LoadWorkerMessageType.ProcessBufferChunks,
+    //         data: {
+    //             data: res,
+    //             size,
+    //             delimiter,
+    //             includesHeader
+    //         }
+    //     };
+
+    //     // it seems this has to be done on the main thread - if used in a worker
+    //     // in firefox, the loading progress freezes on bigger files
+    //     let start = Date.now();
+    //     const readChunk = (
+    //         result: ReadableStreamReadResult<Uint8Array>
+    //     ): void => {
+    //         if (result.done) {
+    //             console.log(`loaded ${chars} chars in ${chunks} chunks`);
+    //             console.log(`loading took ${Date.now() - start} milliseconds`);
+    //             progress.steps[1].total = chunks;
+    //             start = Date.now();
+    //             worker.postMessage(d, { transfer: res });
+    //             return;
+    //         }
+
+    //         chars += result.value.length;
+    //         progress.steps[0].progress = chars;
+    //         progress.applyValue();
+    //         chunks++;
+
+    //         res.push(result.value.buffer);
+
+    //         reader.read().then(readChunk);
+    //     };
+
+    //     reader.read().then(readChunk);
+    // }
 
     protected dataReady(passedData: Array<unknown>): void {
         // functions are removed during message serialization
