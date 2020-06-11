@@ -13,7 +13,6 @@ import { Loader } from './loader';
 export class SingleThreadedLoader extends Loader {
     protected _decoder: TextDecoder;
     protected _remainder = '';
-    protected _charCount = 0;
     protected _lines = new Array<string>();
 
     public load(): Promise<Array<Column>> {
@@ -81,44 +80,9 @@ export class SingleThreadedLoader extends Loader {
         }
     }
 
-    protected parseLine(line: string): Array<string> {
-        const cells = new Array<string>();
-
-        let start = 0;
-        let quote = false;
-        let quoteActive = false;
-
-        const push = (end: number): void => {
-            cells.push(line.substring(
-                quote ? start + 1 : start,
-                quote ? end - 1 : end));
-        };
-
-        for (let i = 0; i < line.length; i++) {
-            const char = line.charAt(i);
-            if (char === '"') {
-                quoteActive = !quoteActive;
-                quote = true;
-                continue;
-            }
-            if (quoteActive) {
-                continue;
-            }
-            const { end, skip } = this.cellEnd(line, i);
-            if (end) {
-                push(i);
-                start = i + skip;
-                quote = false;
-            }
-        }
-        push(undefined);
-
-        return cells;
-    }
-
     protected prepareColumns(): void {
-        const header = this.parseLine(this._lines[0]);
-        const firstLine = this.parseLine(this._lines[1]);
+        const header = this.splitLine(this._lines[0]);
+        const firstLine = this.splitLine(this._lines[1]);
 
         header.map((header, index) => {
             const data = firstLine[index];
@@ -132,21 +96,7 @@ export class SingleThreadedLoader extends Loader {
         const progressThreshold = this._lines.length / 10;
         let progress = 0;
         for (let i = 0; i < this._lines.length - 1; i++) {
-            const cells = this.parseLine(this._lines[i + 1]);
-            cells.forEach((cell, ci) => {
-                const column = this._data[ci];
-                switch (column.type) {
-                    case DataType.Float:
-                        (column as FloatColumn).set(i, Number(cell));
-                        break;
-                    case DataType.Color:
-                        (column as ColorColumn).set(i, Color.hex2rgba(cell));
-                        break;
-                    case DataType.String:
-                        (column as StringColumn).set(i, cell);
-                        break;
-                }
-            });
+            this.storeLine(this._lines[i + 1], i);
             progress++;
             if(progress >= progressThreshold) {
                 this._progress(2, progress);

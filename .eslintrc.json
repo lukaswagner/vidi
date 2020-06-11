@@ -15,7 +15,8 @@
         "sourceType": "module",
         "project": [
             "./tsconfig.eslint.json",
-            "./source/code/worker/loadWorker/tsconfig.json"
+            "./source/code/worker/loadWorker/tsconfig.json",
+            "./source/code/worker/mtLoadSubWorker/tsconfig.json"
         ]
     },
     "plugins": [

@@ -3,6 +3,7 @@ import {
     LoadWorkerMessageType,
     ProcessBufferChunksData
 } from './loadWorkerMessages';
+import { MultiThreadedLoader } from './multiThreadedLoader';
 import { SingleThreadedLoader } from './singleThreadedLoader';
 
 function setProgressStepTotal(index: number, total: number): void {
@@ -30,7 +31,8 @@ function setProgress(index: number, progress = 1): void {
 }
 
 function process(data: ProcessBufferChunksData): void {
-    const loader = new SingleThreadedLoader();
+    // const loader = new SingleThreadedLoader();
+    const loader = new MultiThreadedLoader();
     loader.chunks = data.data;
     loader.size = data.size;
     loader.delimiter = data.delimiter;

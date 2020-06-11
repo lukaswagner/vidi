@@ -32,6 +32,10 @@ export abstract class BaseColumn<T> {
         return this._length;
     }
 
+    public set min(min: T) {
+        this._min = min;
+    }
+
     public get min(): T {
         return this._min;
     }
@@ -40,8 +44,13 @@ export abstract class BaseColumn<T> {
         return this._max;
     }
 
+    public set max(max: T) {
+        this._max = max;
+    }
+
     public abstract get(index: number): T;
     public abstract set(index: number, value: T): void;
+    public abstract copy(other: BaseColumn<T>, offset: number): void;
 
     public abstract get transferable(): Array<Transferable>;
 }
@@ -77,6 +86,10 @@ export class FloatColumn extends BaseColumn<number> {
         this._data[index] = value;
     }
 
+    public copy(other: FloatColumn, offset = 0): void {
+        this._data.set(other._data, offset);
+    }
+
     public get transferable(): Array<Transferable> {
         return [this._data.buffer];
     }
@@ -100,6 +113,10 @@ export class ColorColumn extends BaseColumn<GLclampf4> {
         this._data.set(value, index * 4);
     }
 
+    public copy(other: ColorColumn, offset = 0): void {
+        this._data.set(other._data, offset);
+    }
+
     public get transferable(): Array<Transferable> {
         return [this._data.buffer];
     }
@@ -115,6 +132,9 @@ export class StringColumn extends BaseColumn<string> {
     }
 
     public set(index: number, value: string): void {
+    }
+
+    public copy(other: StringColumn, offset = 0): void {
     }
 
     public get transferable(): Array<Transferable> {
