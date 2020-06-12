@@ -35,7 +35,7 @@ import {
     rebuildColumn,
 } from './data/column';
 
-import { CsvSingleThreadedLoader } from './loader/csvSingleThreaderLoader';
+import { CsvSingleThreadedLoader } from './loader/csvSingleThreadedLoader';
 import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
