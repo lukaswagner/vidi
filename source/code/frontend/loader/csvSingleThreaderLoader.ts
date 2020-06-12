@@ -12,7 +12,8 @@ import {
     SetProgressStepsData
 } from '../../worker/loadWorker/source/loadWorkerMessages';
 import { Column } from '../data/column';
-import LoadWorker from 'worker-loader!../../worker/loadWorker/source/loadWorker';
+import LoadWorker from
+    'worker-loader!../../worker/loadWorker/source/loadWorker';
 import { Progress } from '../ui/progress';
 import { ProgressStep } from '../ui/progressStep';
 
