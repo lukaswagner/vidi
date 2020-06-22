@@ -6,11 +6,10 @@ export enum MessageType {
     Finished,
     ProgressStepTotal,
     Progress,
-    SetProgress,
 }
 
 export type StartData = {
-    data: ArrayBuffer[],
+    chunks: ArrayBuffer[],
     size: number,
     options: CsvLoadOptions
 }
@@ -27,13 +26,7 @@ export type ProgressData = {
     progress: number,
 };
 
-export type SetProgressData = {
-    index: number,
-    progress: number,
-};
-
 export type MessageData = {
     type: MessageType,
-    data: StartData | FinishedData |
-    ProgressStepTotalData | ProgressData | SetProgressData;
+    data: StartData | FinishedData | ProgressStepTotalData | ProgressData;
 }
