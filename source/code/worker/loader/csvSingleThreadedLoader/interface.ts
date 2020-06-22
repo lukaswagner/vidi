@@ -1,5 +1,5 @@
-import { CsvLoadOptions } from '../../../frontend/loader/csvLoadOptions';
 import { Column } from '../../../frontend/data/column';
+import { CsvLoadOptions } from '../../../frontend/loader/csvLoadOptions';
 
 export enum MessageType {
     Start,
@@ -35,5 +35,5 @@ export type SetProgressData = {
 export type MessageData = {
     type: MessageType,
     data: StartData | FinishedData |
-        ProgressStepTotalData | ProgressData | SetProgressData;
+    ProgressStepTotalData | ProgressData | SetProgressData;
 }

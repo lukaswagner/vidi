@@ -4,16 +4,16 @@ import {
 } from './csvLoadOptions';
 import {
     FinishedData,
-    LoadWorkerMessageData,
-    LoadWorkerMessageType,
+    MessageData,
+    MessageType,
     ProgressData,
+    ProgressStepTotalData,
     SetProgressData,
-    SetProgressStepTotalData,
-    SetProgressStepsData
-} from '../../worker/loadWorker/source/loadWorkerMessages';
+    StartData,
+} from '../../worker/loader/csvSingleThreadedLoader/interface';
 import { Column } from '../data/column';
 import LoadWorker from
-    'worker-loader!../../worker/loadWorker/source/loadWorker';
+    'worker-loader!../../worker/loader/csvSingleThreadedLoader/worker';
 import { Progress } from '../ui/progress';
 import { ProgressStep } from '../ui/progressStep';
 
@@ -60,30 +60,27 @@ export class CsvSingleThreadedLoader {
     protected prepareWorker(): LoadWorker {
         const worker = new LoadWorker();
         worker.onmessage = (m: MessageEvent) => {
-            const message = m.data as LoadWorkerMessageData;
+            const message = m.data as MessageData;
             switch (message.type) {
-                case LoadWorkerMessageType.SetProgressSteps:
-                    this._progress.steps = message.data as SetProgressStepsData;
-                    break;
-                case LoadWorkerMessageType.SetProgressStepTotal: {
-                    const data = message.data as SetProgressStepTotalData;
+                case MessageType.ProgressStepTotal: {
+                    const data = message.data as ProgressStepTotalData;
                     this._progress.steps[data.index].total = data.total;
                     this._progress.applyValue();
                     break;
                 }
-                case LoadWorkerMessageType.Progress: {
+                case MessageType.Progress: {
                     const data = message.data as ProgressData;
                     this._progress.steps[data.index].progress += data.progress;
                     this._progress.applyValue();
                     break;
                 }
-                case LoadWorkerMessageType.SetProgress: {
+                case MessageType.SetProgress: {
                     const data = message.data as SetProgressData;
                     this._progress.steps[data.index].progress = data.progress;
                     this._progress.applyValue();
                     break;
                 }
-                case LoadWorkerMessageType.Finished:
+                case MessageType.Finished:
                     this._times.push(Date.now());
                     this.done(message.data as FinishedData);
                     this._progress.visible = false;
@@ -132,14 +129,16 @@ export class CsvSingleThreadedLoader {
     }
 
     protected startWorker(data: Array<ArrayBuffer>): void {
-        const d: LoadWorkerMessageData = {
-            type: LoadWorkerMessageType.ProcessBufferChunks,
+        const d: MessageData = {
+            type: MessageType.Start,
             data: {
                 data,
                 size: this._size,
-                delimiter: this._options.delimiter,
-                includesHeader: this._options.includesHeader
-            }
+                options: {
+                    delimiter: this._options.delimiter,
+                    includesHeader: this._options.includesHeader
+                }
+            } as StartData
         };
 
         this._times.push(Date.now());
