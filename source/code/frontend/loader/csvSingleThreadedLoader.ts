@@ -99,7 +99,7 @@ export class CsvSingleThreadedLoader {
             result: ReadableStreamReadResult<Uint8Array>
         ): void => {
             if (result.done) {
-                console.log(`loaded ${bytes} bytes in ${chunks} chunks`);
+                // console.log(`loaded ${bytes} bytes in ${chunks} chunks`);
                 if(bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
@@ -135,12 +135,12 @@ export class CsvSingleThreadedLoader {
         };
 
         this._times.push(Date.now());
-        this._worker.postMessage(d, { transfer: chunks });
+        this._worker.postMessage(d, /*{ transfer: chunks }*/);
     }
 
     protected done(data: FinishedData): void {
-        console.log(`loaded in ${this._times[1] - this._times[0]}ms`);
-        console.log(`parsed in ${this._times[2] - this._times[1]}ms`);
+        // console.log(`loaded in ${this._times[1] - this._times[0]}ms`);
+        // console.log(`parsed in ${this._times[2] - this._times[1]}ms`);
         this._resolve(data);
     }
 }

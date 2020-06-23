@@ -1,6 +1,9 @@
 import {
     Column,
-    DataType
+    DataType,
+    FloatColumn,
+    columnFromType,
+    rebuildColumn
 } from '../data/column';
 import {
     CsvLoadOptions,
@@ -17,6 +20,7 @@ import LoadWorker from
 import { Progress } from '../ui/progress';
 import { ProgressStep } from '../ui/progressStep';
 import { prepareColumns } from '../../shared/csvLoader/prepareColumns';
+import { storeLine } from '../../shared/csvLoader/storeLine';
 
 export class CsvMultiThreadedLoader {
     protected _stream: ReadableStream;
@@ -26,13 +30,21 @@ export class CsvMultiThreadedLoader {
     protected _resolve: (value: Column[]) => void;
     protected _times = new Array<number>();
 
-    protected _columnNames: string[];
-    protected _columnTypes: DataType[];
     protected _numChunks: number;
     protected _numWorkers: number;
-    protected _rawResults: FinishedData[];
+
+    protected _columnNames: string[];
+    protected _columnTypes: DataType[];
+
+    protected _rawResults = new Array<FinishedData>();
     protected _nextResult = 0;
-    protected _processedResults: FinishedData[];
+    protected _remainder: ArrayBuffer;
+    protected _decoder = new TextDecoder();
+
+    protected _minMax: { ci: number, min: number, max: number }[];
+    protected _rowCount = 0;
+    protected _processedResults: Column[][] = [];
+    protected _processedRemainders: Column[][] = [];
 
     public constructor(info: LoadInfo<CsvLoadOptions>) {
         this._stream = info.stream;
@@ -96,11 +108,16 @@ export class CsvMultiThreadedLoader {
             result: ReadableStreamReadResult<Uint8Array>
         ): void => {
             if (result.done) {
-                console.log(`loaded ${bytes} bytes in ${numChunks} chunks`);
+                // console.log(`loaded ${bytes} bytes in ${numChunks} chunks`);
                 if(bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
                 this._progress.steps[1].total = chunks.length;
+                if(this._columnTypes === undefined) {
+                    this.prepareColumnInfo(
+                        chunks, this._options.delimiter,
+                        this._options.includesHeader);
+                }
                 this.startLoadWorker(chunks, workerId++);
                 this._numWorkers = workerId;
                 this._numChunks = numChunks;
@@ -115,16 +132,12 @@ export class CsvMultiThreadedLoader {
             numChunks++;
 
             if(chunks.length >= workerChunks) {
-                if(this._columnNames === undefined) {
-                    const info = this.readColumnInfo(
-                        chunks,
-                        this._options.delimiter,
+                if(this._columnTypes === undefined) {
+                    this.prepareColumnInfo(
+                        chunks, this._options.delimiter,
                         this._options.includesHeader);
-                    this._columnNames = info.map((c) => c.name);
-                    this._columnTypes = info.map((c) => c.type);
                 }
-
-                const wChunks = chunks.splice(workerChunks);
+                const wChunks = chunks.splice(0, workerChunks);
                 this.startLoadWorker(wChunks, workerId++);
             }
 
@@ -134,9 +147,9 @@ export class CsvMultiThreadedLoader {
         reader.read().then(readChunk);
     }
 
-    protected readColumnInfo(
+    protected prepareColumnInfo(
         chunks: ArrayBuffer[], delimiter: string, includesHeader: boolean
-    ): Column[] {
+    ): void {
         const lf = 0x0A;
         const cr = 0x0D;
 
@@ -187,7 +200,20 @@ export class CsvMultiThreadedLoader {
             delimiter,
             lines.length - 1);
 
-        return columns;
+        this._columnNames = columns.map((c) => c.name);
+        this._columnTypes = columns.map((c) => c.type);
+        this._minMax = columns
+            .map((c, ci) => {
+                return { ci, type: c.type };
+            })
+            .filter((c) => c.type === DataType.Float)
+            .map((c) => {
+                return {
+                    ci: c.ci,
+                    min: Number.MAX_VALUE,
+                    max: Number.MIN_VALUE
+                };
+            });
     }
 
     protected startLoadWorker(chunks: Array<ArrayBuffer>, index: number): void {
@@ -205,17 +231,112 @@ export class CsvMultiThreadedLoader {
         };
 
         const worker = this.prepareWorker(index);
-        console.log(`starting worker ${index} with ${chunks.length} chunks`);
 
-        worker.postMessage(d, { transfer: chunks });
+        worker.postMessage(d, /*{ transfer: chunks }*/);
     }
 
     protected loadDone(data: FinishedData, index: number): void {
-        console.log(`received result from worker ${index}`);
-
         this._rawResults[index] = data;
 
-        if(index === this._numWorkers - 1)
-            this._resolve(data.columns);
+        if(index === this._nextResult) {
+            this.handleResults(data);
+        }
+    }
+
+    protected handleResults(result: FinishedData): void {
+        const fixed = result.columns.map(rebuildColumn);
+        if(this._nextResult !== 0) {
+            this.storeRemainder(
+                this._decoder.decode(this._remainder, { stream: true }) +
+                this._decoder.decode(result.startRemainder));
+        }
+
+        this._rowCount += fixed[0].length;
+
+        this._processedResults.push(fixed);
+        this._remainder = result.endRemainder;
+
+        delete this._rawResults[this._nextResult];
+        this._nextResult++;
+
+        if(this._numWorkers !== undefined &&
+            this._nextResult === this._numWorkers &&
+            this._remainder.byteLength !== 0 // catch files ending with lf
+        ) {
+            this.storeRemainder(
+                this._decoder.decode(this._remainder));
+        }
+
+        if(this._nextResult >= this._numWorkers) {
+            this.combine();
+            return;
+        }
+
+        const next = this._rawResults[this._nextResult];
+        if(next !== undefined) {
+            setTimeout(this.handleResults.bind(this, next));
+        }
+    }
+
+    protected storeRemainder(line: string): void {
+        const rem = this._columnTypes.map((t) => {
+            return columnFromType('', t, 1);
+        });
+
+        storeLine(line, 0, this._options.delimiter, rem);
+
+        this._processedRemainders.push(rem);
+        this._rowCount++;
+    }
+
+    protected combine(): void {
+        const result = this._columnTypes.map((t, i) => {
+            return columnFromType(this._columnNames[i], t, this._rowCount);
+        });
+        let resultOffset = 0;
+
+        for(let i = 0; i < this._numWorkers; i++) {
+            const res = this._processedResults[i];
+            const rem = this._processedRemainders[i];
+
+            if(rem !== undefined) {
+                this._minMax.forEach((c) => {
+                    const resData = res[c.ci] as FloatColumn;
+                    const remData = (rem[c.ci] as FloatColumn).get(0);
+                    c.min = Math.min(c.min, resData.min, remData);
+                    c.max = Math.max(c.max, resData.max, remData);
+                });
+
+                const resLength = res[0].length;
+                result.forEach((c, i) => {
+                    // @ts-ignore
+                    c.copy(res[i], resultOffset);
+                    // @ts-ignore
+                    c.copy(rem[i], resultOffset + resLength);
+                });
+
+                resultOffset += resLength + 1;
+            } else  {
+                this._minMax.forEach((c) => {
+                    const resData = res[c.ci] as FloatColumn;
+                    c.min = Math.min(c.min, resData.min);
+                    c.max = Math.max(c.max, resData.max);
+                });
+
+                result.forEach((c, i) => {
+                    // @ts-ignore
+                    c.copy(res[i], resultOffset);
+                });
+
+                resultOffset += res[0].length;
+            }
+        }
+
+        this._minMax.forEach((c) => {
+            result[c.ci].min = c.min;
+            result[c.ci].max = c.max;
+        });
+
+        this._resolve(result);
     }
 }

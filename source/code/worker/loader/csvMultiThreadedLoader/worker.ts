@@ -1,31 +1,49 @@
-import { FinishedData, MessageData, MessageType, StartData } from './interface';
-import { Column, columnFromType, inferType } from '../../../frontend/data/column';
+import {
+    FinishedData,
+    MessageData,
+    MessageType,
+    StartData
+} from './interface';
+import { calcMinMax } from '../../../shared/csvLoader/calcMinMax';
+import { columnFromType } from '../../../frontend/data/column';
+import { fillColumns } from '../../../shared/csvLoader/fillColumns';
+import { parseChunk } from '../../../shared/csvLoader/parseChunk';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;
 
     if(message.type === MessageType.Start) {
         const data = load(message.data as StartData);
-        // const d: MessageData = {
-        //     type: MessageType.Finished,
-        //     data: columns
-        // };
-        // const transfer: Array<Transferable> = [];
-        // columns.forEach((c) => transfer.push(...c.transferable));
-        // postMessage(d, { transfer });
+        const d: MessageData = {
+            type: MessageType.Finished,
+            data: data
+        };
+        const transfer: Array<Transferable> = [];
+        data.columns.forEach((c) => transfer.push(...c.transferable));
+        postMessage(d, { transfer });
     }
 });
 
 function load(data: StartData): FinishedData {
     const remainderInfo = detectRemainders(data.chunks);
-    // const lines = parse(data.data);
-    // const columns = prepareColumns(
-    //     lines[0], lines[1], data.options.delimiter, lines.length - 1);
+    const lines = parse(data.chunks, remainderInfo);
+    const columns = data.types.map((t) => columnFromType('', t, lines.length));
+    fillColumns(lines, data.options.delimiter, columns, () => {});
+    calcMinMax(columns, () => {});
+
+    return {
+        columns,
+        startRemainder: remainderInfo.start,
+        endRemainder: remainderInfo.end
+    };
 }
 
-function detectRemainders(chunks: ArrayBuffer[]): {
-    startChunk: number, startChar: number, endChunk: number, endChar: number
-} {
+type RemainderInfo = {
+    start: Uint8Array, startChunk: number, startChar: number,
+    end: Uint8Array, endChunk: number, endChar: number
+}
+
+function detectRemainders(chunks: ArrayBuffer[]): RemainderInfo {
     const lf = 0x0A;
     const cr = 0x0D;
 
@@ -33,6 +51,9 @@ function detectRemainders(chunks: ArrayBuffer[]): {
     let startChar: number;
     let endChunk: number;
     let endChar: number;
+
+    let start: Uint8Array;
+    let end: Uint8Array;
 
     let done = false;
     let remainderLength = 0;
@@ -48,8 +69,7 @@ function detectRemainders(chunks: ArrayBuffer[]): {
                     startChar = 0;
                 }
                 const crFix = chunk[j - 1] === cr ? -1 : 0;
-                startRemainder =
-                    new Uint8Array(remainderLength + j + crFix);
+                start = new Uint8Array(remainderLength + j + crFix);
                 done = true;
             }
         }
@@ -58,15 +78,15 @@ function detectRemainders(chunks: ArrayBuffer[]): {
 
     done = false;
     let remainderIndex = 0;
-    remainderLength = startRemainder.length;
+    remainderLength = start.length;
     for(let i = 0; i < chunks.length && !done; i++) {
         const chunk = new Uint8Array(chunks[i]);
         if(chunk.length <= remainderLength - 1 - remainderIndex) {
-            startRemainder.set(chunk, remainderIndex);
+            start.set(chunk, remainderIndex);
             remainderIndex += chunk.length;
         } else {
             const sub = chunk.subarray(0, remainderLength - remainderIndex);
-            startRemainder.set(sub, remainderIndex);
+            start.set(sub, remainderIndex);
             remainderIndex += sub.length;
         }
         if(remainderIndex >= remainderLength) {
@@ -82,8 +102,7 @@ function detectRemainders(chunks: ArrayBuffer[]): {
             if(chunk[j] === lf) {
                 endChunk = i;
                 endChar = j;
-                endRemainder =
-                    new Uint8Array(remainderLength + chunk.length - 1 - j);
+                end = new Uint8Array(remainderLength + chunk.length - 1 - j);
                 done = true;
             }
         }
@@ -91,130 +110,54 @@ function detectRemainders(chunks: ArrayBuffer[]): {
     }
 
     done = false;
-    remainderIndex = endRemainder.length - 1;
-    remainderLength = endRemainder.length;
+    remainderIndex = end.length - 1;
+    remainderLength = end.length;
     for(let i = chunks.length - 1; i >= 0 && !done; i--) {
         if(remainderLength === 0) break;
         const chunk = new Uint8Array(chunks[i]);
         if(chunk.length <= remainderIndex) {
-            endRemainder.set(
+            end.set(
                 chunk, remainderIndex - chunk.length + 1);
             remainderIndex -= chunk.length;
         } else {
             const sub = chunk.subarray(chunk.length - remainderIndex - 1);
-            endRemainder.set(sub, remainderIndex - sub.length + 1);
+            end.set(sub, remainderIndex - sub.length + 1);
             remainderIndex -= sub.length;
         }
         if(remainderIndex < 0) {
             done = true;
         }
     }
+
+    return {
+        start, startChunk, startChar, end, endChunk, endChar
+    };
 }
 
-// function parse(chunks: ArrayBuffer[]): string[] {
-//     const decoder = new TextDecoder();
-//     const lines = new Array<string>();
+function parse(chunks: ArrayBuffer[], ri: RemainderInfo): string[] {
+    const dec = new TextDecoder();
+    const lines = new Array<string>();
+    let remainder = '';
 
-//     const progressThreshold = chunks.length / 10;
-//     let progress = 0;
-
-//     let remainder = '';
-//     chunks.forEach((c, i) => {
-//         const str = decoder.decode(c, { stream: i < chunks.length - 1 });
-//         remainder = parseChunk(str, lines, remainder);
-//         progress++;
-//         if(progress >= progressThreshold) {
-//             progress(1, progress);
-//             progress = 0;
-//         }
-//     });
-//     if(progress > 0) {
-//         progress(1, progress);
-//     }
-
-//     return lines;
-// }
-
-// function parseChunk(chunk: string, lines: string[], rem: string): string {
-//     let start = 0;
-//     let newLine: number; 
-
-//     while ((newLine = chunk.indexOf('\n', start)) !== -1) {
-//         const hasReturn = chunk.charAt(newLine - 1) === '\r';
-//         const str = chunk.substring(start, newLine - (hasReturn ? 1 : 0));
-//         if(start === 0) {
-//             lines.push(rem + str);
-//         } else {
-//             lines.push(str);
-//         }
-//         start = newLine + 1;
-//     }
-
-//     return chunk.substring(start);
-// }
-
-// function prepareColumns(
-//     header: string, firstLine: string, delimiter: string, length: number
-// ): Column[] {
-//     const h = splitLine(header, delimiter);
-//     const f = splitLine(firstLine, delimiter);
-
-//     return h.map((c, i) => {
-//         const data = f[i];
-//         const type = inferType(data);
-//         return columnFromType(header, type, length);
-//     });
-// }
-
-// function splitLine(line: string, delimiter: string): Array<string> {
-//     const cells = new Array<string>();
-
-//     let start = 0;
-//     let quote = false;
-//     let quoteActive = false;
-
-//     const push = (end: number): void => {
-//         cells.push(line.substring(
-//             quote ? start + 1 : start,
-//             quote ? end - 1 : end));
-//     };
-
-//     for (let i = 0; i < line.length; i++) {
-//         const char = line.charAt(i);
-//         if (char === '"') {
-//             quoteActive = !quoteActive;
-//             quote = true;
-//             continue;
-//         }
-//         if (quoteActive) {
-//             continue;
-//         }
-//         const { end, skip } = cellEnd(line, i, delimiter);
-//         if (end) {
-//             push(i);
-//             start = i + skip;
-//             quote = false;
-//         }
-//     }
-//     push(undefined);
-
-//     return cells;
-// }
-
-// function cellEnd(line: string, index: number, delimiter: string): {
-//     end: boolean, skip: number
-// } {
-//     const char = line.charAt(index);
-//     switch (char) {
-//         case delimiter:
-//         case '\n':
-//             return { end: true, skip: 1 };
-//         case '\r':
-//             if (line.charAt(index + 1) === '\n') {
-//                 return { end: true, skip: 2 };
-//             }
-//         // eslint-disable-next-line no-fallthrough
-//         default:
-//             return { end: false, skip: 0 };
-//     }
-// }
+    if(ri.startChunk === ri.endChunk) {
+        const chunk = new Uint8Array(
+            chunks[ri.startChunk],
+            ri.startChar, ri.endChar - ri.startChar + 1);
+        remainder = parseChunk(dec.decode(chunk), lines, remainder);
+        return lines;
+    }
+    let chunk = new Uint8Array(
+        chunks[ri.startChunk], ri.startChar);
+    remainder = parseChunk(
+        dec.decode(chunk, { stream: true }), lines, remainder);
+    for(let i = ri.startChunk + 1; i < ri.endChunk; i++) {
+        remainder = parseChunk(
+            dec.decode(chunks[i], { stream: true }), lines, remainder);
+    }
+    chunk = new Uint8Array(
+        chunks[ri.endChunk], 0, ri.endChar);
+    remainder = parseChunk(dec.decode(chunk), lines, remainder);
+    // last chunk does not end with newline
+    lines.push(remainder);
+    return lines;
+}

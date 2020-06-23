@@ -1,5 +1,9 @@
+import {
+    Column,
+    columnFromType,
+    inferType
+} from '../../frontend/data/column';
 import { splitLine } from './splitLine';
-import { Column, inferType, columnFromType } from '../../frontend/data/column';
 
 
 export function prepareColumns(
