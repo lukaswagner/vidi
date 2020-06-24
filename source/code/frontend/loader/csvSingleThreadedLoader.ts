@@ -135,7 +135,7 @@ export class CsvSingleThreadedLoader {
         };
 
         this._times.push(Date.now());
-        this._worker.postMessage(d, /*{ transfer: chunks }*/);
+        this._worker.postMessage(d, { transfer: chunks });
     }
 
     protected done(data: FinishedData): void {

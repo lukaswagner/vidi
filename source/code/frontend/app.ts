@@ -258,68 +258,15 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-
     protected loadCsv(info: LoadInfo<CsvLoadOptions>): void {
-        this.testCsvPerf(info);
-        // const stloader = new CsvSingleThreadedLoader(info);
-        // loader.load().then(this.dataReady.bind(this));
-    }
-
-    protected preloadStream(stream: ReadableStream): Promise<ReadableStream[]> {
-        const tee = stream.tee();
-        const subTee = tee[1].tee();
-
-        const reader = tee[0].getReader();
-        return new Promise<ReadableStream[]>((resolve) => {
-            const readChunk = (
-                result: ReadableStreamReadResult<Uint8Array>
-            ): void => {
-                if (result.done) {
-                    resolve(subTee);
-                    return;
-                }
-                reader.read().then(readChunk);
-            };
-            reader.read().then(readChunk);
-        });
-
-    }
-
-    protected testCsvPerf(info: LoadInfo<CsvLoadOptions>): void {
-        let start: number;
-        let streams: ReadableStream[];
-
-        const stats = (res: Column[], label: string): void => {
+        const start = Date.now();
+        // const loader = new CsvSingleThreadedLoader(info);
+        const loader = new CsvMultiThreadedLoader(info);
+        loader.load().then((res) => {
             const end = Date.now();
-            console.log(`${label}: ${end - start} ms, ${res.length} columns, ${rebuildColumn(res[0]).length} rows`);
-        };
-
-        this.preloadStream(info.stream)
-            .then((s) => {
-                streams = s;
-                const stloader = new CsvSingleThreadedLoader({
-                    stream: streams[0],
-                    size: info.size,
-                    options: info.options,
-                    progress: info.progress
-                });
-                start = Date.now();
-                return stloader.load();
-            }).then((res) => {
-                stats(res, 'ST');
-                res = undefined;
-                const mtloader = new CsvMultiThreadedLoader({
-                    stream: streams[1],
-                    size: info.size,
-                    options: info.options,
-                    progress: info.progress
-                });
-                start = Date.now();
-                return mtloader.load();
-            }).then((res) => {
-                stats(res, 'MT');
-                this.dataReady(res);
-            });
+            console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
+            this.dataReady(res);
+        });
     }
 
     protected dataReady(passedData: Array<unknown>): void {

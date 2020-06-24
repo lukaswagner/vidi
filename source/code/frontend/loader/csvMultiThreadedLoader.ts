@@ -1,7 +1,9 @@
 import {
+    ColorColumn,
     Column,
     DataType,
     FloatColumn,
+    StringColumn,
     columnFromType,
     rebuildColumn
 } from '../data/column';
@@ -17,6 +19,7 @@ import {
 } from '../../worker/loader/csvMultiThreadedLoader/interface';
 import LoadWorker from
     'worker-loader!../../worker/loader/csvMultiThreadedLoader/worker';
+import { PerfMon } from '../../shared/performance/perfMon';
 import { Progress } from '../ui/progress';
 import { ProgressStep } from '../ui/progressStep';
 import { prepareColumns } from '../../shared/csvLoader/prepareColumns';
@@ -46,6 +49,8 @@ export class CsvMultiThreadedLoader {
     protected _processedResults: Column[][] = [];
     protected _processedRemainders: Column[][] = [];
 
+    protected _perf = new PerfMon();
+
     public constructor(info: LoadInfo<CsvLoadOptions>) {
         this._stream = info.stream;
         this._size = info.size;
@@ -54,6 +59,7 @@ export class CsvMultiThreadedLoader {
     }
 
     public load(): Promise<Column[]> {
+        this._perf.sample(-1, 'start');
         this.prepareProgress();
         this.read();
 
@@ -70,8 +76,8 @@ export class CsvMultiThreadedLoader {
     
         this._progress.steps = [
             new ProgressStep('Loading file', this._size, 5),
-            new ProgressStep('Parsing data', 100, 70),
-            new ProgressStep('Combining chunks', 100, 25),
+            new ProgressStep('Parsing data', 100, 90),
+            new ProgressStep('Combining chunks', 100, 5),
         ];
         this._progress.applyValue();
     }
@@ -98,7 +104,9 @@ export class CsvMultiThreadedLoader {
         let bytes = 0;
         let numChunks = 0;
 
-        const workerChunks = 100;
+        const targetNumWorkers = 25;
+        let workerChunks: number;
+
         let workerId = 0;
 
         // it seems this has to be done on the main thread - if used in a worker
@@ -108,7 +116,7 @@ export class CsvMultiThreadedLoader {
             result: ReadableStreamReadResult<Uint8Array>
         ): void => {
             if (result.done) {
-                // console.log(`loaded ${bytes} bytes in ${numChunks} chunks`);
+                console.log(`loaded ${bytes} bytes in ${numChunks} chunks (avg: ${bytes/numChunks} bytes/chunk)`);
                 if(bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
@@ -118,10 +126,23 @@ export class CsvMultiThreadedLoader {
                         chunks, this._options.delimiter,
                         this._options.includesHeader);
                 }
-                this.startLoadWorker(chunks, workerId++);
+                if(chunks.length > 0) {
+                    this.startLoadWorker(chunks, workerId++);
+                }
                 this._numWorkers = workerId;
+                this._progress.steps[1].total = this._numWorkers;
+                this._progress.steps[2].total = this._numWorkers;
+                this._progress.applyValue();
                 this._numChunks = numChunks;
+                this._perf.sample(-1, 'load done');
                 return;
+            }
+
+            if(workerChunks === undefined) {
+                console.log(result.value.length);
+                const bytesPerChunk = result.value.length;
+                const estimatedChunks = this._size / bytesPerChunk;
+                workerChunks = Math.ceil(estimatedChunks / targetNumWorkers);
             }
 
             bytes += result.value.length;
@@ -144,6 +165,7 @@ export class CsvMultiThreadedLoader {
             reader.read().then(readChunk);
         };
 
+        this._perf.sample(-1, 'load start');
         reader.read().then(readChunk);
     }
 
@@ -232,10 +254,12 @@ export class CsvMultiThreadedLoader {
 
         const worker = this.prepareWorker(index);
 
-        worker.postMessage(d, /*{ transfer: chunks }*/);
+        this._perf.sample(index, `start worker ${index}`);
+        worker.postMessage(d, { transfer: chunks });
     }
 
     protected loadDone(data: FinishedData, index: number): void {
+        this._perf.sample(index, `worker ${index} done`);
         this._rawResults[index] = data;
 
         if(index === this._nextResult) {
@@ -244,6 +268,9 @@ export class CsvMultiThreadedLoader {
     }
 
     protected handleResults(result: FinishedData): void {
+        this._progress.steps[1].progress++;
+        this._progress.applyValue();
+
         const fixed = result.columns.map(rebuildColumn);
         if(this._nextResult !== 0) {
             this.storeRemainder(
@@ -268,7 +295,7 @@ export class CsvMultiThreadedLoader {
         }
 
         if(this._nextResult >= this._numWorkers) {
-            this.combine();
+            setTimeout(this.combine.bind(this));
             return;
         }
 
@@ -290,6 +317,7 @@ export class CsvMultiThreadedLoader {
     }
 
     protected combine(): void {
+        this._perf.sample(-1, 'combine start');
         const result = this._columnTypes.map((t, i) => {
             return columnFromType(this._columnNames[i], t, this._rowCount);
         });
@@ -309,10 +337,34 @@ export class CsvMultiThreadedLoader {
 
                 const resLength = res[0].length;
                 result.forEach((c, i) => {
-                    // @ts-ignore
-                    c.copy(res[i], resultOffset);
-                    // @ts-ignore
-                    c.copy(rem[i], resultOffset + resLength);
+                    switch (c.type) {
+                        case DataType.Float:
+                            (c as FloatColumn).copy(
+                                res[i] as FloatColumn,
+                                resultOffset);
+                            (c as FloatColumn).copy(
+                                rem[i] as FloatColumn,
+                                resultOffset + resLength);
+                            break;
+                        case DataType.Color:
+                            (c as ColorColumn).copy(
+                                res[i] as ColorColumn,
+                                resultOffset);
+                            (c as ColorColumn).copy(
+                                rem[i] as ColorColumn,
+                                resultOffset + resLength);
+                            break;
+                        case DataType.String:
+                            (c as StringColumn).copy(
+                                res[i] as StringColumn,
+                                resultOffset);
+                            (c as StringColumn).copy(
+                                rem[i] as StringColumn,
+                                resultOffset + resLength);
+                            break;
+                        default:
+                            break;
+                    }
                 });
 
                 resultOffset += resLength + 1;
@@ -324,12 +376,32 @@ export class CsvMultiThreadedLoader {
                 });
 
                 result.forEach((c, i) => {
-                    // @ts-ignore
-                    c.copy(res[i], resultOffset);
+                    switch (c.type) {
+                        case DataType.Float:
+                            (c as FloatColumn).copy(
+                                res[i] as FloatColumn,
+                                resultOffset);
+                            break;
+                        case DataType.Color:
+                            (c as ColorColumn).copy(
+                                res[i] as ColorColumn,
+                                resultOffset);
+                            break;
+                        case DataType.String:
+                            (c as StringColumn).copy(
+                                res[i] as StringColumn,
+                                resultOffset);
+                            break;
+                        default:
+                            break;
+                    }
                 });
 
                 resultOffset += res[0].length;
             }
+
+            this._progress.steps[2].progress++;
+            this._progress.applyValue();
         }
 
         this._minMax.forEach((c) => {
@@ -337,6 +409,9 @@ export class CsvMultiThreadedLoader {
             result[c.ci].max = c.max;
         });
 
-        this._resolve(result);
+        this._progress.visible = false;
+        this._perf.sample(-1, 'done');
+        this._resolve(this._perf.toColumns());
+        // this._resolve(result);
     }
 }
