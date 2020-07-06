@@ -31,13 +31,11 @@ import {
 } from './loader/csvLoadOptions';
 
 import {
-    Column,
     DataType,
     rebuildColumn,
 } from './data/column';
 
 import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
-import { CsvSingleThreadedLoader } from './loader/csvSingleThreadedLoader';
 import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
@@ -233,7 +231,7 @@ export class TopicMapApp extends Initializable {
                     delimiter: ',',
                     includesHeader: true
                 },
-                progress: this._controls.customDataProgress
+                progress: this._controls.dataProgress
             });
         });
     }

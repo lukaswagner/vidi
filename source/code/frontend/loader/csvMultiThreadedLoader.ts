@@ -411,7 +411,7 @@ export class CsvMultiThreadedLoader {
 
         this._progress.visible = false;
         this._perf.sample(-1, 'done');
-        this._resolve(this._perf.toColumns());
-        // this._resolve(result);
+        // this._resolve(this._perf.toColumns());
+        this._resolve(result);
     }
 }
