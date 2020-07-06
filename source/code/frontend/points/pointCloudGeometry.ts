@@ -55,6 +55,7 @@ export class PointCloudGeometry extends Geometry {
      * @param globalPosLocation - Attribute binding point for vertices.
      * @param normalLocation - Attribute binding point for vertex normal.
      */
+    @Initializable.initialize()
     public initialize(
         uvLocation: GLuint = 0,
         globalPosLocation: GLuint = 1,

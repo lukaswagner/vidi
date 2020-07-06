@@ -1,12 +1,12 @@
 import {
+    ColorColumn,
     Column,
     DataType,
     FloatColumn,
-    ColorColumn,
     StringColumn
-} from "../../frontend/data/column";
-import { splitLine } from "./splitLine";
-import { Color } from "webgl-operate";
+} from '../../frontend/data/column';
+import { Color } from 'webgl-operate';
+import { splitLine } from './splitLine';
 
 export function storeLine(
     line: string, index: number, delimiter: string, columns: Column[]
