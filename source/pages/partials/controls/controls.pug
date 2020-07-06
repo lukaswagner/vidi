@@ -1,34 +1,68 @@
 include control-block.pug
 include control-element.pug
-include control-select.pug
-include control-select-button.pug
-include control-input-slider.pug
-include control-file-button.pug
-include control-select-input.pug
-include control-button.pug
-include control-checkbox.pug
+include elements/control-select.pug
+include elements/control-button.pug
+include elements/control-file.pug
+include elements/control-label.pug
+include elements/control-slider.pug
+include elements/control-input.pug
+include elements/control-checkbox.pug
+include elements/progress-bar.pug
 
 .control-panel#controls(style='width: 350px;')
     .form
         +control-block('data-header', 'data-group', 'Data', true)
-            +control-select-button('preset', 'Presets', 'Apply')
+            +control-element('preset-select', 'Presets')
+                +control-select('preset').col
+                +control-button('preset', 'Apply').col-3.ml-2
             hr
-            +control-select-button('data', 'Dataset', 'Load')
+            +control-element('data-select', 'Dataset')
+                +control-select('data').col
+                +control-button('data', 'Load').col-3.ml-2
+            .mt-2.d-none#data-progress-wrapper
+                +control-element('data-progress-bar', 'Loading')
+                    +progress-bar('data').col
             hr
-            +control-file-button('custom-data', 'Choose custom dataset', 'Select')
-            +control-select-input('custom-data-delimiter', 'Delimiter')
-            +control-checkbox('custom-data-header', 'Header', 'File includes header row')
-            +control-button('custom-data-upload', 'Load custom dataset', 'Load')
+            +control-element('custom-data-button', 'Choose custom dataset').mb-2
+                +control-file('custom-data', 'Select').col-3
+                +control-label('custom-data', 'No file selected').col.text-secondary
+            +control-element('custom-data-delimiter-select', 'Delimiter').mb-2
+                +control-select('custom-data-delimiter').col
+                +control-input('custom-data-delimiter').col-3.ml-2
+            +control-element('custom-data-header-checkbox', 'Header').mb-2
+                +control-checkbox('custom-data-header').col-auto
+                +control-label('custom-data-header', 'File includes header row').col
+            +control-element('custom-data-upload', 'Load custom dataset')
+                +control-button('custom-data-upload', 'Load').col-3
+                .d-none.ml-2.p-0.col#custom-data-progress-wrapper
+                    +progress-bar('custom-data').w-100
             hr
-            +control-select('x-axis', 'X axis')
-            +control-select('y-axis', 'Y axis')
-            +control-select('z-axis', 'Z axis')
+            +control-element('x-axis-select', 'Data mapping', true)
+                .row.mx-0
+                    +control-label('x-axis', 'X axis').col-3.px-0
+                    +control-select('x-axis').col
+                .row.mx-0.my-2
+                    +control-label('y-axis', 'Y axis').col-3.px-0
+                    +control-select('y-axis').col
+                .row.mx-0.pb-0
+                    +control-label('z-axis', 'Z axis').col-3.px-0
+                    +control-select('z-axis').col
         +control-block('size-header', 'size-group', 'Size')
-            +control-input-slider('scale', 'Scale')
-            +control-input-slider('point-size', 'Point size')
-            +control-input-slider('variable-point-size-strength', 'Variable point size strength')
-            +control-select('variable-point-size-column', 'Column for variable point size')
-        +control-block('color-header', 'color-group', 'Color')
-            +control-select('color-mode', 'Color mode')
-            +control-select('color-mapping', 'Mapping for position-based color')
-            +control-select('color-column', 'Column for per-point color')
+            +control-element('scale-input', 'Scale').mb-2
+                +control-input('scale').col-3
+                +control-slider('scale').col.ml-2
+            +control-element('point-size-input', 'Point size').mb-2
+                +control-input('point-size').col-3
+                +control-slider('point-size').col.ml-2
+            +control-element('variable-point-size-strength-input', 'Variable point size strength').mb-2
+                +control-input('variable-point-size-strength').col-3
+                +control-slider('variable-point-size-strength').col.ml-2
+            +control-element('variable-point-size-column-select', 'Column for variable point size')
+                +control-select('variable-point-size-column').col
+        +control-block('color-header', 'color-group', 'Color').mb-2
+            +control-element('color-mode-select', 'Color mode')
+                +control-select('color-mode').col
+            +control-element('color-mapping-select', 'Mapping for position-based color').mb-2
+                +control-select('color-mapping').col
+            +control-element('color-column-select', 'Column for per-point color').mb-2
+                +control-select('color-column').col

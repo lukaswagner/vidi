@@ -31,7 +31,9 @@ export class Select extends ControlBase<string> {
         this.setValue(ids[0], invokeHandler);
     }
 
-    public fromDict(options: Dict<any, any>, invokeHandler = true): void {
+    public fromDict(
+        options: Dict<unknown, unknown>, invokeHandler = true
+    ): void {
         this.setOptions(
             options.map((m) => m[0].toString()),
             options.map((m) => m[1].toString()),

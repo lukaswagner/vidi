@@ -1,37 +1,37 @@
 import { vec3 } from 'webgl-operate';
 
 export type AxisInfo = {
-    name: string,
-    direction: vec3,
-    extents: { min: number, max: number },
-    subdivisions: number
+    name: string;
+    direction: vec3;
+    extents: { min: number; max: number };
+    subdivisions: number;
 }
 
 export type GridInfo = {
-    firstAxis: AxisInfo,
-    secondAxis: AxisInfo,
-    normal: vec3,
-    offsets: [number, number]
+    firstAxis: AxisInfo;
+    secondAxis: AxisInfo;
+    normal: vec3;
+    offsets: [number, number];
 }
 
 export type ExtendedAxisInfo = {
-    name: string,
-    direction: vec3,
-    extents: { min: number, max: number, center: number },
-    extentPositions: { min: vec3, max: vec3, center: vec3 },
-    subdivisions: number
+    name: string;
+    direction: vec3;
+    extents: { min: number; max: number; center: number };
+    extentPositions: { min: vec3; max: vec3; center: vec3 };
+    subdivisions: number;
 }
 
 export type ExtendedGridInfo = {
-    firstAxis: ExtendedAxisInfo,
-    secondAxis: ExtendedAxisInfo,
-    normal: vec3,
-    offsets: [number, number]
+    firstAxis: ExtendedAxisInfo;
+    secondAxis: ExtendedAxisInfo;
+    normal: vec3;
+    offsets: [number, number];
 }
 
 type ExtendedExtents = {
-    center: number,
-    extentPositions: { min: vec3, max: vec3, center: vec3 }
+    center: number;
+    extentPositions: { min: vec3; max: vec3; center: vec3 };
 }
 
 function calcExtendedExtents(self: AxisInfo): ExtendedExtents {

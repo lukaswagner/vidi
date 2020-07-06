@@ -26,10 +26,17 @@ import {
 } from './controls';
 
 import {
-    Data,
-    DataType
-} from './data';
+    CsvLoadOptions,
+    LoadInfo
+} from './loader/csvLoadOptions';
 
+import {
+    DataType,
+    rebuildColumn,
+} from './data/column';
+
+import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
+import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
@@ -58,7 +65,7 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string, path: string }[];
+    private _datasets: { name: string; path: string; size: number }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -67,7 +74,7 @@ export class TopicMapApp extends Initializable {
         this._canvas.framePrecision = Wizard.Precision.half;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
-        var bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
+        const bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
         this._canvas.clearColor = new Color([
             Number(bgComponents[1]) / 255,
             Number(bgComponents[2]) / 255,
@@ -91,8 +98,7 @@ export class TopicMapApp extends Initializable {
                     this._controls.scale.step
                 )
             );
-            e.preventDefault();
-        }, { capture: true });
+        }, { capture: true, passive: true });
 
         this.initControls();
         this.fetchAvailable();
@@ -210,18 +216,27 @@ export class TopicMapApp extends Initializable {
     }
 
     protected load(name: string): Promise<void> {
-        const path = this._datasets.find((d) => d.name === name)?.path;
-        if (path === undefined) {
-            console.log('can\'t load', name, '- path unknown');
+        const file = this._datasets.find((d) => d.name === name);
+        if (file === undefined) {
+            console.log('can\'t load', name, '- file unknown');
             return;
         }
-        console.log('loading', name, 'from', path);
-        return fetch(path)
-            .then((r) => r.text())
-            .then((data) => this.prepareData(data));
+        console.log('loading', name, 'from', file.path);
+
+        fetch(file.path).then((res) => {
+            this.loadCsv({
+                stream: res.body,
+                size: file.size,
+                options: {
+                    delimiter: ',',
+                    includesHeader: true
+                },
+                progress: this._controls.dataProgress
+            });
+        });
     }
 
-    protected loadCustom(): Promise<void> {
+    protected loadCustom(): void {
         const file = this._controls.customData.files[0];
         let delimiter = this._controls.customDataDelimiterSelect.value;
         if (delimiter === 'custom') {
@@ -229,17 +244,38 @@ export class TopicMapApp extends Initializable {
         }
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
-        return file.text()
-            .then((data) => this.prepareData(data, delimiter, includesHeader));
+
+        this.loadCsv({
+            stream: file.stream(),
+            size: file.size,
+            options: {
+                delimiter,
+                includesHeader
+            },
+            progress: this._controls.customDataProgress
+        });
     }
 
-    protected prepareData(
-        data: string, delimiter = ',', includesHeader = true
-    ): void {
-        this._data = new Data(data, delimiter, includesHeader);
+    protected loadCsv(info: LoadInfo<CsvLoadOptions>): void {
+        const start = Date.now();
+        // const loader = new CsvSingleThreadedLoader(info);
+        const loader = new CsvMultiThreadedLoader(info);
+        loader.load().then((res) => {
+            const end = Date.now();
+            console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
+            this.dataReady(res);
+        });
+    }
+
+    protected dataReady(passedData: Array<unknown>): void {
+        // functions are removed during message serialization
+        // this means the objects have to be rebuild
+        const columns = passedData.map((c) => rebuildColumn(c));
+
+        this._data = new Data(columns);
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Number);
+        const numberColumnNames = this._data.getColumnNames(DataType.Float);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
@@ -261,7 +297,7 @@ export class TopicMapApp extends Initializable {
             numberIds, numberLabels);
     }
 
-    protected updatePositions(updatedAxis: number = -1): void {
+    protected updatePositions(updatedAxis = -1): void {
         if (updatedAxis > -1) {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);

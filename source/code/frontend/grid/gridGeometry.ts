@@ -84,6 +84,7 @@ export class GridGeometry extends Geometry {
      * @param globalPosLocation - Attribute binding point for vertices.
      * @param normalLocation - Attribute binding point for vertex normal.
      */
+    @Initializable.initialize()
     public initialize(
         localPosLocation: GLuint = 0,
         uvLocation: GLuint = 1,
@@ -121,11 +122,10 @@ export class GridGeometry extends Geometry {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.offsets) {
             this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
         }
-
         this._altered.reset();
     }
 

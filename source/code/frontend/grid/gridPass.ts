@@ -77,7 +77,7 @@ export class GridPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.gridInfo) {
             this._geometry.buildGrid(this._gridInfo);
         }

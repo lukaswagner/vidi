@@ -1,114 +1,23 @@
-import { Color } from 'webgl-operate';
-import { GLclampf4 } from 'webgl-operate/lib/tuples';
-
-export enum DataType {
-    Number,
-    Color,
-    String
-}
-
-type Content = Number | GLclampf4 | String;
-
-type Column<T> = {
-    name: string;
-    type: DataType;
-    data: Array<T>;
-    min: T;
-    max: T;
-}
+import {
+    Column,
+    DataType,
+    FloatColumn,
+    ColorColumn,
+    BaseColumn
+} from './column';
 
 export class Data {
-    protected _columns = Array<Column<Content>>();
+    protected _columns = Array<Column>();
     protected _rowCount: number;
 
     protected _selectedColumns: number[];
 
     public constructor(
-        data: string, delimiter = ',', includesHeader = true
+        columns: Array<Column>
     ) {
-        // prepare data
-        let lines = data.split(/\r\n|\n/);
-        lines = lines.filter((s: string) => s.trim() !== '');
-
-        // get headers and create columns - try to detect value type
-        const columnNames = includesHeader ?
-            lines.shift().split(delimiter) :
-            lines[0].split(delimiter).map((c, i) => i.toString());
-        const firstLine = lines[0].split(delimiter);
-        let result: Column<Content>;
-        columnNames.forEach((column, i) => {
-            const type = this.inferType(firstLine[i]);
-            console.log('interpreting column', column, 'as', DataType[type]);
-            switch (type) {
-                case DataType.Number:
-                    result = {
-                        name: column,
-                        type: type,
-                        data: new Array<Number>(),
-                        min: Number.MAX_VALUE,
-                        max: Number.MIN_VALUE
-                    } as Column<Number>;
-                    break;
-                case DataType.Color:
-                    result = {
-                        name: column,
-                        type: type,
-                        data: new Array<GLclampf4>(),
-                        min: [0, 0, 0, 0],
-                        max: [0, 0, 0, 0]
-                    } as Column<GLclampf4>;
-                    break;
-                case DataType.String:
-                    result = {
-                        name: column,
-                        type: type,
-                        data: new Array<String>(),
-                        min: '',
-                        max: ''
-                    } as Column<String>;
-                    break;
-            }
-            this._columns.push(result);
-        });
-
-        // store number of rows
-        this._rowCount = lines.length;
-
-        // read values into columns
-        lines.forEach((line) => {
-            const values = line.split(delimiter);
-            values.forEach((value, i) => {
-                const column = this._columns[i];
-                switch (column.type) {
-                    case DataType.Number:
-                        column.data.push(Number(value));
-                        break;
-                    case DataType.Color:
-                        column.data.push(Color.hex2rgba(value));
-                        break;
-                    case DataType.String:
-                        column.data.push(value);
-                        break;
-                }
-            });
-        });
-
-        // calculate min/max
-        this._columns.forEach((c) => {
-            if (c.type !== DataType.Number) {
-                return;
-            }
-            let min = Number.MAX_VALUE;
-            let max = Number.MIN_VALUE;
-            c.data.forEach((n: number) => {
-                if (n < min) min = n;
-                if (n > max) max = n;
-            });
-            c.min = min;
-            c.max = max;
-        });
-
-        this.initSelectedColumns(false);
+        this._columns = columns;
+        this._rowCount = columns[0].length;
+        this.initSelectedColumns(true);
     }
 
     public getColumnNames(type: DataType): string[] {
@@ -149,7 +58,7 @@ export class Data {
             // fetch the min/max values
             const e = this._selectedColumns.map((ci) => {
                 if (ci === -1) return { min: -1, max: 1 };
-                const c = this._columns[ci] as Column<number>;
+                const c = this._columns[ci] as FloatColumn;
                 return { min: c.min, max: c.max };
             });
             // ensure range exists for each axis
@@ -172,8 +81,8 @@ export class Data {
         const sc = this._selectedColumns;
         const get = sc.map((i) => {
             if (i === -1) return () => 0;
-            const data = (this._columns[i] as Column<number>).data;
-            return (i: number) => data[i];
+            const col = this._columns[i] as FloatColumn;
+            return col.get.bind(col);
         });
 
         const positions = new Float32Array(this._rowCount * 3);
@@ -188,7 +97,7 @@ export class Data {
         const extents = this._selectedColumns.map((ci, ai) => {
             if (ci === -1) return { min: -1, max: 1 };
             if (ai < range.length) return range[ai];
-            const c = this._columns[ci] as Column<number>;
+            const c = this._columns[ci] as FloatColumn;
             return { min: c.min, max: c.max };
         });
 
@@ -204,9 +113,9 @@ export class Data {
         ) {
             return colors;
         }
-        const data = this._columns[columnIndex].data;
+        const col = this._columns[columnIndex] as ColorColumn;
         for (let i = 0; i < this._rowCount; i++) {
-            const c = data[i] as GLclampf4;
+            const c = col.get(i);
             colors[i * 3 + 0] = c[0];
             colors[i * 3 + 1] = c[1];
             colors[i * 3 + 2] = c[2];
@@ -217,32 +126,16 @@ export class Data {
     public getVariablePointSize(column: string): Float32Array {
         const pointSize = new Float32Array(this._rowCount);
         const columnIndex = this.getColumnIndex(column);
-        if (
-            columnIndex === -1 ||
-            this._columns[columnIndex].type !== DataType.Number
+        if (columnIndex === -1 ||
+            this._columns[columnIndex].type !== DataType.Float
         ) {
             return pointSize.fill(1);
         }
-        const data = this._columns[columnIndex].data;
+        const col = this._columns[columnIndex] as FloatColumn;
         for (let i = 0; i < this._rowCount; i++) {
-            pointSize[i] = Math.log(data[i] as number);
+            pointSize[i] = Math.log(col.get(i));
         }
         return pointSize;
-    }
-
-    protected inferType(input: string): DataType {
-        if (!Number.isNaN(Number(input))) {
-            return DataType.Number;
-        }
-
-        if (input.startsWith('#')) {
-            const col = Color.hex2rgba(input);
-            if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
-                return DataType.Color;
-            }
-        }
-
-        return DataType.String;
     }
 
     protected initSelectedColumns(initZ: boolean): void {
@@ -271,7 +164,11 @@ export class Data {
             this._selectedColumns = matchMatches[0];
         } else {
             // fallback: use first columns
-            this._selectedColumns = [0, 1, initZ ? 2 : -1];
+            this._selectedColumns = [
+                this._columns.length > 0 ? 0 : -1,
+                this._columns.length > 1 ? 1 : -1,
+                initZ && this._columns.length > 2 ? 2 : -1
+            ];
         }
     }
 }
