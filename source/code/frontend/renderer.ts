@@ -5,9 +5,9 @@ import {
     Camera,
     Context,
     DefaultFramebuffer,
+    EventProvider,
     Framebuffer,
     Invalidate,
-    MouseEventProvider,
     Navigation,
     Renderbuffer,
     Renderer,
@@ -81,13 +81,13 @@ export class TopicMapRenderer extends Renderer {
      * with program.
      * @param context - valid context to create the object for.
      * @param identifier - meaningful name for identification of this instance.
-     * @param mouseEventProvider - required for mouse interaction
+     * @param eventProvider - required for mouse interaction
      * @returns - whether initialization was successful
      */
     protected onInitialize(
         context: Context,
         callback: Invalidate,
-        mouseEventProvider: MouseEventProvider
+        eventProvider: EventProvider
     ): boolean {
         const gl = context.gl as WebGLRenderingContext;
         const gl2facade = this._context.gl2facade;
@@ -103,7 +103,7 @@ export class TopicMapRenderer extends Renderer {
         this._camera.near = 0.1;
         this._camera.far = 64.0;
 
-        this._navigation = new Navigation(callback, mouseEventProvider);
+        this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
 
         // set up intermediate rendering
@@ -286,6 +286,10 @@ export class TopicMapRenderer extends Renderer {
                 this._accumulatePass.framebuffer :
                 this._intermediateFBO;
         this._blitPass.frame();
+    }
+
+    protected onDiscarded(): void {
+        console.warn('got discarded');
     }
 
     public set positions(positions: Float32Array) {
