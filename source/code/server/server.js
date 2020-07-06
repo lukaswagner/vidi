@@ -32,6 +32,9 @@ const argv = require('yargs')
     })
     .argv;
 
+if(argv['override-page'] !== undefined)
+    argv['disable-reload'] = true;
+
 const credentials = argv.credentials;
 const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
