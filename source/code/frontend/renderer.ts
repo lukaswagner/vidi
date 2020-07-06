@@ -285,10 +285,12 @@ export class TopicMapRenderer extends Renderer {
     }
 
     protected onSwap(): void {
-        this._blitPass.framebuffer =
+        const fb =
             this._accumulatePass.framebuffer ?
                 this._accumulatePass.framebuffer :
                 this._intermediateFBO;
+        if(!fb.initialized) return;
+        this._blitPass.framebuffer = fb;
         this._blitPass.frame();
     }
 
