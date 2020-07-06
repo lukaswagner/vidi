@@ -3,6 +3,10 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const webpackConfig = require('../../../webpack.config');
+const webpack = require('webpack');
+const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackHotMiddleware = require('webpack-hot-middleware');
 
 const argv = require('yargs')
     .option('data', {
@@ -15,6 +19,17 @@ const argv = require('yargs')
         type: 'string',
         default: 'credentials.json'
     })
+    .option('override-page', {
+        alias: 'p',
+        type: 'string',
+        description:
+            'Use given dir as root dir instead of webpack-dev-middleware.'
+    })
+    .option('disable-reload', {
+        type: 'boolean',
+        description:
+            'Disable auto reload when building using webpack-dev-middleware.'
+    })
     .argv;
 
 const credentials = argv.credentials;
@@ -22,6 +37,11 @@ const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
+if(argv['disable-reload'])
+    webpackConfig.entry = webpackConfig.entry.filter((e) => {
+        return !e.startsWith('webpack-hot-middleware');
+    });
+const compiler = webpack(webpackConfig);
 
 console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
@@ -45,7 +65,15 @@ if (fs.existsSync(credentials)) {
 }
 
 app.use('/data', express.static(dataDir));
-app.use('/', express.static('build'));
+if(argv['override-page'] !== undefined) {
+    app.use('/', express.static(argv['override-page']));
+} else {
+    app.use(webpackDevMiddleware(compiler, {
+        publicPath: webpackConfig.output.publicPath,
+    }));
+    if(!argv['disable-reload'])
+        app.use(webpackHotMiddleware(compiler, { reload: true }));
+}
 
 app.get('/ls', (req, res) => {
     fs.readdir(datasetDir, (e, d) => {

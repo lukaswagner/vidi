@@ -3,9 +3,13 @@
 const path = require('path');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
-    entry: './source/code/frontend/app.ts',
+    entry: [
+        'webpack-hot-middleware/client?reload=true',
+        './source/code/frontend/app.ts',
+    ],
     devtool: 'inline-source-map',
     mode: 'development',
     module: {
@@ -36,11 +40,8 @@ module.exports = {
         filename: '[name].js',
         path: path.resolve(__dirname, 'build'),
         library: undefined,
-        libraryTarget: 'umd'
-    },
-    devServer: {
-        contentBase: path.resolve(__dirname, './source'),
-        watchContentBase: true
+        libraryTarget: 'umd',
+        publicPath: '/',
     },
     plugins: [
         new HtmlWebpackPlugin({
@@ -52,5 +53,8 @@ module.exports = {
             { from: 'source/css', to: 'css' },
             { from: 'source/fonts', to: 'fonts' },
         ]),
+        new webpack.optimize.OccurrenceOrderPlugin(),
+        new webpack.HotModuleReplacementPlugin(),
+        new webpack.NoEmitOnErrorsPlugin()
     ],
 };

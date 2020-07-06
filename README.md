@@ -4,10 +4,12 @@
 
 - Install [node.js](https://nodejs.org/)
 - Install dependencies: `npm i`
-- Build page: `npm run build` (or `npm run watch`)
+- \[optional\] Build page: `npm run build` (or `npm run watch`) - the server started with `npm start` automatically builds the page, this is only required if you want to host the page otherwise.
 - \[optional\] Add data as `data/*.csv`
 - \[optional\] Add `credentials.json` file to add password protection
 - Start server to host page: `npm start`
+
+Note: `npm start` automatically rebuilds and reloads the page if source changes are detected. To disable the auto-reload, pass the `--disable-reload` option.
 
 ## Used Technologies
 
