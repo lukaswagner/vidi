@@ -17,6 +17,12 @@ const argv = require('yargs')
         type: 'string',
         default: 'credentials.json'
     })
+    .option('override-page', {
+        alias: 'p',
+        type: 'string',
+        description:
+            'Use given dir as root dir instead of webpack-dev-middleware.'
+    })
     .argv;
 
 const credentials = argv.credentials;
@@ -50,9 +56,13 @@ if (fs.existsSync(credentials)) {
 }
 
 app.use('/data', express.static(dataDir));
-app.use(webpackDevMiddleware(compiler, {
-    publicPath: config.output.publicPath,
-}));
+if(argv['override-page'] !== undefined) {
+    app.use('/', express.static(argv['override-page']));
+} else {
+    app.use(webpackDevMiddleware(compiler, {
+        publicPath: config.output.publicPath,
+    }));
+}
 
 app.get('/ls', (req, res) => {
     fs.readdir(datasetDir, (e, d) => {
