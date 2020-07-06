@@ -32,15 +32,12 @@ const argv = require('yargs')
     })
     .argv;
 
-if(argv['override-page'] !== undefined)
-    argv['disable-reload'] = true;
-
 const credentials = argv.credentials;
 const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
-if(argv['disable-reload'])
+if(argv['disable-reload'] || argv['override-page'] !== undefined)
     webpackConfig.entry = webpackConfig.entry.filter((e) => {
         return !e.startsWith('webpack-hot-middleware');
     });
