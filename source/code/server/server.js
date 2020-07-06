@@ -19,16 +19,17 @@ const argv = require('yargs')
         type: 'string',
         default: 'credentials.json'
     })
-    .option('override-page', {
+    .option('static-page', {
         alias: 'p',
         type: 'string',
         description:
             'Use given dir as root dir instead of webpack-dev-middleware.'
     })
-    .option('disable-reload', {
+    .option('enable-reload', {
         type: 'boolean',
+        default: true,
         description:
-            'Disable auto reload when building using webpack-dev-middleware.'
+            'Enable auto reload when building using webpack-dev-middleware.'
     })
     .argv;
 
@@ -37,11 +38,6 @@ const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
-if(argv['disable-reload'] || argv['override-page'] !== undefined)
-    webpackConfig.entry = webpackConfig.entry.filter((e) => {
-        return !e.startsWith('webpack-hot-middleware');
-    });
-const compiler = webpack(webpackConfig);
 
 console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
@@ -65,14 +61,21 @@ if (fs.existsSync(credentials)) {
 }
 
 app.use('/data', express.static(dataDir));
-if(argv['override-page'] !== undefined) {
-    app.use('/', express.static(argv['override-page']));
+if(argv['static-page'] !== undefined) {
+    console.log('Hosting static page from', argv['static-page']);
+    app.use('/', express.static(argv['static-page']));
 } else {
+    console.log(
+        'Using webpack-dev-middleware to host page - auto-reload is',
+        argv['enable-reload'] ? 'enabled' : 'disabled');
+    const config = webpackConfig({ enableReload: argv['enable-reload']});
+    const compiler = webpack(config);
     app.use(webpackDevMiddleware(compiler, {
-        publicPath: webpackConfig.output.publicPath,
+        publicPath: config.output.publicPath,
     }));
-    if(!argv['disable-reload'])
+    if(argv['enable-reload']) {
         app.use(webpackHotMiddleware(compiler, { reload: true }));
+    }
 }
 
 app.get('/ls', (req, res) => {

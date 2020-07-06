@@ -9,7 +9,10 @@
 - \[optional\] Add `credentials.json` file to add password protection
 - Start server to host page: `npm start`
 
-Note: `npm start` automatically rebuilds and reloads the page if source changes are detected. To disable the auto-reload, pass the `--disable-reload` option.
+Options for hosting using `npm start`:
+- Statically built page: build the page first, then pass `--static-page=path`
+- Dynamically built page with auto-reload: rebuilds the page automatically on source changes and reloads it
+- Dynamically built page without auto-reload: pass `--disable-reload` to avoid the automatic reload when rebuilding the page
 
 ## Used Technologies
 
