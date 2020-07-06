@@ -3,6 +3,8 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const webpack = require('webpack');
+const webpackDevMiddleware = require('webpack-dev-middleware');
 
 const argv = require('yargs')
     .option('data', {
@@ -22,6 +24,9 @@ const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
+
+const config = require('../../../webpack.config');
+const compiler = webpack(config);
 
 console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
@@ -45,7 +50,9 @@ if (fs.existsSync(credentials)) {
 }
 
 app.use('/data', express.static(dataDir));
-app.use('/', express.static('build'));
+app.use(webpackDevMiddleware(compiler, {
+    publicPath: config.output.publicPath,
+}));
 
 app.get('/ls', (req, res) => {
     fs.readdir(datasetDir, (e, d) => {

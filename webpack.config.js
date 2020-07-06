@@ -36,11 +36,8 @@ module.exports = {
         filename: '[name].js',
         path: path.resolve(__dirname, 'build'),
         library: undefined,
-        libraryTarget: 'umd'
-    },
-    devServer: {
-        contentBase: path.resolve(__dirname, './source'),
-        watchContentBase: true
+        libraryTarget: 'umd',
+        publicPath: '/',
     },
     plugins: [
         new HtmlWebpackPlugin({

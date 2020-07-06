@@ -32,6 +32,7 @@
     "webgl-operate": "^0.7.0",
     "webpack": "^4.43.0",
     "webpack-cli": "^3.3.10",
+    "webpack-dev-middleware": "^3.7.2",
     "webpack-glsl-loader": "^1.0.1",
     "worker-loader": "^2.0.0"
   },
