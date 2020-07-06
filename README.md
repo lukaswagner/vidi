@@ -9,6 +9,8 @@
 - \[optional\] Add `credentials.json` file to add password protection
 - Start server to host page: `npm start`
 
+Note: `npm start` automatically rebuilds and reloads the page if source changes are detected. To disable the auto-reload, pass the `--disable-reload` option.
+
 ## Used Technologies
 
 - Frontend (webpage):

@@ -25,6 +25,11 @@ const argv = require('yargs')
         description:
             'Use given dir as root dir instead of webpack-dev-middleware.'
     })
+    .option('disable-reload', {
+        type: 'boolean',
+        description:
+            'Disable auto reload when building using webpack-dev-middleware.'
+    })
     .argv;
 
 const credentials = argv.credentials;
@@ -32,6 +37,10 @@ const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
+if(argv['disable-reload'])
+    webpackConfig.entry = webpackConfig.entry.filter((e) => {
+        return !e.startsWith('webpack-hot-middleware');
+    });
 const compiler = webpack(webpackConfig);
 
 console.log('credentials file:', credentials);
@@ -62,9 +71,8 @@ if(argv['override-page'] !== undefined) {
     app.use(webpackDevMiddleware(compiler, {
         publicPath: webpackConfig.output.publicPath,
     }));
-    app.use(webpackHotMiddleware(compiler, {
-        reload: true
-    }));
+    if(!argv['disable-reload'])
+        app.use(webpackHotMiddleware(compiler, { reload: true }));
 }
 
 app.get('/ls', (req, res) => {
