@@ -324,3 +324,8 @@ export class TopicMapApp extends Initializable {
             this._data.getVariablePointSize(sizeAxis);
     }
 }
+
+const m = module as any;
+if(m.hot !== undefined) {
+    m.hot.decline();
+}

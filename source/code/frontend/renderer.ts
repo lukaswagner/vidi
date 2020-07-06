@@ -105,6 +105,10 @@ export class TopicMapRenderer extends Renderer {
 
         this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
+        // webgl-operate mouse wheel zoom is broken
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        delete this._navigation._wheelZoom;
 
         // set up intermediate rendering
         const internalFormatAndType = Wizard.queryInternalTextureFormat(

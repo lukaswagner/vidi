@@ -3,8 +3,10 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const webpackConfig = require('../../../webpack.config');
 const webpack = require('webpack');
 const webpackDevMiddleware = require('webpack-dev-middleware');
+const webpackHotMiddleware = require('webpack-hot-middleware');
 
 const argv = require('yargs')
     .option('data', {
@@ -30,9 +32,7 @@ const dataDir = argv.data;
 const datasetDir = path.join(dataDir, 'datasets');
 
 const app = express();
-
-const config = require('../../../webpack.config');
-const compiler = webpack(config);
+const compiler = webpack(webpackConfig);
 
 console.log('credentials file:', credentials);
 console.log('data dir:', dataDir);
@@ -60,7 +60,10 @@ if(argv['override-page'] !== undefined) {
     app.use('/', express.static(argv['override-page']));
 } else {
     app.use(webpackDevMiddleware(compiler, {
-        publicPath: config.output.publicPath,
+        publicPath: webpackConfig.output.publicPath,
+    }));
+    app.use(webpackHotMiddleware(compiler, {
+        reload: true
     }));
 }
 
