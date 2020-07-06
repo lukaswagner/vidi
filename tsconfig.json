@@ -15,6 +15,7 @@
     "include": [
         "source/code/frontend/*.ts",
         "source/code/frontend/**/*.ts",
-        "source/code/typings/*.ts"
+        "source/code/typings/*.ts",
+        "source/code/shared/**/*.ts"
     ]
 }

@@ -3,6 +3,7 @@
     "include": [
         "source/code/frontend/*.ts",
         "source/code/frontend/**/*.ts",
+        "source/code/shared/**/*.ts",
         "source/code/typings/*.ts",
         "source/code/server/*.js",
         "webpack.config.js"
