@@ -70,12 +70,13 @@ export class CsvMultiThreadedLoader {
 
     protected prepareProgress(): void {
         // don't show progress bar for small files - would just flash shortly
-        if(this._size > 5e6) {
+        if(this._size === undefined || this._size > 5e6) {
             this._progress.visible = true;
         }
     
         this._progress.steps = [
-            new ProgressStep('Loading file', this._size, 5),
+            new ProgressStep('Loading file',
+                this._size || 1, this._size === undefined ? 0 : 5),
             new ProgressStep('Parsing data', 100, 90),
             new ProgressStep('Combining chunks', 100, 5),
         ];
@@ -117,7 +118,7 @@ export class CsvMultiThreadedLoader {
         ): void => {
             if (result.done) {
                 console.log(`loaded ${bytes} bytes in ${numChunks} chunks (avg: ${bytes/numChunks} bytes/chunk)`);
-                if(bytes !== this._size) {
+                if(this._size !== undefined && bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
                 this._progress.steps[1].total = chunks.length;
@@ -139,10 +140,14 @@ export class CsvMultiThreadedLoader {
             }
 
             if(workerChunks === undefined) {
-                console.log(result.value.length);
-                const bytesPerChunk = result.value.length;
-                const estimatedChunks = this._size / bytesPerChunk;
-                workerChunks = Math.ceil(estimatedChunks / targetNumWorkers);
+                if(this._size !== undefined) {
+                    const bytesPerChunk = result.value.length;
+                    const estimatedChunks = this._size / bytesPerChunk;
+                    workerChunks = Math.ceil(
+                        estimatedChunks / targetNumWorkers);
+                } else {
+                    workerChunks = 100;
+                }
             }
 
             bytes += result.value.length;
@@ -243,7 +248,6 @@ export class CsvMultiThreadedLoader {
             type: MessageType.Start,
             data: {
                 chunks,
-                size: this._size,
                 types: this._columnTypes,
                 options: {
                     delimiter: this._options.delimiter,

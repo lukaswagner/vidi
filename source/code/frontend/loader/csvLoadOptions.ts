@@ -7,7 +7,7 @@ export type CsvLoadOptions = {
 
 export type LoadInfo<T> = {
     stream: ReadableStream,
-    size: number,
+    size?: number,
     options: T,
     progress: Progress,
 }

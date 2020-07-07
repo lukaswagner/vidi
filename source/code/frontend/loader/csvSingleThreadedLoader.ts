@@ -44,12 +44,13 @@ export class CsvSingleThreadedLoader {
 
     protected prepareProgress(): void {
         // don't show progress bar for small files - would just flash shortly
-        if(this._size > 5e6) {
+        if(this._size === undefined || this._size > 5e6) {
             this._progress.visible = true;
         }
     
         this._progress.steps = [
-            new ProgressStep('Loading file', this._size, 5),
+            new ProgressStep('Loading file',
+                this._size || 1, this._size === undefined ? 0 : 5),
             new ProgressStep('Decoding text', 100, 25),
             new ProgressStep('Parsing data', 100, 70),
         ];
@@ -99,8 +100,8 @@ export class CsvSingleThreadedLoader {
             result: ReadableStreamReadResult<Uint8Array>
         ): void => {
             if (result.done) {
-                // console.log(`loaded ${bytes} bytes in ${chunks} chunks`);
-                if(bytes !== this._size) {
+                console.log(`loaded ${bytes} bytes in ${chunks} chunks`);
+                if(this._size !== undefined && bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
                 this._progress.steps[1].total = chunks;
@@ -126,7 +127,6 @@ export class CsvSingleThreadedLoader {
             type: MessageType.Start,
             data: {
                 chunks,
-                size: this._size,
                 options: {
                     delimiter: this._options.delimiter,
                     includesHeader: this._options.includesHeader

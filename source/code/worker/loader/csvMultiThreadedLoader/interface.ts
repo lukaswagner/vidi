@@ -9,7 +9,6 @@ export enum MessageType {
 export type StartData = {
     chunks: ArrayBuffer[],
     types: DataType[],
-    size: number,
     options: CsvLoadOptions
 }
 
