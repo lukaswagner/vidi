@@ -4,6 +4,9 @@ export class Input extends ControlBase<string> {
 
     public constructor(id: string) {
         super(id);
+        this._element.addEventListener('input', () => {
+            this._value = this.element.value;
+        });
     }
 
     protected applyValue(): void {

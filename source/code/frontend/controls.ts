@@ -63,11 +63,11 @@ export class Controls {
 
         this.customDataFile = new FileInput('custom-data-file');
         this.customDataUrlInput =
-            new Input('custom-data-url-user');
+            new Input('custom-data-url-input');
         this.customDataUrlUserInput =
-            new Input('custom-data-url-user');
+            new Input('custom-data-url-user-input');
         this.customDataUrlPassInput =
-            new Input('custom-data-url-pass');
+            new Input('custom-data-url-pass-input');
 
         this.customDataDelimiterSelect =
             new Select('custom-data-delimiter-select');
