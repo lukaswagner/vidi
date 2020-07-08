@@ -10,7 +10,7 @@ include elements/control-checkbox.pug
 include elements/progress-bar.pug
 
 .control-panel#controls(style='width: 350px;')
-    .form
+    form
         +control-block('data-header', 'data-group', 'Data', true)
             +control-element('preset-select', 'Presets')
                 +control-select('preset').col
@@ -23,9 +23,23 @@ include elements/progress-bar.pug
                 +control-element('data-progress-bar', 'Loading')
                     +progress-bar('data').col
             hr
-            +control-element('custom-data-button', 'Choose custom dataset').mb-2
-                +control-file('custom-data', 'Select').col-3
-                +control-label('custom-data', 'No file selected').col.text-secondary
+            +control-element('custom-data-source', 'Custom dataset source')
+                +control-select('custom-data-source').col
+            .mt-2#custom-data-file-wrapper
+                +control-element('custom-data-file-button', 'Choose custom dataset').mb-2
+                    +control-file('custom-data-file', 'Select').col-3
+                    +control-label('custom-data-file', 'No file selected').col.text-secondary
+            .mt-2.d-none#custom-data-url-wrapper
+                +control-element('custom-data-url-input', 'Specify data URL').mb-2
+                    .row.mx-0.w-100
+                        +control-label('custom-data-url', 'URL').col-3.px-0
+                        +control-input('custom-data-url').col.ml-2
+                    .row.mx-0.my-2.w-100
+                        +control-label('custom-data-url-user', 'User').col-3.px-0
+                        +control-input('custom-data-url-user')(autocomplete='username').col.ml-2
+                    .row.mx-0.pb-0.w-100
+                        +control-label('custom-data-url-pass', 'Password').col-3.px-0
+                        +control-input('custom-data-url-pass')(type='password', autocomplete='password').col.ml-2
             +control-element('custom-data-delimiter-select', 'Delimiter').mb-2
                 +control-select('custom-data-delimiter').col
                 +control-input('custom-data-delimiter').col-3.ml-2

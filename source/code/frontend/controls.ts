@@ -26,7 +26,13 @@ export class Controls {
     public dataButton: Button;
     public dataProgress: Progress;
 
-    public customData: FileInput;
+    public customDataSourceSelect: Select;
+
+    public customDataFile: FileInput;
+    public customDataUrlInput: Input;
+    public customDataUrlUserInput: Input;
+    public customDataUrlPassInput: Input;
+
     public customDataDelimiterSelect: Select;
     public customDataDelimiterInput: Input;
     public customDataIncludesHeader: Checkbox;
@@ -52,7 +58,17 @@ export class Controls {
         this.dataButton = new Button('data-button');
         this.dataProgress = new Progress('data-progress');
 
-        this.customData = new FileInput('custom-data');
+        this.customDataSourceSelect =
+            new Select('custom-data-source-select');
+
+        this.customDataFile = new FileInput('custom-data-file');
+        this.customDataUrlInput =
+            new Input('custom-data-url-user');
+        this.customDataUrlUserInput =
+            new Input('custom-data-url-user');
+        this.customDataUrlPassInput =
+            new Input('custom-data-url-pass');
+
         this.customDataDelimiterSelect =
             new Select('custom-data-delimiter-select');
         this.customDataDelimiterInput =
