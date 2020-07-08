@@ -8,8 +8,8 @@ export function fillColumns(
 ): void {
     const progressThreshold = lines.length / 10;
     let prog = 0;
-    for (let i = 0; i < lines.length - 1; i++) {
-        storeLine(lines[i + 1], i, delimiter, columns);
+    for (let i = 0; i < lines.length; i++) {
+        storeLine(lines[i], i, delimiter, columns);
         prog++;
         if(prog >= progressThreshold) {
             progress(2, prog);
