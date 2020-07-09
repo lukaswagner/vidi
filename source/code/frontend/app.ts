@@ -121,6 +121,26 @@ export class TopicMapApp extends Initializable {
         };
 
         // custom data
+        this._controls.customDataSourceSelect.setOptions(['File', 'URL']);
+        this._controls.customDataSourceSelect.handler = (v: string) => {
+            switch (v) {
+                case 'File':
+                    document.getElementById('custom-data-file-wrapper')
+                        .classList.remove('d-none');
+                    document.getElementById('custom-data-url-wrapper')
+                        .classList.add('d-none');
+                    break;
+                case 'URL':
+                    document.getElementById('custom-data-file-wrapper')
+                        .classList.add('d-none');
+                    document.getElementById('custom-data-url-wrapper')
+                        .classList.remove('d-none');
+                    break;
+                default:
+                    break;
+            }
+        };
+
         this._controls.customDataDelimiterSelect.setOptions(
             [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
         this._controls.customDataIncludesHeader.setValue(true);
@@ -237,7 +257,20 @@ export class TopicMapApp extends Initializable {
     }
 
     protected loadCustom(): void {
-        const file = this._controls.customData.files[0];
+        switch (this._controls.customDataSourceSelect.value) {
+            case 'File':
+                this. loadCustomFromFile();
+                break;
+            case 'URL':
+                this. loadCustomFromUrl();
+                break;
+            default:
+                break;
+        }
+    }
+
+    protected loadCustomFromFile(): void {
+        const file = this._controls.customDataFile.files[0];
         let delimiter = this._controls.customDataDelimiterSelect.value;
         if (delimiter === 'custom') {
             delimiter = this._controls.customDataDelimiterInput.value;
@@ -253,6 +286,37 @@ export class TopicMapApp extends Initializable {
                 includesHeader
             },
             progress: this._controls.customDataProgress
+        });
+    }
+    protected loadCustomFromUrl(): void {
+        const url = this._controls.customDataUrlInput.value;
+        const user = this._controls.customDataUrlUserInput.value;
+        const pass = this._controls.customDataUrlPassInput.value;
+
+        const headers = new Headers();
+        if(user !== '' && pass !== '') {
+            headers.set(
+                'Authorization',
+                'Basic ' + btoa(user + ':' + pass));
+        }
+
+        let delimiter = this._controls.customDataDelimiterSelect.value;
+        if (delimiter === 'custom') {
+            delimiter = this._controls.customDataDelimiterInput.value;
+        }
+        const includesHeader = this._controls.customDataIncludesHeader.value;
+
+        console.log('loading from url', url);
+
+        fetch(url, { headers }).then((res) => {
+            this.loadCsv({
+                stream: res.body,
+                options: {
+                    delimiter,
+                    includesHeader
+                },
+                progress: this._controls.customDataProgress
+            });
         });
     }
 
