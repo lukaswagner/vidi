@@ -306,7 +306,6 @@ export class TopicMapApp extends Initializable {
         }
         const includesHeader = this._controls.customDataIncludesHeader.value;
 
-        console.log(this._controls.customDataUrlInput.value);
         console.log('loading from url', url);
 
         fetch(url, { headers }).then((res) => {

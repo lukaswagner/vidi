@@ -353,10 +353,10 @@ export class CsvMultiThreadedLoader {
                         case DataType.Color:
                             (c as ColorColumn).copy(
                                 res[i] as ColorColumn,
-                                resultOffset);
+                                resultOffset * 4);
                             (c as ColorColumn).copy(
                                 rem[i] as ColorColumn,
-                                resultOffset + resLength);
+                                (resultOffset + resLength) * 4);
                             break;
                         case DataType.String:
                             (c as StringColumn).copy(
@@ -389,7 +389,7 @@ export class CsvMultiThreadedLoader {
                         case DataType.Color:
                             (c as ColorColumn).copy(
                                 res[i] as ColorColumn,
-                                resultOffset);
+                                resultOffset * 4);
                             break;
                         case DataType.String:
                             (c as StringColumn).copy(
