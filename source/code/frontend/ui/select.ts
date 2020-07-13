@@ -53,4 +53,8 @@ export class Select extends ControlBase<string> {
         this.setHandler(f);
         this._element.addEventListener('change', () => f(this.value));
     }
+
+    public get selectedIndex(): number {
+        return (this._element as HTMLSelectElement).selectedIndex;
+    }
 }

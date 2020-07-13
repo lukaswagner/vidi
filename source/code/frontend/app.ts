@@ -41,6 +41,9 @@ import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
+    private static readonly API_URL = 'https://api.varg.dev';
+    private static readonly API_USER = 'none';
+
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
         min: 0.001,
@@ -65,7 +68,7 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string; path: string; size: number }[];
+    private _datasets: { id: string; url: string; format: string }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -117,7 +120,8 @@ export class TopicMapApp extends Initializable {
 
         // data
         this._controls.dataButton.handler = () => {
-            this.load(this._controls.data.value);
+            const toLoad = this._datasets[this._controls.data.selectedIndex];
+            this.load(toLoad.url, toLoad.format);
         };
 
         // custom data
@@ -143,6 +147,12 @@ export class TopicMapApp extends Initializable {
 
         this._controls.customDataDelimiterSelect.setOptions(
             [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
+        this._controls.customDataFile.handler = (v) => {
+            const splitName = v[0].name.split('.');
+            const format = splitName[splitName.length - 1];
+            const delimiter = this.deductSeparator(format) || 'custom';
+            this._controls.customDataDelimiterSelect.setValue(delimiter, true);
+        };
         this._controls.customDataIncludesHeader.setValue(true);
         this._controls.customDataIncludesHeader.setDefault(true);
         this._controls.customDataUploadButton.handler =
@@ -204,12 +214,25 @@ export class TopicMapApp extends Initializable {
     }
 
     protected fetchAvailable(): void {
-        fetch('/ls').then((res) => {
+        const userUrl = `${TopicMapApp.API_URL}/users/${TopicMapApp.API_USER}`;
+        const datasetsUrl = userUrl + '/datasets';
+        fetch(datasetsUrl).then((res) => {
             res.json().then((j) => {
-                this._datasets = j;
+                const csv = j
+                    .filter((d: any) => d.format === 'csv')
+                    .map((d: any) => {
+                        return {
+                            id: d.id,
+                            url: `${datasetsUrl}/${d.id}/data`,
+                            format: d.format
+                        };
+                    });
+                this._datasets = csv;
                 this._controls.data.setOptions(
-                    this._datasets.map((d) => d.name));
-                this.load(this._controls.data.value);
+                    this._datasets.map((d) => d.id));
+                const toLoad =
+                    this._datasets[this._controls.data.selectedIndex];
+                this.load(toLoad.url, toLoad.format);
             });
         });
     }
@@ -222,7 +245,7 @@ export class TopicMapApp extends Initializable {
                     const preset = presets.find((p) => p.name === selected);
                     if (preset.data !== undefined) {
                         this._controls.data.setValue(preset.data, false);
-                        this.load(preset.data).then(() => {
+                        this.load(preset.data, 'csv').then(() => {
                             this._controls.applyPreset(preset);
                         });
                     } else {
@@ -235,20 +258,25 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected load(name: string): Promise<void> {
-        const file = this._datasets.find((d) => d.name === name);
-        if (file === undefined) {
-            console.log('can\'t load', name, '- file unknown');
-            return;
+    protected deductSeparator(format: string): string {
+        switch (format.toLowerCase()) {
+            case 'csv':
+                return ',';
+            case 'tsv':
+                return '\t';
+            default:
+                return undefined;
         }
-        console.log('loading', name, 'from', file.path);
+    }
 
-        fetch(file.path).then((res) => {
+    protected load(url: string, format: string): Promise<void> {
+        console.log('loading', url);
+
+        return fetch(url).then((res) => {
             this.loadCsv({
                 stream: res.body,
-                size: file.size,
                 options: {
-                    delimiter: ',',
+                    delimiter: this.deductSeparator(format) || ',',
                     includesHeader: true
                 },
                 progress: this._controls.dataProgress
