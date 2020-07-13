@@ -243,9 +243,11 @@ export class TopicMapApp extends Initializable {
                 this._controls.presetButton.handler = () => {
                     const selected = this._controls.presets.value;
                     const preset = presets.find((p) => p.name === selected);
-                    if (preset.data !== undefined) {
+                    const data =
+                        this._datasets.find((d) => d.id === preset.data);
+                    if (preset.data !== undefined && data !== undefined) {
                         this._controls.data.setValue(preset.data, false);
-                        this.load(preset.data, 'csv').then(() => {
+                        this.load(data.url, data.format).then(() => {
                             this._controls.applyPreset(preset);
                         });
                     } else {
@@ -273,7 +275,7 @@ export class TopicMapApp extends Initializable {
         console.log('loading', url);
 
         return fetch(url).then((res) => {
-            this.loadCsv({
+            return this.loadCsv({
                 stream: res.body,
                 options: {
                     delimiter: this.deductSeparator(format) || ',',
@@ -284,20 +286,18 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCustom(): void {
+    protected loadCustom(): Promise<void>{
         switch (this._controls.customDataSourceSelect.value) {
             case 'File':
-                this. loadCustomFromFile();
-                break;
+                return this.loadCustomFromFile();
             case 'URL':
-                this. loadCustomFromUrl();
-                break;
+                return this.loadCustomFromUrl();
             default:
                 break;
         }
     }
 
-    protected loadCustomFromFile(): void {
+    protected loadCustomFromFile(): Promise<void> {
         const file = this._controls.customDataFile.files[0];
         let delimiter = this._controls.customDataDelimiterSelect.value;
         if (delimiter === 'custom') {
@@ -306,7 +306,7 @@ export class TopicMapApp extends Initializable {
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
 
-        this.loadCsv({
+        return this.loadCsv({
             stream: file.stream(),
             size: file.size,
             options: {
@@ -316,7 +316,7 @@ export class TopicMapApp extends Initializable {
             progress: this._controls.customDataProgress
         });
     }
-    protected loadCustomFromUrl(): void {
+    protected loadCustomFromUrl(): Promise<void> {
         const url = this._controls.customDataUrlInput.value;
         const user = this._controls.customDataUrlUserInput.value;
         const pass = this._controls.customDataUrlPassInput.value;
@@ -336,8 +336,8 @@ export class TopicMapApp extends Initializable {
 
         console.log('loading from url', url);
 
-        fetch(url, { headers }).then((res) => {
-            this.loadCsv({
+        return fetch(url, { headers }).then((res) => {
+            return this.loadCsv({
                 stream: res.body,
                 options: {
                     delimiter,
@@ -348,14 +348,17 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCsv(info: LoadInfo<CsvLoadOptions>): void {
+    protected loadCsv(info: LoadInfo<CsvLoadOptions>): Promise<void> {
         const start = Date.now();
         // const loader = new CsvSingleThreadedLoader(info);
         const loader = new CsvMultiThreadedLoader(info);
-        loader.load().then((res) => {
-            const end = Date.now();
-            console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
-            this.dataReady(res);
+        return new Promise<void>((resolve) => {
+            loader.load().then((res) => {
+                const end = Date.now();
+                console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
+                this.dataReady(res);
+                resolve();
+            });
         });
     }
 
