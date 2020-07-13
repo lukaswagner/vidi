@@ -218,7 +218,10 @@ export class CsvMultiThreadedLoader {
         }
 
         const decoder = new TextDecoder();
-        const lines = decoder.decode(firstLines).split('\n');
+        const lines = decoder
+            .decode(firstLines)
+            .split('\n')
+            .map((l) => l.replace('\r', ''));
 
         let lineIndex = 0;
         const columns = prepareColumns(

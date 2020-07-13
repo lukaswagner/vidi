@@ -42,7 +42,7 @@ import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
     private static readonly API_URL = 'https://api.varg.dev';
-    private static readonly API_USER = 'none';
+    private static readonly API_USER = 'topicmap';
 
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
@@ -104,8 +104,11 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         this.initControls();
-        this.fetchAvailable();
-        this.fetchPresets();
+        const userUrl = `${TopicMapApp.API_URL}/users/${TopicMapApp.API_USER}`;
+        const datasetsUrl = userUrl + '/datasets';
+        this.fetchAvailable(datasetsUrl).then(() => {
+            this.fetchPresets(datasetsUrl);
+        });
 
         return true;
     }
@@ -213,34 +216,32 @@ export class TopicMapApp extends Initializable {
             this.updateVariablePointSize.bind(this);
     }
 
-    protected fetchAvailable(): void {
-        const userUrl = `${TopicMapApp.API_URL}/users/${TopicMapApp.API_USER}`;
-        const datasetsUrl = userUrl + '/datasets';
-        fetch(datasetsUrl).then((res) => {
-            res.json().then((j) => {
-                const csv = j
-                    .filter((d: any) => d.format === 'csv')
-                    .map((d: any) => {
-                        return {
-                            id: d.id,
-                            url: `${datasetsUrl}/${d.id}/data`,
-                            format: d.format
-                        };
-                    });
-                this._datasets = csv;
-                this._controls.data.setOptions(
-                    this._datasets.map((d) => d.id));
-                const toLoad =
-                    this._datasets[this._controls.data.selectedIndex];
-                this.load(toLoad.url, toLoad.format);
+    protected fetchAvailable(datasetsUrl: string): Promise<void> {
+        return new Promise<void>((resolve) => {
+            fetch(datasetsUrl).then((res) => {
+                res.json().then((j) => {
+                    const csv = j
+                        .filter((d: any) => d.format === 'csv')
+                        .map((d: any) => {
+                            return {
+                                id: d.id,
+                                url: `${datasetsUrl}/${d.id}/data`,
+                                format: d.format
+                            };
+                        });
+                    this._datasets = csv;
+                    this._controls.data.setOptions(
+                        this._datasets.map((d) => d.id));
+                    resolve();
+                });
             });
         });
     }
 
-    protected fetchPresets(): void {
-        fetch('/data/presets.json').then((res) => {
+    protected fetchPresets(datasetsUrl: string): void {
+        fetch(datasetsUrl + '/presets/data').then((res) => {
             res.json().then((presets: Preset[]) => {
-                this._controls.presetButton.handler = () => {
+                const handler = (): void => {
                     const selected = this._controls.presets.value;
                     const preset = presets.find((p) => p.name === selected);
                     const data =
@@ -255,7 +256,9 @@ export class TopicMapApp extends Initializable {
                     }
                 };
 
+                this._controls.presetButton.handler = handler;
                 this._controls.presets.setOptions(presets.map((p) => p.name));
+                handler();
             });
         });
     }
