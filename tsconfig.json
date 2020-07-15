@@ -10,7 +10,22 @@
         "lib": [
             "DOM",
             "ES2020"
-        ]
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "shared/*": [
+                "source/code/shared/*"
+            ],
+            "frontend/*": [
+                "source/code/frontend/*"
+            ],
+            "worker/*": [
+                "source/code/worker/*"
+            ],
+            "loader/*": [
+                "source/code/worker/loader/*"
+            ],
+        }
     },
     "include": [
         "source/code/frontend/*.ts",

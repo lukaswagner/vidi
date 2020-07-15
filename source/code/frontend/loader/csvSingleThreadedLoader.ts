@@ -12,7 +12,7 @@ import {
 } from '../../worker/loader/csvSingleThreadedLoader/interface';
 import { Column } from '../data/column';
 import LoadWorker from
-    'worker-loader!../../worker/loader/csvSingleThreadedLoader/worker';
+    'worker-loader?inline=true!../../worker/loader/csvSingleThreadedLoader/worker';
 import { Progress } from '../ui/progress';
 import { ProgressStep } from '../ui/progressStep';
 

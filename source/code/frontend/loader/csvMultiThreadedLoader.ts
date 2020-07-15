@@ -6,7 +6,7 @@ import {
     StringColumn,
     columnFromType,
     rebuildColumn
-} from '../data/column';
+} from 'frontend/data/column';
 import {
     CsvLoadOptions,
     LoadInfo
@@ -16,14 +16,14 @@ import {
     MessageData,
     MessageType,
     StartData,
-} from '../../worker/loader/csvMultiThreadedLoader/interface';
+} from 'worker/loader/csvMultiThreadedLoader/interface';
 import LoadWorker from
-    'worker-loader!../../worker/loader/csvMultiThreadedLoader/worker';
-import { PerfMon } from '../../shared/performance/perfMon';
-import { Progress } from '../ui/progress';
-import { ProgressStep } from '../ui/progressStep';
-import { prepareColumns } from '../../shared/csvLoader/prepareColumns';
-import { storeLine } from '../../shared/csvLoader/storeLine';
+    'worker-loader?inline=true!loader/csvMultiThreadedLoader/worker';
+import { PerfMon } from 'shared/performance/perfMon';
+import { Progress } from 'frontend/ui/progress';
+import { ProgressStep } from 'frontend/ui/progressStep';
+import { prepareColumns } from 'shared/csvLoader/prepareColumns';
+import { storeLine } from 'shared/csvLoader/storeLine';
 
 export class CsvMultiThreadedLoader {
     protected _stream: ReadableStream;
