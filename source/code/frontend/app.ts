@@ -41,9 +41,6 @@ import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
 export class TopicMapApp extends Initializable {
-    private static readonly API_URL = 'https://api.varg.dev';
-    private static readonly API_USER = 'topicmap';
-
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
         min: 0.001,
@@ -72,6 +69,8 @@ export class TopicMapApp extends Initializable {
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
+        console.log('version:', COMMIT);
+
         this._canvas = new Canvas(element, { antialias: false });
         this._canvas.controller.multiFrameNumber = 8;
         this._canvas.framePrecision = Wizard.Precision.half;
@@ -104,7 +103,7 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         this.initControls();
-        const userUrl = `${TopicMapApp.API_URL}/users/${TopicMapApp.API_USER}`;
+        const userUrl = `${API_URL}/users/${API_USER}`;
         const datasetsUrl = userUrl + '/datasets';
         this.fetchAvailable(datasetsUrl).then(() => {
             this.fetchPresets(datasetsUrl);
