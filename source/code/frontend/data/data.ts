@@ -2,8 +2,7 @@ import {
     Column,
     DataType,
     FloatColumn,
-    ColorColumn,
-    BaseColumn
+    ColorColumn
 } from './column';
 
 export class Data {

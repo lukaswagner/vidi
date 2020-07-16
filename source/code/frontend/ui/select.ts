@@ -1,5 +1,5 @@
 import { ControlBase } from './base';
-import { Dict } from '../util/dict';
+import { Dict } from 'frontend/util/dict';
 
 export class Select extends ControlBase<string> {
     public constructor(id: string) {

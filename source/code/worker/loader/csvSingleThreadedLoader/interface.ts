@@ -1,5 +1,5 @@
-import { Column } from '../../../frontend/data/column';
-import { CsvLoadOptions } from '../../../frontend/loader/csvLoadOptions';
+import { Column } from 'frontend/data/column';
+import { CsvLoadOptions } from 'frontend/loader/csvLoadOptions';
 
 export enum MessageType {
     Start,

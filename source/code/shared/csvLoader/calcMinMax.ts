@@ -1,4 +1,4 @@
-import { Column, DataType, FloatColumn } from '../../frontend/data/column';
+import { Column, DataType, FloatColumn } from 'frontend/data/column';
 
 export function calcMinMax(
     columns: Column[], progress: (index: number, progress: number) => void

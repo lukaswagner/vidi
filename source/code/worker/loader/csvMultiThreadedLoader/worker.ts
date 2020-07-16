@@ -4,10 +4,10 @@ import {
     MessageType,
     StartData
 } from './interface';
-import { calcMinMax } from '../../../shared/csvLoader/calcMinMax';
-import { columnFromType } from '../../../frontend/data/column';
-import { fillColumns } from '../../../shared/csvLoader/fillColumns';
-import { parseChunk } from '../../../shared/csvLoader/parseChunk';
+import { calcMinMax } from 'shared/csvLoader/calcMinMax';
+import { columnFromType } from 'frontend/data/column';
+import { fillColumns } from 'shared/csvLoader/fillColumns';
+import { parseChunk } from 'shared/csvLoader/parseChunk';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;

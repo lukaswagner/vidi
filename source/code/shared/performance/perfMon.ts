@@ -4,9 +4,9 @@ import {
     FloatColumn,
     StringColumn,
     columnFromType
-} from '../../frontend/data/column';
+} from 'frontend/data/column';
 import { Timestamp } from './timestamp';
-import { calcMinMax } from '../csvLoader/calcMinMax';
+import { calcMinMax } from 'shared/csvLoader/calcMinMax';
 
 export class PerfMon {
     protected _zero = Date.now();

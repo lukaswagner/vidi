@@ -1,4 +1,4 @@
-import { Column } from '../../frontend/data/column';
+import { Column } from 'frontend/data/column';
 import { storeLine } from './storeLine';
 
 // i can feel it coming in the air tonight, oh lord

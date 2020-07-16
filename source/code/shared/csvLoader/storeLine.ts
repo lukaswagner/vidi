@@ -4,7 +4,7 @@ import {
     DataType,
     FloatColumn,
     StringColumn
-} from '../../frontend/data/column';
+} from 'frontend/data/column';
 import { Color } from 'webgl-operate';
 import { splitLine } from './splitLine';
 
