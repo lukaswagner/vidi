@@ -1,4 +1,4 @@
-import { Progress } from '../ui/progress';
+import { Progress } from 'frontend/ui/progress';
 
 export type CsvLoadOptions = {
     delimiter: string,

@@ -14,7 +14,7 @@ import {
     LabelSet
 } from './gridLabelPass';
 import { GridPass } from './gridPass';
-import { PointPass } from '../points/pointPass';
+import { PointPass } from 'frontend/points/pointPass';
 
 export class GridOffsetHelper extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {

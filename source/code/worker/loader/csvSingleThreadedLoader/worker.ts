@@ -6,11 +6,11 @@ import {
     ProgressStepTotalData,
     StartData
 } from './interface';
-import { Column } from '../../../frontend/data/column';
-import { calcMinMax } from '../../../shared/csvLoader/calcMinMax';
-import { fillColumns } from '../../../shared/csvLoader/fillColumns';
-import { parseChunk } from '../../../shared/csvLoader/parseChunk';
-import { prepareColumns } from '../../../shared/csvLoader/prepareColumns';
+import { Column } from 'frontend/data/column';
+import { calcMinMax } from 'shared/csvLoader/calcMinMax';
+import { fillColumns } from 'shared/csvLoader/fillColumns';
+import { parseChunk } from 'shared/csvLoader/parseChunk';
+import { prepareColumns } from 'shared/csvLoader/prepareColumns';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;

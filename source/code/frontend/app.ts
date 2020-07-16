@@ -65,10 +65,12 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string; path: string; size: number }[];
+    private _datasets: { id: string; url: string; format: string }[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
+        console.log('version:', COMMIT);
+
         this._canvas = new Canvas(element, { antialias: false });
         this._canvas.controller.multiFrameNumber = 8;
         this._canvas.framePrecision = Wizard.Precision.half;
@@ -101,8 +103,11 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         this.initControls();
-        this.fetchAvailable();
-        this.fetchPresets();
+        const userUrl = `${API_URL}/users/${API_USER}`;
+        const datasetsUrl = userUrl + '/datasets';
+        this.fetchAvailable(datasetsUrl).then(() => {
+            this.fetchPresets(datasetsUrl);
+        });
 
         return true;
     }
@@ -117,7 +122,8 @@ export class TopicMapApp extends Initializable {
 
         // data
         this._controls.dataButton.handler = () => {
-            this.load(this._controls.data.value);
+            const toLoad = this._datasets[this._controls.data.selectedIndex];
+            this.load(toLoad.url, toLoad.format);
         };
 
         // custom data
@@ -143,6 +149,12 @@ export class TopicMapApp extends Initializable {
 
         this._controls.customDataDelimiterSelect.setOptions(
             [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
+        this._controls.customDataFile.handler = (v) => {
+            const splitName = v[0].name.split('.');
+            const format = splitName[splitName.length - 1];
+            const delimiter = this.deductSeparator(format) || 'custom';
+            this._controls.customDataDelimiterSelect.setValue(delimiter, true);
+        };
         this._controls.customDataIncludesHeader.setValue(true);
         this._controls.customDataIncludesHeader.setDefault(true);
         this._controls.customDataUploadButton.handler =
@@ -203,26 +215,39 @@ export class TopicMapApp extends Initializable {
             this.updateVariablePointSize.bind(this);
     }
 
-    protected fetchAvailable(): void {
-        fetch('/ls').then((res) => {
-            res.json().then((j) => {
-                this._datasets = j;
-                this._controls.data.setOptions(
-                    this._datasets.map((d) => d.name));
-                this.load(this._controls.data.value);
+    protected fetchAvailable(datasetsUrl: string): Promise<void> {
+        return new Promise<void>((resolve) => {
+            fetch(datasetsUrl).then((res) => {
+                res.json().then((j) => {
+                    const csv = j
+                        .filter((d: any) => d.format === 'csv')
+                        .map((d: any) => {
+                            return {
+                                id: d.id,
+                                url: `${datasetsUrl}/${d.id}/data`,
+                                format: d.format
+                            };
+                        });
+                    this._datasets = csv;
+                    this._controls.data.setOptions(
+                        this._datasets.map((d) => d.id));
+                    resolve();
+                });
             });
         });
     }
 
-    protected fetchPresets(): void {
-        fetch('/data/presets.json').then((res) => {
+    protected fetchPresets(datasetsUrl: string): void {
+        fetch(datasetsUrl + '/presets/data').then((res) => {
             res.json().then((presets: Preset[]) => {
-                this._controls.presetButton.handler = () => {
+                const handler = (): void => {
                     const selected = this._controls.presets.value;
                     const preset = presets.find((p) => p.name === selected);
-                    if (preset.data !== undefined) {
+                    const data =
+                        this._datasets.find((d) => d.id === preset.data);
+                    if (preset.data !== undefined && data !== undefined) {
                         this._controls.data.setValue(preset.data, false);
-                        this.load(preset.data).then(() => {
+                        this.load(data.url, data.format).then(() => {
                             this._controls.applyPreset(preset);
                         });
                     } else {
@@ -230,25 +255,32 @@ export class TopicMapApp extends Initializable {
                     }
                 };
 
+                this._controls.presetButton.handler = handler;
                 this._controls.presets.setOptions(presets.map((p) => p.name));
+                handler();
             });
         });
     }
 
-    protected load(name: string): Promise<void> {
-        const file = this._datasets.find((d) => d.name === name);
-        if (file === undefined) {
-            console.log('can\'t load', name, '- file unknown');
-            return;
+    protected deductSeparator(format: string): string {
+        switch (format.toLowerCase()) {
+            case 'csv':
+                return ',';
+            case 'tsv':
+                return '\t';
+            default:
+                return undefined;
         }
-        console.log('loading', name, 'from', file.path);
+    }
 
-        fetch(file.path).then((res) => {
-            this.loadCsv({
+    protected load(url: string, format: string): Promise<void> {
+        console.log('loading', url);
+
+        return fetch(url).then((res) => {
+            return this.loadCsv({
                 stream: res.body,
-                size: file.size,
                 options: {
-                    delimiter: ',',
+                    delimiter: this.deductSeparator(format) || ',',
                     includesHeader: true
                 },
                 progress: this._controls.dataProgress
@@ -256,20 +288,18 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCustom(): void {
+    protected loadCustom(): Promise<void>{
         switch (this._controls.customDataSourceSelect.value) {
             case 'File':
-                this. loadCustomFromFile();
-                break;
+                return this.loadCustomFromFile();
             case 'URL':
-                this. loadCustomFromUrl();
-                break;
+                return this.loadCustomFromUrl();
             default:
                 break;
         }
     }
 
-    protected loadCustomFromFile(): void {
+    protected loadCustomFromFile(): Promise<void> {
         const file = this._controls.customDataFile.files[0];
         let delimiter = this._controls.customDataDelimiterSelect.value;
         if (delimiter === 'custom') {
@@ -278,7 +308,7 @@ export class TopicMapApp extends Initializable {
         const includesHeader = this._controls.customDataIncludesHeader.value;
         console.log('loading custom file', file.name);
 
-        this.loadCsv({
+        return this.loadCsv({
             stream: file.stream(),
             size: file.size,
             options: {
@@ -288,7 +318,7 @@ export class TopicMapApp extends Initializable {
             progress: this._controls.customDataProgress
         });
     }
-    protected loadCustomFromUrl(): void {
+    protected loadCustomFromUrl(): Promise<void> {
         const url = this._controls.customDataUrlInput.value;
         const user = this._controls.customDataUrlUserInput.value;
         const pass = this._controls.customDataUrlPassInput.value;
@@ -308,8 +338,8 @@ export class TopicMapApp extends Initializable {
 
         console.log('loading from url', url);
 
-        fetch(url, { headers }).then((res) => {
-            this.loadCsv({
+        return fetch(url, { headers }).then((res) => {
+            return this.loadCsv({
                 stream: res.body,
                 options: {
                     delimiter,
@@ -320,14 +350,17 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCsv(info: LoadInfo<CsvLoadOptions>): void {
+    protected loadCsv(info: LoadInfo<CsvLoadOptions>): Promise<void> {
         const start = Date.now();
         // const loader = new CsvSingleThreadedLoader(info);
         const loader = new CsvMultiThreadedLoader(info);
-        loader.load().then((res) => {
-            const end = Date.now();
-            console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
-            this.dataReady(res);
+        return new Promise<void>((resolve) => {
+            loader.load().then((res) => {
+                const end = Date.now();
+                console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
+                this.dataReady(res);
+                resolve();
+            });
         });
     }
 

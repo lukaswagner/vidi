@@ -2,7 +2,7 @@ import {
     Column,
     columnFromType,
     inferType
-} from '../../frontend/data/column';
+} from 'frontend/data/column';
 import { splitLine } from './splitLine';
 
 

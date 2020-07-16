@@ -9,12 +9,12 @@ import {
     ProgressData,
     ProgressStepTotalData,
     StartData,
-} from '../../worker/loader/csvSingleThreadedLoader/interface';
-import { Column } from '../data/column';
+} from 'worker/loader/csvSingleThreadedLoader/interface';
+import { Column } from 'frontend/data/column';
 import LoadWorker from
-    'worker-loader!../../worker/loader/csvSingleThreadedLoader/worker';
-import { Progress } from '../ui/progress';
-import { ProgressStep } from '../ui/progressStep';
+    'worker-loader?inline=true!loader/csvSingleThreadedLoader/worker';
+import { Progress } from 'frontend/ui/progress';
+import { ProgressStep } from 'frontend/ui/progressStep';
 
 export class CsvSingleThreadedLoader {
     protected _stream: ReadableStream;
