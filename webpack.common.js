@@ -43,8 +43,6 @@ module.exports = function (env) {
 
     return {
         entry: './source/code/frontend/app.ts',
-        devtool: 'inline-source-map',
-        mode: 'development',
         module: {
             rules: [
                 {

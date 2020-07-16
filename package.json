@@ -34,12 +34,16 @@
     "webpack-cli": "^3.3.10",
     "webpack-dev-server": "^3.11.0",
     "webpack-glsl-loader": "^1.0.1",
+    "webpack-merge": "^5.0.9",
     "worker-loader": "^2.0.0"
   },
   "dependencies": {},
   "scripts": {
-    "build": "webpack",
-    "watch": "webpack --watch",
-    "start": "webpack-dev-server"
+    "build-dev": "webpack --config webpack.dev.js",
+    "watch-dev": "webpack --config webpack.dev.js --watch",
+    "start-dev": "webpack-dev-server --config webpack.dev.js",
+    "build-prod": "webpack --config webpack.prod.js",
+    "watch-prod": "webpack --config webpack.prod.js --watch",
+    "start-prod": "webpack-dev-server --config webpack.prod.js"
   }
 }
