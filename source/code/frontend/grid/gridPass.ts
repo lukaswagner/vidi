@@ -6,11 +6,10 @@ import {
     Initializable,
     Program,
     Shader,
-    tuples,
 } from 'webgl-operate';
-import GLfloat2 = tuples.GLfloat2;
 
 import { ExtendedGridInfo } from './gridInfo';
+import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
 
 export class GridPass extends Initializable {

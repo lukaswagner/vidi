@@ -13,14 +13,9 @@ import {
     Renderer,
     Texture2D,
     Wizard,
-    tuples,
     vec3,
     viewer
 } from 'webgl-operate';
-
-// can't use destructuring, so we have to import this manually
-// see https://github.com/microsoft/TypeScript/issues/13135
-import GLfloat2 = tuples.GLfloat2;
 
 import {
     ExtendedGridInfo,
@@ -28,6 +23,7 @@ import {
     calculateExtendedGridInfo
 } from './grid/gridInfo';
 
+import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';

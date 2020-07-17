@@ -5,7 +5,7 @@ import {
     FloatColumn,
     StringColumn
 } from 'frontend/data/column';
-import { Color } from 'webgl-operate';
+import { hex2rgba } from 'shared/helper/color';
 import { splitLine } from './splitLine';
 
 export function storeLine(
@@ -19,7 +19,7 @@ export function storeLine(
                 (column as FloatColumn).set(index, Number(cell));
                 break;
             case DataType.Color:
-                (column as ColorColumn).set(index, Color.hex2rgba(cell));
+                (column as ColorColumn).set(index, hex2rgba(cell));
                 break;
             case DataType.String:
                 (column as StringColumn).set(index, cell);
