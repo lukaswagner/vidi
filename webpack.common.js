@@ -5,6 +5,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { DefinePlugin } = require('webpack');
 const child_process = require('child_process');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
 module.exports = function (env) {
     const api_url =
@@ -41,10 +42,12 @@ module.exports = function (env) {
         ]),
     ];
 
+    if (env !== undefined && env.analyze !== undefined) {
+        plugins.push(new BundleAnalyzerPlugin());
+    }
+
     return {
         entry: './source/code/frontend/app.ts',
-        devtool: 'inline-source-map',
-        mode: 'development',
         module: {
             rules: [
                 {

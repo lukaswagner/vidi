@@ -16,7 +16,7 @@ import {
     MessageData,
     MessageType,
     StartData,
-} from 'worker/loader/csvMultiThreadedLoader/interface';
+} from 'loader/csvMultiThreadedLoader/interface';
 import LoadWorker from
     'worker-loader?inline=true!loader/csvMultiThreadedLoader/worker';
 import { PerfMon } from 'shared/performance/perfMon';

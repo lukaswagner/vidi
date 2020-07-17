@@ -6,10 +6,9 @@ import {
     Initializable,
     Program,
     Shader,
-    tuples,
 } from 'webgl-operate';
-import GLfloat2 = tuples.GLfloat2;
 
+import { GLfloat2 } from 'shared/types/tuples' ;
 import { PointCloudGeometry } from './pointCloudGeometry';
 
 export class PointPass extends Initializable {

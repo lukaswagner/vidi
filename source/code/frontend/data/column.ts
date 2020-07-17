@@ -1,5 +1,5 @@
-import { GLclampf4 } from "webgl-operate/lib/tuples";
-import { Color } from "webgl-operate";
+import { GLclampf4 } from "shared/types/tuples";
+import { hex2rgba } from "shared/helper/color";
 
 export enum DataType {
     Float,
@@ -164,7 +164,7 @@ export function inferType(input: string): DataType {
     }
 
     if (input.startsWith('#')) {
-        const col = Color.hex2rgba(input);
+        const col = hex2rgba(input);
         if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
             return DataType.Color;
         }
