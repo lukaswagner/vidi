@@ -15,7 +15,7 @@
             "type": "npm",
             "script": "start-dev",
             "problemMatcher": []
-        }
+        },
         {
             "type": "npm",
             "script": "build-prod",
