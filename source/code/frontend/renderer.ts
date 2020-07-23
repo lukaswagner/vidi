@@ -107,18 +107,20 @@ export class TopicMapRenderer extends Renderer {
         delete this._navigation._wheelZoom;
 
         // set up intermediate rendering
+
+        // usually precision is provided by canvas, but this._framePrecision is defined only after initialization.
         const internalFormatAndType = Wizard.queryInternalTextureFormat(
-            this._context, gl.RGBA, Wizard.Precision.half);
+            this._context, gl.RGB, Wizard.Precision.byte);
 
         this._colorRenderTexture = new Texture2D(
             this._context, 'ColorRenderTexture');
         this._colorRenderTexture.initialize(
-            1, 1, internalFormatAndType[0], gl.RGBA, internalFormatAndType[1]);
-        this._colorRenderTexture.filter(gl.LINEAR, gl.LINEAR);
+            1, 1, internalFormatAndType[0], gl.RGB, internalFormatAndType[1]);
+        this._colorRenderTexture.filter(gl.NEAREST, gl.NEAREST);
 
         this._depthRenderbuffer = new Renderbuffer(
             this._context, 'DepthRenderbuffer');
-        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_COMPONENT16);
+        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_STENCIL);
 
         this._intermediateFBO = new Framebuffer(
             this._context, 'IntermediateFBO');

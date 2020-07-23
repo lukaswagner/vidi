@@ -75,7 +75,7 @@ export class TopicMapApp extends Initializable {
 
         this._canvas = new Canvas(element, { antialias: false });
         this._canvas.controller.multiFrameNumber = 8;
-        this._canvas.framePrecision = Wizard.Precision.half;
+        this._canvas.framePrecision = Wizard.Precision.byte;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
         const bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
