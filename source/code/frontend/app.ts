@@ -40,6 +40,8 @@ import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
+declare let window: any; // for exposing canvas, controller, context, and renderer
+
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
         default: 0.01,
@@ -108,6 +110,12 @@ export class TopicMapApp extends Initializable {
         this.fetchAvailable(datasetsUrl).then(() => {
             this.fetchPresets(datasetsUrl);
         });
+
+        // expose canvas, context, and renderer for console access
+        window.canvas = this._canvas;
+        window.context = this._canvas.context;
+        window.controller = this._canvas.controller;
+        window.renderer = this._renderer;
 
         return true;
     }
