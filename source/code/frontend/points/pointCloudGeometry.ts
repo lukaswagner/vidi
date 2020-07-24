@@ -16,7 +16,8 @@ export class PointCloudGeometry extends Geometry {
         variablePointSize: false,
     });
 
-    protected _uv = new Float32Array([+1, -1, +1, +1, -1, -1, -1, +1]);
+    protected _uv = new Uint8Array([+1, -1, +1, +1, -1, -1, -1, +1]);
+
     protected _positions = new Float32Array([]);
     protected _vertexColors = new Float32Array([]);
     protected _variablePointSize = new Float32Array([]);
@@ -131,8 +132,8 @@ export class PointCloudGeometry extends Geometry {
      */
     protected bindBuffers(/*indices: Array<GLuint>*/): void {
         this._buffers[0].attribEnable(
-            this._uvLocation, 2, this._gl.FLOAT,
-            false, 8, 0, true, false);
+            this._uvLocation, 2, this._gl.BYTE,
+            false, 2, 0, true, false);
         this._gl2facade.vertexAttribDivisor(this._uvLocation, 0);
 
         this._buffers[1].attribEnable(
