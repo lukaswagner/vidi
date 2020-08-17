@@ -44,10 +44,7 @@ export function hex2rgba(hex: string): GLclampf4 {
             hex[offset + 3 * length + stride], 16) / 255.0;
     }
 
-    if(
-        !isNaN(rgba[0]) || !isNaN(rgba[1]) ||
-        !isNaN(rgba[2]) || !isNaN(rgba[3])
-    ){
+    if(isNaN(rgba[0]) || isNaN(rgba[1]) || isNaN(rgba[2]) || isNaN(rgba[3])){
         console.warn(
             `expected well formated hexadecimal RGBA string, given '${hex}'`);
     }
