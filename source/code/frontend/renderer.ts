@@ -108,7 +108,8 @@ export class TopicMapRenderer extends Renderer {
 
         // set up intermediate rendering
 
-        // usually precision is provided by canvas, but this._framePrecision is defined only after initialization.
+        // usually precision is provided by canvas, but this._framePrecision is
+        // defined only after initialization.
         const internalFormatAndType = Wizard.queryInternalTextureFormat(
             this._context, gl.RGB, Wizard.Precision.byte);
 
