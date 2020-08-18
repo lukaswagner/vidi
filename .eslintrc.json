@@ -15,7 +15,6 @@
         "sourceType": "module",
         "project": [
             "./tsconfig.eslint.json",
-            "./source/code/worker/loader/csvSingleThreadedLoader/tsconfig.json",
             "./source/code/worker/loader/csvMultiThreadedLoader/tsconfig.json"
         ]
     },

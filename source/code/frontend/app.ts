@@ -360,7 +360,6 @@ export class TopicMapApp extends Initializable {
 
     protected loadCsv(info: LoadInfo<CsvLoadOptions>): Promise<void> {
         const start = Date.now();
-        // const loader = new CsvSingleThreadedLoader(info);
         const loader = new CsvMultiThreadedLoader(info);
         return new Promise<void>((resolve) => {
             loader.load().then((res) => {
