@@ -26,19 +26,16 @@ import {
 } from './controls';
 
 import {
-    CsvLoadOptions,
+    CsvLoaderOptions,
     LoadInfo
-} from './loader/csvLoadOptions';
-
-import {
-    DataType,
-    rebuildColumn,
-} from './data/column';
+} from '../shared/csvLoader/options';
 
 import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
 import { Data } from './data/data';
+import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
+import { rebuildColumn } from 'shared/column/column';
 
 // for exposing canvas, controller, context, and renderer
 declare let window: any;
@@ -359,7 +356,7 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCsv(info: LoadInfo<CsvLoadOptions>): Promise<void> {
+    protected loadCsv(info: LoadInfo<CsvLoaderOptions>): Promise<void> {
         const start = Date.now();
         const loader = new CsvMultiThreadedLoader(info);
         return new Promise<void>((resolve) => {
@@ -380,7 +377,7 @@ export class TopicMapApp extends Initializable {
         this._data = new Data(columns);
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Float);
+        const numberColumnNames = this._data.getColumnNames(DataType.Number);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
@@ -407,9 +404,12 @@ export class TopicMapApp extends Initializable {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);
         }
-        const { positions, extents } = this._data.getCoordinates(
-            [{ min: -1, max: 1 }, { min: -1, max: 1 }, { min: -1, max: 1 }]);
-        this._renderer.positions = positions;
+        this._renderer.positions = this._data.getCoordinates();
+        const extents = [
+            { min: -1, max: 1 },
+            { min: -1, max: 1 },
+            { min: -1, max: 1 }
+        ];
         const subdivisions = 12;
         this._renderer.grid = GridHelper.buildGrid(
             [0, 1, 2].map((i) => this._data.selectedColumn(i)),

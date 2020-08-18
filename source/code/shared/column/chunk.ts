@@ -1,7 +1,7 @@
 import { DataType } from './dataType';
-import { GLclampf4 } from 'shared/types/tuples';
+import { RGBA } from 'shared/types/tuples';
 
-export abstract class BaseSubColumn<T> {
+export abstract class BaseChunk<T> {
     protected _data: ArrayBuffer;
     protected _type: DataType;
     protected _length: number;
@@ -26,7 +26,7 @@ export abstract class BaseSubColumn<T> {
     public abstract set(index: number, value: T): void;
 }
 
-export class NumberSubColumn extends BaseSubColumn<number> {
+export class NumberChunk extends BaseChunk<number> {
     protected _view: Float32Array;
     protected _min: number;
     protected _max: number;
@@ -58,7 +58,7 @@ export class NumberSubColumn extends BaseSubColumn<number> {
     }
 }
 
-export class ColorSubColumn extends BaseSubColumn<GLclampf4> {
+export class ColorChunk extends BaseChunk<RGBA> {
     protected _view: Float32Array;
 
     public constructor(length: number) {
@@ -67,13 +67,34 @@ export class ColorSubColumn extends BaseSubColumn<GLclampf4> {
         this._data = this._view.buffer;
     }
 
-    public get(index: number): GLclampf4 {
+    public get(index: number): RGBA {
         return Array.from(
             this._view.subarray(index * 4, (index + 1) * 4)
-        ) as GLclampf4;
+        ) as RGBA;
     }
 
-    public set(index: number, value: GLclampf4): void {
+    public set(index: number, value: RGBA): void {
         this._view.set(value, index * 4);
+    }
+}
+
+export type Chunk = NumberChunk | ColorChunk;
+
+export function buildChunk(type: DataType, length: number): Chunk {
+    switch (type) {
+        case DataType.Number:
+            return new NumberChunk(length);
+        case DataType.Color:
+            return new ColorChunk(length);
+    }
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function rebuildChunk(chunk: any): Chunk {
+    switch (chunk._type) {
+        case DataType.Number:
+            return Object.assign(new NumberChunk(0), chunk);
+        case DataType.Color:
+            return Object.assign(new ColorChunk(0), chunk);
     }
 }

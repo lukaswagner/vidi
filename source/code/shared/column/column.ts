@@ -1,10 +1,10 @@
-import { BaseSubColumn, NumberSubColumn } from './subColumn';
+import { BaseChunk, NumberChunk, rebuildChunk } from './chunk';
 import { DataType } from './dataType';
 import { GLclampf4 } from 'shared/types/tuples';
 
 export abstract class BaseColumn<T> {
     protected _name: string;
-    protected _subColumns: BaseSubColumn<T>[];
+    protected _chunks: BaseChunk<T>[] = [];
     protected _type: DataType;
     protected _length = 0;
 
@@ -13,19 +13,29 @@ export abstract class BaseColumn<T> {
         this._type = type;
     }
 
-    public setSubColumn(index: number, subColumn: BaseSubColumn<T>): void {
-        const old = this._subColumns[index];
-
-        if(old !== undefined) {
-            this._length -= old.length;
-        }
-
-        this._subColumns[index] = subColumn;
-        this._length += subColumn.length;
+    public push(chunk: BaseChunk<T>): void {
+        this._chunks.push(chunk);
+        this._length += chunk.length;
     }
 
-    public getSubColumn(index: number): BaseSubColumn<T> {
-        return this._subColumns[index];
+    public getChunk(index: number): BaseChunk<T> {
+        return this._chunks[index];
+    }
+
+    public get name(): string {
+        return this._name;
+    }
+
+    public get type(): DataType {
+        return this._type;
+    }
+
+    public get chunkCount(): number {
+        return this._chunks.length;
+    }
+
+    public get length(): number {
+        return this._length;
     }
 }
 
@@ -33,32 +43,52 @@ export class NumberColumn extends BaseColumn<number> {
     protected _min: number;
     protected _max: number;
 
-    public setSubColumn(index: number, subColumn: BaseSubColumn<number>): void {
-        const col = subColumn as NumberSubColumn;
-        const old = this._subColumns[index] as NumberSubColumn;
-
-        if(old !== undefined) {
-            if(old.min === this._min || old.max === this._max) {
-                this.rebuildMinMax();
-            }
-        }
-
-        super.setSubColumn(index, subColumn);
-
-        if (col.min < this._min) this._min = col.min;
-        if (col.max > this._max) this._max = col.max;
-    }
-
-    private rebuildMinMax(): void {
+    public constructor(name: string) {
+        super(name, DataType.Number);
         this._min = Number.POSITIVE_INFINITY;
         this._max = Number.NEGATIVE_INFINITY;
+    }
 
-        this._subColumns.forEach((c) => {
-            const n = c as NumberSubColumn;
-            if(n.min < this._min) this._min = n.min;
-            if(n.max < this._max) this._max = n.max;
-        });
+    public push(chunk: BaseChunk<number>): void {
+        super.push(chunk);
+        const nc = chunk as NumberChunk;
+        if (nc.min < this._min) this._min = nc.min;
+        if (nc.max > this._max) this._max = nc.max;
+    }
+
+    public get min(): number {
+        return this._min;
+    }
+
+    public get max(): number {
+        return this._max;
     }
 }
 
-export type ColorColumn = BaseColumn<GLclampf4>;
+export class ColorColumn extends BaseColumn<GLclampf4> {
+    public constructor(name: string) {
+        super(name, DataType.Color);
+    }
+}
+
+export type Column = NumberColumn | ColorColumn;
+
+export function buildColumn(name: string, type: DataType): Column {
+    switch (type) {
+        case DataType.Number:
+            return new NumberColumn(name);
+        case DataType.Color:
+            return new ColorColumn(name);
+    }
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function rebuildColumn(column: any): Column {
+    column._chunks = column._chunks.map((c: any) => rebuildChunk(c));
+    switch (column.type) {
+        case DataType.Number:
+            return Object.assign(new NumberColumn(''), column);
+        case DataType.Color:
+            return Object.assign(new NumberColumn(''), column);
+    }
+}

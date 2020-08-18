@@ -1,22 +1,19 @@
 import {
-    ColorColumn,
-    Column,
-    DataType,
-    FloatColumn,
-    StringColumn,
-    columnFromType,
-    rebuildColumn
-} from 'frontend/data/column';
+    BaseChunk,
+    buildChunk,
+    rebuildChunk,
+} from 'shared/column/chunk';
 import {
-    CsvLoadOptions,
-    LoadInfo
-} from './csvLoadOptions';
+    CsvLoaderOptions,
+    LoadInfo,
+} from '../../shared/csvLoader/options';
 import {
     FinishedData,
     MessageData,
     MessageType,
     StartData,
 } from 'loader/csvMultiThreadedLoader/interface';
+import { Column } from 'shared/column/column';
 import LoadWorker from
     'worker-loader?inline=true!loader/csvMultiThreadedLoader/worker';
 import { PerfMon } from 'shared/performance/perfMon';
@@ -28,7 +25,7 @@ import { storeLine } from 'shared/csvLoader/storeLine';
 export class CsvMultiThreadedLoader {
     protected _stream: ReadableStream;
     protected _size: number;
-    protected _options: CsvLoadOptions;
+    protected _options: CsvLoaderOptions;
     protected _progress: Progress;
     protected _resolve: (value: Column[]) => void;
     protected _times = new Array<number>();
@@ -36,22 +33,18 @@ export class CsvMultiThreadedLoader {
     protected _numChunks: number;
     protected _numWorkers: number;
 
-    protected _columnNames: string[];
-    protected _columnTypes: DataType[];
+    protected _columns: Column[];
 
-    protected _rawResults = new Array<FinishedData>();
-    protected _nextResult = 0;
-    protected _remainder: ArrayBuffer;
+    protected _workerResults = new Array<FinishedData>();
+    protected _nextWorkerResult = 0;
+    protected _lastRemainder: ArrayBuffer;
     protected _decoder = new TextDecoder();
 
-    protected _minMax: { ci: number, min: number, max: number }[];
-    protected _rowCount = 0;
-    protected _processedResults: Column[][] = [];
-    protected _processedRemainders: Column[][] = [];
+    protected _remainders: string[] = [];
 
     protected _perf = new PerfMon();
 
-    public constructor(info: LoadInfo<CsvLoadOptions>) {
+    public constructor(info: LoadInfo<CsvLoaderOptions>) {
         this._stream = info.stream;
         this._size = info.size;
         this._options = info.options;
@@ -122,10 +115,8 @@ export class CsvMultiThreadedLoader {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
                 this._progress.steps[1].total = chunks.length;
-                if(this._columnTypes === undefined) {
-                    this.prepareColumnInfo(
-                        chunks, this._options.delimiter,
-                        this._options.includesHeader);
+                if(this._columns === undefined) {
+                    this.prepareColumnInfo(chunks);
                 }
                 if(chunks.length > 0) {
                     this.startLoadWorker(chunks, workerId++);
@@ -158,10 +149,8 @@ export class CsvMultiThreadedLoader {
             numChunks++;
 
             if(chunks.length >= workerChunks) {
-                if(this._columnTypes === undefined) {
-                    this.prepareColumnInfo(
-                        chunks, this._options.delimiter,
-                        this._options.includesHeader);
+                if(this._columns === undefined) {
+                    this.prepareColumnInfo(chunks);
                 }
                 const wChunks = chunks.splice(0, workerChunks);
                 this.startLoadWorker(wChunks, workerId++);
@@ -174,14 +163,12 @@ export class CsvMultiThreadedLoader {
         reader.read().then(readChunk);
     }
 
-    protected prepareColumnInfo(
-        chunks: ArrayBuffer[], delimiter: string, includesHeader: boolean
-    ): void {
+    protected prepareColumnInfo(chunks: ArrayBuffer[]): void {
         const lf = 0x0A;
         const cr = 0x0D;
 
         let firstLines: Uint8Array;
-        let lfCount = includesHeader ? 2 : 1;
+        let lfCount = this._options.includesHeader ? 2 : 1;
         let length = 0;
 
         for(let i = 0; i < chunks.length && lfCount > 0; i++) {
@@ -224,26 +211,10 @@ export class CsvMultiThreadedLoader {
             .map((l) => l.replace('\r', ''));
 
         let lineIndex = 0;
-        const columns = prepareColumns(
-            includesHeader ? lines[lineIndex++] : undefined,
+        this._columns = prepareColumns(
+            this._options.includesHeader ? lines[lineIndex++] : undefined,
             lines[lineIndex],
-            delimiter,
-            lines.length - 1);
-
-        this._columnNames = columns.map((c) => c.name);
-        this._columnTypes = columns.map((c) => c.type);
-        this._minMax = columns
-            .map((c, ci) => {
-                return { ci, type: c.type };
-            })
-            .filter((c) => c.type === DataType.Float)
-            .map((c) => {
-                return {
-                    ci: c.ci,
-                    min: Number.MAX_VALUE,
-                    max: Number.MIN_VALUE
-                };
-            });
+            this._options.delimiter);
     }
 
     protected startLoadWorker(chunks: Array<ArrayBuffer>, index: number): void {
@@ -251,7 +222,7 @@ export class CsvMultiThreadedLoader {
             type: MessageType.Start,
             data: {
                 chunks,
-                types: this._columnTypes,
+                types: this._columns.map((c) => c.type),
                 options: {
                     delimiter: this._options.delimiter,
                     includesHeader: this._options.includesHeader
@@ -267,9 +238,9 @@ export class CsvMultiThreadedLoader {
 
     protected loadDone(data: FinishedData, index: number): void {
         this._perf.sample(index, `worker ${index} done`);
-        this._rawResults[index] = data;
+        this._workerResults[index] = data;
 
-        if(index === this._nextResult) {
+        if(index === this._nextWorkerResult) {
             this.handleResults(data);
         }
     }
@@ -278,147 +249,52 @@ export class CsvMultiThreadedLoader {
         this._progress.steps[1].progress++;
         this._progress.applyValue();
 
-        const fixed = result.columns.map(rebuildColumn);
-        if(this._nextResult !== 0) {
-            this.storeRemainder(
-                this._decoder.decode(this._remainder, { stream: true }) +
+        const fixed = result.columns.map(rebuildChunk);
+        if(this._nextWorkerResult !== 0) {
+            this._remainders.push(
+                this._decoder.decode(this._lastRemainder, { stream: true }) +
                 this._decoder.decode(result.startRemainder));
         }
 
-        this._rowCount += fixed[0].length;
+        this._columns.map((c, ci) => c.push(fixed[ci] as BaseChunk<any>));
+        this._lastRemainder = result.endRemainder;
 
-        this._processedResults.push(fixed);
-        this._remainder = result.endRemainder;
-
-        delete this._rawResults[this._nextResult];
-        this._nextResult++;
+        delete this._workerResults[this._nextWorkerResult];
+        this._nextWorkerResult++;
 
         if(this._numWorkers !== undefined &&
-            this._nextResult === this._numWorkers &&
-            this._remainder.byteLength !== 0 // catch files ending with lf
+            this._nextWorkerResult === this._numWorkers &&
+            this._lastRemainder.byteLength !== 0 // catch files ending with lf
         ) {
-            this.storeRemainder(
-                this._decoder.decode(this._remainder));
+            this._remainders.push(this._decoder.decode(this._lastRemainder));
         }
 
-        if(this._nextResult >= this._numWorkers) {
+        if(this._nextWorkerResult >= this._numWorkers) {
             setTimeout(this.combine.bind(this));
             return;
         }
 
-        const next = this._rawResults[this._nextResult];
+        const next = this._workerResults[this._nextWorkerResult];
         if(next !== undefined) {
             setTimeout(this.handleResults.bind(this, next));
         }
     }
 
-    protected storeRemainder(line: string): void {
-        const rem = this._columnTypes.map((t) => {
-            return columnFromType('', t, 1);
-        });
-
-        storeLine(line, 0, this._options.delimiter, rem);
-
-        this._processedRemainders.push(rem);
-        this._rowCount++;
-    }
-
     protected combine(): void {
         this._perf.sample(-1, 'combine start');
-        const result = this._columnTypes.map((t, i) => {
-            return columnFromType(this._columnNames[i], t, this._rowCount);
+
+        const chunks = this._columns.map((c) => {
+            return buildChunk(c.type, this._remainders.length);
         });
-        let resultOffset = 0;
-
-        for(let i = 0; i < this._numWorkers; i++) {
-            const res = this._processedResults[i];
-            const rem = this._processedRemainders[i];
-
-            if(rem !== undefined) {
-                this._minMax.forEach((c) => {
-                    const resData = res[c.ci] as FloatColumn;
-                    const remData = (rem[c.ci] as FloatColumn).get(0);
-                    c.min = Math.min(c.min, resData.min, remData);
-                    c.max = Math.max(c.max, resData.max, remData);
-                });
-
-                const resLength = res[0].length;
-                result.forEach((c, i) => {
-                    switch (c.type) {
-                        case DataType.Float:
-                            (c as FloatColumn).copy(
-                                res[i] as FloatColumn,
-                                resultOffset);
-                            (c as FloatColumn).copy(
-                                rem[i] as FloatColumn,
-                                resultOffset + resLength);
-                            break;
-                        case DataType.Color:
-                            (c as ColorColumn).copy(
-                                res[i] as ColorColumn,
-                                resultOffset * 4);
-                            (c as ColorColumn).copy(
-                                rem[i] as ColorColumn,
-                                (resultOffset + resLength) * 4);
-                            break;
-                        case DataType.String:
-                            (c as StringColumn).copy(
-                                res[i] as StringColumn,
-                                resultOffset);
-                            (c as StringColumn).copy(
-                                rem[i] as StringColumn,
-                                resultOffset + resLength);
-                            break;
-                        default:
-                            break;
-                    }
-                });
-
-                resultOffset += resLength + 1;
-            } else  {
-                this._minMax.forEach((c) => {
-                    const resData = res[c.ci] as FloatColumn;
-                    c.min = Math.min(c.min, resData.min);
-                    c.max = Math.max(c.max, resData.max);
-                });
-
-                result.forEach((c, i) => {
-                    switch (c.type) {
-                        case DataType.Float:
-                            (c as FloatColumn).copy(
-                                res[i] as FloatColumn,
-                                resultOffset);
-                            break;
-                        case DataType.Color:
-                            (c as ColorColumn).copy(
-                                res[i] as ColorColumn,
-                                resultOffset * 4);
-                            break;
-                        case DataType.String:
-                            (c as StringColumn).copy(
-                                res[i] as StringColumn,
-                                resultOffset);
-                            break;
-                        default:
-                            break;
-                    }
-                });
-
-                resultOffset += res[0].length;
-            }
-
-            this._progress.steps[2].progress++;
-            this._progress.applyValue();
-        }
-
-        this._minMax.forEach((c) => {
-            result[c.ci].min = c.min;
-            result[c.ci].max = c.max;
+        this._remainders.forEach((r, ri) => {
+            storeLine(r, ri, this._options.delimiter, chunks);
         });
+
+        this._columns.map((c, ci) => c.push(chunks[ci] as BaseChunk<any>));
 
         this._progress.visible = false;
         this._perf.sample(-1, 'done');
         // this._resolve(this._perf.toColumns());
-        this._resolve(result);
+        this._resolve(this._columns);
     }
 }

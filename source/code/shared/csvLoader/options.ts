@@ -1,6 +1,6 @@
 import { Progress } from 'frontend/ui/progress';
 
-export type CsvLoadOptions = {
+export type CsvLoaderOptions = {
     delimiter: string,
     includesHeader: boolean,
 }

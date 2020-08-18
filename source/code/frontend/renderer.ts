@@ -28,6 +28,7 @@ import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
+import { ColorColumn, NumberColumn } from 'shared/column/column';
 
 export class TopicMapRenderer extends Renderer {
     // scene data
@@ -297,7 +298,7 @@ export class TopicMapRenderer extends Renderer {
         console.warn('got discarded');
     }
 
-    public set positions(positions: Float32Array) {
+    public set positions(positions: NumberColumn[]) {
         this._pointPass.positions = positions;
 
         if (this.initialized) {
@@ -333,7 +334,7 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set vertexColors(colors: Float32Array) {
+    public set vertexColors(colors: ColorColumn) {
         this._pointPass.vertexColors = colors;
         this.invalidate();
     }
@@ -343,7 +344,7 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set variablePointSize(pointSize: Float32Array) {
+    public set variablePointSize(pointSize: NumberColumn) {
         this._pointPass.variablePointSize = pointSize;
         this.invalidate();
     }
