@@ -40,7 +40,8 @@ import { Data } from './data/data';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
-declare let window: any; // for exposing canvas, controller, context, and renderer
+// for exposing canvas, controller, context, and renderer
+declare let window: any;
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
