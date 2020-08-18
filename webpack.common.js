@@ -36,10 +36,12 @@ module.exports = function (env) {
             template: './source/pages/index.pug',
             inject: false
         }),
-        new CopyWebpackPlugin([
-            { from: 'source/css', to: 'css' },
-            { from: 'source/fonts', to: 'fonts' },
-        ]),
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'source/css', to: 'css' },
+                { from: 'source/fonts', to: 'fonts' },
+            ]
+        }),
     ];
 
     if (env !== undefined && env.analyze !== undefined) {
