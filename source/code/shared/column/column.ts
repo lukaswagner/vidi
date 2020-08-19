@@ -7,6 +7,7 @@ export abstract class BaseColumn<T> {
     protected _chunks: BaseChunk<T>[] = [];
     protected _type: DataType;
     protected _length = 0;
+    protected _altered: boolean;
 
     public constructor(name: string, type: DataType) {
         this._name = name;
@@ -16,6 +17,7 @@ export abstract class BaseColumn<T> {
     public push(chunk: BaseChunk<T>): void {
         this._chunks.push(chunk);
         this._length += chunk.length;
+        this._altered = true;
     }
 
     public getChunk(index: number): BaseChunk<T> {
@@ -36,6 +38,22 @@ export abstract class BaseColumn<T> {
 
     public get length(): number {
         return this._length;
+    }
+
+    public get chunks(): BaseChunk<T>[] {
+        return this._chunks;
+    }
+
+    public getChunks(start: number, end: number): BaseChunk<T>[] {
+        return this._chunks.slice(start, end);
+    }
+
+    public get altered(): boolean {
+        return this._altered;
+    }
+
+    public set altered(altered: boolean) {
+        this._altered = altered;
     }
 }
 

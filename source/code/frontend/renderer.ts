@@ -18,6 +18,11 @@ import {
 } from 'webgl-operate';
 
 import {
+    ColorColumn,
+    NumberColumn
+} from 'shared/column/column';
+
+import {
     ExtendedGridInfo,
     GridInfo,
     calculateExtendedGridInfo
@@ -28,7 +33,6 @@ import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
-import { ColorColumn, NumberColumn } from 'shared/column/column';
 
 export class TopicMapRenderer extends Renderer {
     // scene data
