@@ -283,14 +283,16 @@ export class CsvMultiThreadedLoader {
     protected combine(): void {
         this._perf.sample(-1, 'combine start');
 
-        const chunks = this._columns.map((c) => {
-            return buildChunk(c.type, this._remainders.length);
-        });
-        this._remainders.forEach((r, ri) => {
-            storeLine(r, ri, this._options.delimiter, chunks);
-        });
+        if(this._remainders.length > 0) {
+            const chunks = this._columns.map((c) => {
+                return buildChunk(c.type, this._remainders.length);
+            });
+            this._remainders.forEach((r, ri) => {
+                storeLine(r, ri, this._options.delimiter, chunks);
+            });
 
-        this._columns.map((c, ci) => c.push(chunks[ci] as BaseChunk<any>));
+            this._columns.map((c, ci) => c.push(chunks[ci] as BaseChunk<any>));
+        }
 
         this._progress.visible = false;
         this._perf.sample(-1, 'done');
