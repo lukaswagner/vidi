@@ -35,7 +35,7 @@ export class PointPass extends Initializable {
     });
 
     protected _context: Context;
-    protected _gl: WebGLRenderingContext;
+    protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
     protected _camera: Camera;
@@ -52,6 +52,7 @@ export class PointPass extends Initializable {
 
     protected _program: Program;
 
+    protected _uPosLimits: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
     protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
@@ -93,6 +94,7 @@ export class PointPass extends Initializable {
 
         this._program.link();
 
+        this._uPosLimits = this._program.uniform('u_posLimits');
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uViewProjectionInverse =
             this._program.uniform('u_viewProjectionInverse');
@@ -146,12 +148,12 @@ export class PointPass extends Initializable {
             this._geometries = [];
         }
 
+        this._program.bind();
+
         const newGeometries = this.dataAltered;
         if (override || rebuildGeometries || newGeometries) {
             this.buildGeometries();
         }
-
-        this._program.bind();
 
         if (override || this._altered.aspectRatio) {
             this._gl.uniform1f(this._uAspectRatio, this._aspectRatio);
@@ -188,7 +190,7 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
-        // this._geometry.update();
+        // this._geometries.forEach((g) => g.update());
 
         this._altered.reset();
     }
@@ -222,9 +224,11 @@ export class PointPass extends Initializable {
 
         this._target.bind();
 
-        // this._geometry.bind();
-        // this._geometry.draw();
-        // this._geometry.unbind();
+        this._geometries.forEach((g) => {
+            g.bind();
+            g.draw();
+            g.unbind();
+        });
 
         this._program.unbind();
 
@@ -249,6 +253,25 @@ export class PointPass extends Initializable {
         const newChunks = columns.map(
             (c) => c ? c.getChunks(start, end) : undefined);
         console.log(newChunks);
+
+        for(let i = 0; i < end - start; i++) {
+            const chunks = newChunks.map((nc) => nc ? nc[i] : undefined);
+            const len = Math.min(...chunks.map(
+                (c) => c ? c.length : Number.POSITIVE_INFINITY));
+            const data = chunks.map(
+                (c) => c ? c.data : new ArrayBuffer(len * 4));
+
+            this._geometries.push(PointCloudGeometry.fromColumns(
+                this._context,
+                data
+            ));
+        }
+
+        this._gl.uniformMatrix2x3fv(
+            this._uPosLimits, true,
+            this._positions
+                .map((c) => c ? [c.min, c.max - c.min] : [0, 1])
+                .flat());
     }
 
     public set positions(positions: NumberColumn[]) {

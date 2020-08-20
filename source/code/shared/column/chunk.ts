@@ -22,6 +22,10 @@ export abstract class BaseChunk<T> {
         return [this._data];
     }
 
+    public get data(): ArrayBuffer {
+        return this._data;
+    }
+
     public abstract get(index: number): T;
     public abstract set(index: number, value: T): void;
 }
