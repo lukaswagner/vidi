@@ -6,6 +6,8 @@ import {
     Initializable,
     Program,
     Shader,
+    mat4,
+    quat,
 } from 'webgl-operate';
 
 import {
@@ -52,7 +54,7 @@ export class PointPass extends Initializable {
 
     protected _program: Program;
 
-    protected _uPosLimits: WebGLUniformLocation;
+    protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
     protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
@@ -94,7 +96,7 @@ export class PointPass extends Initializable {
 
         this._program.link();
 
-        this._uPosLimits = this._program.uniform('u_posLimits');
+        this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uViewProjectionInverse =
             this._program.uniform('u_viewProjectionInverse');
@@ -252,7 +254,6 @@ export class PointPass extends Initializable {
 
         const newChunks = columns.map(
             (c) => c ? c.getChunks(start, end) : undefined);
-        console.log(newChunks);
 
         for(let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc ? nc[i] : undefined);
@@ -267,16 +268,34 @@ export class PointPass extends Initializable {
             ));
         }
 
-        this._gl.uniformMatrix2x3fv(
-            this._uPosLimits, true,
-            this._positions
-                .map((c) => c ? [c.min, c.max - c.min] : [0, 1])
-                .flat());
+        const limits = this._positions.map((c) => c ?
+            {offset: -c.min, scale: 1 / (c.max - c.min)} :
+            {offset: 0, scale: 0});
+        const model = mat4.create();
+        mat4.translate(model, model, [-1, limits[1].scale === 0 ? 0 : -1, 1]);
+        mat4.scale(model, model, [2, 2, 2]);
+        mat4.scale(model, model, [
+            limits[0].scale,
+            limits[1].scale,
+            -limits[2].scale
+        ]);
+        mat4.translate(model, model, [
+            limits[0].offset,
+            limits[1].offset,
+            limits[2].offset
+        ]);
+        this._gl.uniformMatrix4fv(this._uModel, false, model);
+
+        columns.forEach((c) => {
+            if(c) c.altered = false;
+        });
     }
 
     public set positions(positions: NumberColumn[]) {
         this.assertInitialized();
-        this._positions = positions;
+        this._positions = [
+            positions[0], positions[2], positions[1]
+        ];
         this._altered.alter('positions');
     }
 

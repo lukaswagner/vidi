@@ -66,7 +66,7 @@ export class ColorChunk extends BaseChunk<RGBA> {
     protected _view: Float32Array;
 
     public constructor(length: number) {
-        super(DataType.Number, length);
+        super(DataType.Color, length);
         this._view = new Float32Array(length * 4);
         this._data = this._view.buffer;
     }

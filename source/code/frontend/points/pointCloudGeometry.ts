@@ -62,8 +62,8 @@ export class PointCloudGeometry extends Geometry {
     ): PointCloudGeometry {
         const g = new PointCloudGeometry(context);
         g._xCoord = new Float32Array(data[0]);
-        g._yCoord = new Float32Array(data[2]);
-        g._zCoord = new Float32Array(data[1]);
+        g._yCoord = new Float32Array(data[1]);
+        g._zCoord = new Float32Array(data[2]);
         g._vertexColors = new Float32Array(data[3]);
         g._variablePointSize = new Float32Array(data[4]);
         g.initialize();
@@ -124,7 +124,7 @@ export class PointCloudGeometry extends Geometry {
      */
     public draw(): void {
         this._gl2facade.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 4, this._xCoord.length / 3);
+            this._gl.TRIANGLE_STRIP, 0, 4, this._xCoord.length);
     }
 
     /**
@@ -153,7 +153,7 @@ export class PointCloudGeometry extends Geometry {
         this._gl2facade.vertexAttribDivisor(this._zCoordLocation, 1);
 
         this._buffers[4].attribEnable(
-            this._vertexColorLocation, 3, this._gl.FLOAT,
+            this._vertexColorLocation, 4, this._gl.FLOAT,
             false, 0, 0, true, false);
         this._gl2facade.vertexAttribDivisor(this._vertexColorLocation, 1);
 

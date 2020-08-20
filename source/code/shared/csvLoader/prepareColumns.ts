@@ -25,14 +25,14 @@ export function prepareColumns(
 }
 
 function inferType(input: string): DataType {
-    if (!Number.isNaN(Number(input))) {
-        return DataType.Number;
-    }
-
     if (input.startsWith('#')) {
         const col = hex2rgba(input);
         if (col[0] !== 0 || col[1] !== 0 || col[2] !== 0 || col[3] !== 0) {
             return DataType.Color;
         }
+    }
+
+    if (!Number.isNaN(Number(input))) {
+        return DataType.Number;
     }
 }

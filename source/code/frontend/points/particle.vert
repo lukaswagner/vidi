@@ -18,7 +18,7 @@ precision lowp float;
     layout(location = 5) in float a_variablePointSize;
 #endif
 
-uniform mat2x3 u_posLimits;
+uniform mat4 u_model;
 uniform mat4 u_viewProjection;
 uniform mat4 u_viewProjectionInverse;
 uniform vec2 u_ndcOffset;
@@ -77,16 +77,12 @@ vec3 color()
 
 void main()
 {
-    vec3 pos = vec3(a_xCoord, a_yCoord, a_zCoord);
-    pos -= u_posLimits[0];
-    pos /= u_posLimits[1];
-    pos *= 2.0;
-    pos -= 1.0;
-    v_pos = pos;
+    vec4 pos = u_model * vec4(a_xCoord, a_yCoord, a_zCoord, 1.0);
+    v_pos = pos.xyz / pos.w;
     v_color = color();
     v_uv = a_uv;
 
-    vec4 position = u_viewProjection * vec4(pos, 1.0);
+    vec4 position = u_viewProjection * pos;
 
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
