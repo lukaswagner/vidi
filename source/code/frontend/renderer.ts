@@ -77,6 +77,11 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
+    public updateData(): void {
+        console.log('update data');
+        this.invalidate();
+    }
+
     /**
      * Initializes and sets up buffer, cube geometry, camera and links shaders
      * with program.

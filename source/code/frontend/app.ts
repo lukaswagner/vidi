@@ -30,12 +30,12 @@ import {
     LoadInfo
 } from '../shared/csvLoader/options';
 
+import { Column } from 'shared/column/column';
 import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
 import { Data } from './data/data';
 import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
-import { rebuildColumn } from 'shared/column/column';
 
 // for exposing canvas, controller, context, and renderer
 declare let window: any;
@@ -360,20 +360,16 @@ export class TopicMapApp extends Initializable {
         const start = Date.now();
         const loader = new CsvMultiThreadedLoader(info);
         return new Promise<void>((resolve) => {
-            loader.load().then((res) => {
+            loader.load(() => this._renderer.updateData()).then((res) => {
                 const end = Date.now();
-                console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
+                console.log(`loaded ${res.length} columns with ${res[0].length} rows in ${end - start} ms`);
                 this.dataReady(res);
                 resolve();
             });
         });
     }
 
-    protected dataReady(passedData: Array<unknown>): void {
-        // functions are removed during message serialization
-        // this means the objects have to be rebuild
-        const columns = passedData.map((c) => rebuildColumn(c));
-
+    protected dataReady(columns: Column[]): void {
         this._data = new Data(columns);
 
         // set up axis controls

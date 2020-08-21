@@ -27,7 +27,7 @@ export class CsvMultiThreadedLoader {
     protected _size: number;
     protected _options: CsvLoaderOptions;
     protected _progress: Progress;
-    protected _resolve: (value: Column[]) => void;
+    protected _invalidate: (force?: boolean) => void;
     protected _times = new Array<number>();
 
     protected _numChunks: number;
@@ -51,13 +51,13 @@ export class CsvMultiThreadedLoader {
         this._progress = info.progress;
     }
 
-    public load(): Promise<Column[]> {
+    public load(invalidate: (force: boolean) => void): Promise<Column[]> {
         this._perf.sample(-1, 'start');
         this.prepareProgress();
-        this.read();
+        this._invalidate = invalidate;
 
         return new Promise<Column[]>((resolve) => {
-            this._resolve = resolve;
+            this.read(resolve);
         });
     }
 
@@ -92,7 +92,7 @@ export class CsvMultiThreadedLoader {
         return worker;
     }
 
-    protected read(): void {
+    protected read(resolve: (data: Column[]) => void): void {
         const reader = this._stream.getReader();
         const chunks = new Array<ArrayBuffer>();
         let bytes = 0;
@@ -116,7 +116,7 @@ export class CsvMultiThreadedLoader {
                 }
                 this._progress.steps[1].total = chunks.length;
                 if(this._columns === undefined) {
-                    this.prepareColumnInfo(chunks);
+                    this.setupColumns(chunks, resolve);
                 }
                 if(chunks.length > 0) {
                     this.startLoadWorker(chunks, workerId++);
@@ -150,7 +150,7 @@ export class CsvMultiThreadedLoader {
 
             if(chunks.length >= workerChunks) {
                 if(this._columns === undefined) {
-                    this.prepareColumnInfo(chunks);
+                    this.setupColumns(chunks, resolve);
                 }
                 const wChunks = chunks.splice(0, workerChunks);
                 this.startLoadWorker(wChunks, workerId++);
@@ -163,7 +163,9 @@ export class CsvMultiThreadedLoader {
         reader.read().then(readChunk);
     }
 
-    protected prepareColumnInfo(chunks: ArrayBuffer[]): void {
+    protected setupColumns(
+        chunks: ArrayBuffer[], resolve: (data: Column[]) => void
+    ): void {
         const lf = 0x0A;
         const cr = 0x0D;
 
@@ -215,6 +217,7 @@ export class CsvMultiThreadedLoader {
             this._options.includesHeader ? lines[lineIndex++] : undefined,
             lines[lineIndex],
             this._options.delimiter);
+        resolve(this._columns);
     }
 
     protected startLoadWorker(chunks: Array<ArrayBuffer>, index: number): void {
@@ -259,6 +262,8 @@ export class CsvMultiThreadedLoader {
         this._columns.map((c, ci) => c.push(fixed[ci] as BaseChunk<any>));
         this._lastRemainder = result.endRemainder;
 
+        this._invalidate();
+
         delete this._workerResults[this._nextWorkerResult];
         this._nextWorkerResult++;
 
@@ -296,7 +301,6 @@ export class CsvMultiThreadedLoader {
 
         this._progress.visible = false;
         this._perf.sample(-1, 'done');
-        // this._resolve(this._perf.toColumns());
-        this._resolve(this._columns);
+        this._invalidate();
     }
 }
