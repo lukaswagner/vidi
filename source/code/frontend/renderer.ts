@@ -78,7 +78,6 @@ export class TopicMapRenderer extends Renderer {
     }
 
     public updateData(): void {
-        console.log('update data');
         this.invalidate();
     }
 

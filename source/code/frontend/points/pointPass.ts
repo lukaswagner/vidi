@@ -374,8 +374,6 @@ export class PointPass extends Initializable {
     }
 
     public get altered(): boolean {
-        console.log('check');
-        if(this.dataAltered) console.log('altered');
         return this._altered.any || this.dataAltered;
     }
 
