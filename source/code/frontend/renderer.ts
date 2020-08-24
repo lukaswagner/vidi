@@ -18,6 +18,11 @@ import {
 } from 'webgl-operate';
 
 import {
+    ColorColumn,
+    NumberColumn
+} from 'shared/column/column';
+
+import {
     ExtendedGridInfo,
     GridInfo,
     calculateExtendedGridInfo
@@ -72,6 +77,10 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
+    public updateData(): void {
+        this.invalidate();
+    }
+
     /**
      * Initializes and sets up buffer, cube geometry, camera and links shaders
      * with program.
@@ -108,7 +117,8 @@ export class TopicMapRenderer extends Renderer {
 
         // set up intermediate rendering
 
-        // usually precision is provided by canvas, but this._framePrecision is defined only after initialization.
+        // usually precision is provided by canvas, but this._framePrecision is
+        // defined only after initialization.
         const internalFormatAndType = Wizard.queryInternalTextureFormat(
             this._context, gl.RGB, Wizard.Precision.byte);
 
@@ -296,7 +306,7 @@ export class TopicMapRenderer extends Renderer {
         console.warn('got discarded');
     }
 
-    public set positions(positions: Float32Array) {
+    public set positions(positions: NumberColumn[]) {
         this._pointPass.positions = positions;
 
         if (this.initialized) {
@@ -332,7 +342,7 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set vertexColors(colors: Float32Array) {
+    public set vertexColors(colors: ColorColumn) {
         this._pointPass.vertexColors = colors;
         this.invalidate();
     }
@@ -342,7 +352,7 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set variablePointSize(pointSize: Float32Array) {
+    public set variablePointSize(pointSize: NumberColumn) {
         this._pointPass.variablePointSize = pointSize;
         this.invalidate();
     }

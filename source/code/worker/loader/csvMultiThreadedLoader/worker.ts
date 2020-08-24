@@ -4,8 +4,7 @@ import {
     MessageType,
     StartData
 } from './interface';
-import { calcMinMax } from 'shared/csvLoader/calcMinMax';
-import { columnFromType } from 'frontend/data/column';
+import { buildChunk } from 'shared/column/chunk';
 import { fillColumns } from 'shared/csvLoader/fillColumns';
 import { parseChunk } from 'shared/csvLoader/parseChunk';
 
@@ -27,9 +26,8 @@ self.addEventListener('message', (m: MessageEvent) => {
 function load(data: StartData): FinishedData {
     const remainderInfo = detectRemainders(data.chunks);
     const lines = parse(data.chunks, remainderInfo);
-    const columns = data.types.map((t) => columnFromType('', t, lines.length));
+    const columns = data.types.map((t) => buildChunk(t, lines.length));
     fillColumns(lines, data.options.delimiter, columns, () => {});
-    calcMinMax(columns, () => {});
 
     return {
         columns,

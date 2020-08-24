@@ -6,9 +6,15 @@ import {
     Initializable,
     Program,
     Shader,
+    mat4,
 } from 'webgl-operate';
 
-import { GLfloat2 } from 'shared/types/tuples' ;
+import {
+    ColorColumn,
+    NumberColumn
+} from 'shared/column/column';
+
+import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
 
 export class PointPass extends Initializable {
@@ -30,7 +36,7 @@ export class PointPass extends Initializable {
     });
 
     protected _context: Context;
-    protected _gl: WebGLRenderingContext;
+    protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
     protected _camera: Camera;
@@ -47,6 +53,7 @@ export class PointPass extends Initializable {
 
     protected _program: Program;
 
+    protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
     protected _uViewProjectionInverse: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
@@ -60,10 +67,10 @@ export class PointPass extends Initializable {
     protected _uColorMapping: WebGLUniformLocation;
     protected _uVariablePointSizeStrength: WebGLUniformLocation;
 
-    protected _geometry: PointCloudGeometry;
-    protected _positions: Float32Array;
-    protected _vertexColors: Float32Array;
-    protected _variablePointSize: Float32Array;
+    protected _geometries: PointCloudGeometry[] = [];
+    protected _positions: NumberColumn[];
+    protected _vertexColors: ColorColumn;
+    protected _variablePointSize: NumberColumn;
 
     public constructor(context: Context) {
         super();
@@ -71,13 +78,10 @@ export class PointPass extends Initializable {
         this._gl = context.gl;
 
         this._program = new Program(this._context);
-        this._geometry = new PointCloudGeometry(this._context);
     }
 
     @Initializable.initialize()
     public initialize(): boolean {
-        this._geometry.initialize();
-
         this._context.enable(['OES_standard_derivatives']);
 
         const vert = new Shader(
@@ -91,6 +95,7 @@ export class PointPass extends Initializable {
 
         this._program.link();
 
+        this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uViewProjectionInverse =
             this._program.uniform('u_viewProjectionInverse');
@@ -116,7 +121,7 @@ export class PointPass extends Initializable {
 
     @Initializable.uninitialize()
     public uninitialize(): void {
-        this._geometry.uninitialize();
+        this._geometries.forEach((g) => g.uninitialize());
         this._program.uninitialize();
 
         this._uViewProjection = undefined;
@@ -135,19 +140,21 @@ export class PointPass extends Initializable {
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        if (override || this._altered.positions) {
-            this._geometry.positions = this._positions;
-        }
-
-        if (override || this._altered.vertexColors) {
-            this._geometry.vertexColors = this._vertexColors;
-        }
-
-        if (override || this._altered.variablePointSize) {
-            this._geometry.variablePointSize = this._variablePointSize;
+        const rebuildGeometries =
+            this._altered.positions ||
+            this._altered.vertexColors ||
+            this._altered.variablePointSize;
+        if (override || rebuildGeometries) {
+            this._geometries.forEach((g) => g.uninitialize());
+            this._geometries = [];
         }
 
         this._program.bind();
+
+        const newGeometries = this.dataAltered;
+        if (override || rebuildGeometries || newGeometries) {
+            this.buildGeometries();
+        }
 
         if (override || this._altered.aspectRatio) {
             this._gl.uniform1f(this._uAspectRatio, this._aspectRatio);
@@ -184,7 +191,7 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
-        this._geometry.update();
+        // this._geometries.forEach((g) => g.update());
 
         this._altered.reset();
     }
@@ -218,18 +225,76 @@ export class PointPass extends Initializable {
 
         this._target.bind();
 
-        this._geometry.bind();
-        this._geometry.draw();
-        this._geometry.unbind();
+        this._geometries.forEach((g) => {
+            g.bind();
+            g.draw();
+            g.unbind();
+        });
 
         this._program.unbind();
 
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
-    public set positions(positions: Float32Array) {
+    protected buildGeometries(): void {
+        const start = this._geometries.length;
+
+        const columns = [
+            this._positions[0],
+            this._positions[1],
+            this._positions[2],
+            this._vertexColors,
+            this._variablePointSize
+        ];
+
+        const end = Math.min(...columns.map((c) => {
+            return c ? c.chunkCount : Number.POSITIVE_INFINITY;
+        }));
+
+        const newChunks = columns.map(
+            (c) => c ? c.getChunks(start, end) : undefined);
+
+        for(let i = 0; i < end - start; i++) {
+            const chunks = newChunks.map((nc) => nc ? nc[i] : undefined);
+            const len = Math.min(...chunks.map(
+                (c) => c ? c.length : Number.POSITIVE_INFINITY));
+            const data = chunks.map(
+                (c) => c ? c.data : new ArrayBuffer(len * 4));
+
+            this._geometries.push(PointCloudGeometry.fromColumns(
+                this._context,
+                data
+            ));
+        }
+
+        const limits = this._positions.map((c) => c ?
+            {offset: -c.min, scale: 1 / (c.max - c.min)} :
+            {offset: 0, scale: 0});
+        const model = mat4.create();
+        mat4.translate(model, model, [-1, limits[1].scale === 0 ? 0 : -1, 1]);
+        mat4.scale(model, model, [2, 2, 2]);
+        mat4.scale(model, model, [
+            limits[0].scale,
+            limits[1].scale,
+            -limits[2].scale
+        ]);
+        mat4.translate(model, model, [
+            limits[0].offset,
+            limits[1].offset,
+            limits[2].offset
+        ]);
+        this._gl.uniformMatrix4fv(this._uModel, false, model);
+
+        columns.forEach((c) => {
+            if(c) c.altered = false;
+        });
+    }
+
+    public set positions(positions: NumberColumn[]) {
         this.assertInitialized();
-        this._positions = positions;
+        this._positions = [
+            positions[0], positions[2], positions[1]
+        ];
         this._altered.alter('positions');
     }
 
@@ -277,7 +342,7 @@ export class PointPass extends Initializable {
         this._altered.alter('colorMapping');
     }
 
-    public set vertexColors(colors: Float32Array) {
+    public set vertexColors(colors: ColorColumn) {
         this.assertInitialized();
         this._vertexColors = colors;
         this._altered.alter('vertexColors');
@@ -289,7 +354,7 @@ export class PointPass extends Initializable {
         this._altered.alter('variablePointSizeStrength');
     }
 
-    public set variablePointSize(pointSize: Float32Array) {
+    public set variablePointSize(pointSize: NumberColumn) {
         this.assertInitialized();
         this._variablePointSize = pointSize;
         this._altered.alter('variablePointSize');
@@ -309,6 +374,14 @@ export class PointPass extends Initializable {
     }
 
     public get altered(): boolean {
-        return this._altered.any;
+        return this._altered.any || this.dataAltered;
+    }
+
+    protected get dataAltered(): boolean {
+        return (
+            (this._positions && this._positions.some((c) => c && c.altered)) ||
+            (this._vertexColors && this._vertexColors.altered) ||
+            (this._variablePointSize && this._variablePointSize.altered)
+        );
     }
 }

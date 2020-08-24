@@ -1,4 +1,4 @@
-import { GLclampf4 } from 'shared/types/tuples';
+import { RGBA } from 'shared/types/tuples';
 
 // excerpt from webgl-operate
 // https://github.com/cginternals/webgl-operate/blob/master/source/color.ts
@@ -15,8 +15,8 @@ const HEX_FORMAT_REGEX =
  * @returns - RGBA color tuple: red, green, blue, and alpha,
  * each in [0.0, 1.0]. On error [0, 0, 0, 0] is returned.
  */
-export function hex2rgba(hex: string): GLclampf4 {
-    const rgba: GLclampf4 = [0.0, 0.0, 0.0, DEFAULT_ALPHA];
+export function hex2rgba(hex: string): RGBA {
+    const rgba: RGBA = [0.0, 0.0, 0.0, DEFAULT_ALPHA];
 
     if (!HEX_FORMAT_REGEX.test(hex)) {
         console.warn('hexadecimal RGBA color string must conform to either',

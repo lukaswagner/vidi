@@ -26,21 +26,19 @@ import {
 } from './controls';
 
 import {
-    CsvLoadOptions,
+    CsvLoaderOptions,
     LoadInfo
-} from './loader/csvLoadOptions';
+} from '../shared/csvLoader/options';
 
-import {
-    DataType,
-    rebuildColumn,
-} from './data/column';
-
+import { Column } from 'shared/column/column';
 import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
 import { Data } from './data/data';
+import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
-declare let window: any; // for exposing canvas, controller, context, and renderer
+// for exposing canvas, controller, context, and renderer
+declare let window: any;
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -358,29 +356,23 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCsv(info: LoadInfo<CsvLoadOptions>): Promise<void> {
-        const start = Date.now();
-        // const loader = new CsvSingleThreadedLoader(info);
+    protected loadCsv(info: LoadInfo<CsvLoaderOptions>): Promise<void> {
         const loader = new CsvMultiThreadedLoader(info);
         return new Promise<void>((resolve) => {
-            loader.load().then((res) => {
-                const end = Date.now();
-                console.log(`loaded ${res.length} columns with ${rebuildColumn(res[0]).length} rows in ${end - start} ms`);
-                this.dataReady(res);
-                resolve();
-            });
+            loader
+                .load(() => this._renderer.updateData())
+                .then((res) => {
+                    this.dataReady(res);
+                    resolve();
+                });
         });
     }
 
-    protected dataReady(passedData: Array<unknown>): void {
-        // functions are removed during message serialization
-        // this means the objects have to be rebuild
-        const columns = passedData.map((c) => rebuildColumn(c));
-
+    protected dataReady(columns: Column[]): void {
         this._data = new Data(columns);
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Float);
+        const numberColumnNames = this._data.getColumnNames(DataType.Number);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
@@ -407,9 +399,12 @@ export class TopicMapApp extends Initializable {
             this._data.selectColumn(
                 updatedAxis, this._controls.axes[updatedAxis].value);
         }
-        const { positions, extents } = this._data.getCoordinates(
-            [{ min: -1, max: 1 }, { min: -1, max: 1 }, { min: -1, max: 1 }]);
-        this._renderer.positions = positions;
+        this._renderer.positions = this._data.getCoordinates();
+        const extents = [
+            { min: -1, max: 1 },
+            { min: -1, max: 1 },
+            { min: -1, max: 1 }
+        ];
         const subdivisions = 12;
         this._renderer.grid = GridHelper.buildGrid(
             [0, 1, 2].map((i) => this._data.selectedColumn(i)),

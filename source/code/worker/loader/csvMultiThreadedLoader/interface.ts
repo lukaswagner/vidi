@@ -1,5 +1,6 @@
-import { Column, DataType } from 'frontend/data/column';
-import { CsvLoadOptions } from 'frontend/loader/csvLoadOptions';
+import { Chunk } from 'shared/column/chunk';
+import { CsvLoaderOptions } from 'shared/csvLoader/options';
+import { DataType } from 'shared/column/dataType';
 
 export enum MessageType {
     Start,
@@ -9,14 +10,15 @@ export enum MessageType {
 export type StartData = {
     chunks: ArrayBuffer[],
     types: DataType[],
-    options: CsvLoadOptions
+    options: CsvLoaderOptions
 }
 
 export type FinishedData = {
-    columns: Array<Column>,
+    columns: Array<Chunk>,
     startRemainder: ArrayBuffer,
     endRemainder: ArrayBuffer
 }
+
 export type MessageData = {
     type: MessageType,
     data: StartData | FinishedData;

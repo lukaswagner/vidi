@@ -3,17 +3,22 @@ precision lowp float;
 #if __VERSION__ == 100
     #define texture(sampler, coord) texture2D(sampler, coord)
     attribute vec2 a_uv;
-    attribute vec3 a_pos;
+    attribute float a_xCoord;
+    attribute float a_yCoord;
+    attribute float a_zCoord;
     attribute vec3 a_vertexColor;
     attribute float a_variablePointSize;
 #else
     #define varying out
     layout(location = 0) in vec2 a_uv;
-    layout(location = 1) in vec3 a_pos;
-    layout(location = 2) in vec3 a_vertexColor;
-    layout(location = 3) in float a_variablePointSize;
+    layout(location = 1) in float a_xCoord;
+    layout(location = 2) in float a_yCoord;
+    layout(location = 3) in float a_zCoord;
+    layout(location = 4) in vec3 a_vertexColor;
+    layout(location = 5) in float a_variablePointSize;
 #endif
 
+uniform mat4 u_model;
 uniform mat4 u_viewProjection;
 uniform mat4 u_viewProjectionInverse;
 uniform vec2 u_ndcOffset;
@@ -72,11 +77,12 @@ vec3 color()
 
 void main()
 {
-    v_pos = a_pos;
+    vec4 pos = u_model * vec4(a_xCoord, a_yCoord, a_zCoord, 1.0);
+    v_pos = pos.xyz / pos.w;
     v_color = color();
     v_uv = a_uv;
 
-    vec4 position = u_viewProjection * vec4(a_pos, 1.0);
+    vec4 position = u_viewProjection * pos;
 
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
