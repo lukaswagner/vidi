@@ -252,10 +252,10 @@ export class PointPass extends Initializable {
         }));
 
         const newChunks = columns.map(
-            (c) => c ? c.getChunks(start, end) : undefined);
+            (c) => c?.getChunks(start, end));
 
         for(let i = 0; i < end - start; i++) {
-            const chunks = newChunks.map((nc) => nc ? nc[i] : undefined);
+            const chunks = newChunks.map((nc) => nc?.[i]);
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(
