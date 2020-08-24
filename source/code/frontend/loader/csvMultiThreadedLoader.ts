@@ -15,7 +15,7 @@ import {
 } from 'loader/csvMultiThreadedLoader/interface';
 import { Column } from 'shared/column/column';
 import LoadWorker from
-    'worker-loader?inline=true!loader/csvMultiThreadedLoader/worker';
+    'worker-loader?inline=fallback!loader/csvMultiThreadedLoader/worker';
 import { PerfMon } from 'shared/performance/perfMon';
 import { Progress } from 'frontend/ui/progress';
 import { ProgressStep } from 'frontend/ui/progressStep';

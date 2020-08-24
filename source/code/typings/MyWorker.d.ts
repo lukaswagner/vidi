@@ -1,4 +1,4 @@
-declare module 'worker-loader?inline=true!*' {
+declare module 'worker-loader?inline=fallback!*' {
     class MyWorker extends Worker {
         public constructor();
     }
