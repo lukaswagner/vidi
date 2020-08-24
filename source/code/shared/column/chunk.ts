@@ -82,7 +82,23 @@ export class ColorChunk extends BaseChunk<RGBA> {
     }
 }
 
-export type Chunk = NumberChunk | ColorChunk;
+export class StringChunk extends BaseChunk<string> {
+    public constructor(length: number) {
+        super(DataType.String, length);
+        this._data = new ArrayBuffer(0);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public get(index: number): string {
+        return 'Not implemented';
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    public set(index: number, value: string): void {
+    }
+}
+
+export type Chunk = NumberChunk | ColorChunk | StringChunk;
 
 export function buildChunk(type: DataType, length: number): Chunk {
     switch (type) {
@@ -90,15 +106,19 @@ export function buildChunk(type: DataType, length: number): Chunk {
             return new NumberChunk(length);
         case DataType.Color:
             return new ColorChunk(length);
+        case DataType.String:
+            return new StringChunk(length);
     }
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function rebuildChunk(chunk: any): Chunk {
-    switch (chunk._type) {
+    switch (chunk._type as DataType) {
         case DataType.Number:
             return Object.assign(new NumberChunk(0), chunk);
         case DataType.Color:
             return Object.assign(new ColorChunk(0), chunk);
+        case DataType.String:
+            return Object.assign(new StringChunk(0), chunk);
     }
 }

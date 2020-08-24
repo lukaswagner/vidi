@@ -35,4 +35,6 @@ function inferType(input: string): DataType {
     if (!Number.isNaN(Number(input))) {
         return DataType.Number;
     }
+
+    return DataType.String;
 }

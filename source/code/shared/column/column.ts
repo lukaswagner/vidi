@@ -89,7 +89,13 @@ export class ColorColumn extends BaseColumn<GLclampf4> {
     }
 }
 
-export type Column = NumberColumn | ColorColumn;
+export class StringColumn extends BaseColumn<string> {
+    public constructor(name: string) {
+        super(name, DataType.String);
+    }
+}
+
+export type Column = NumberColumn | ColorColumn | StringColumn;
 
 export function buildColumn(name: string, type: DataType): Column {
     switch (type) {
@@ -97,16 +103,20 @@ export function buildColumn(name: string, type: DataType): Column {
             return new NumberColumn(name);
         case DataType.Color:
             return new ColorColumn(name);
+        case DataType.String:
+            return new StringColumn(name);
     }
 }
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function rebuildColumn(column: any): Column {
     column._chunks = column._chunks.map((c: any) => rebuildChunk(c));
-    switch (column.type) {
+    switch (column.type as DataType) {
         case DataType.Number:
             return Object.assign(new NumberColumn(''), column);
         case DataType.Color:
             return Object.assign(new NumberColumn(''), column);
+        case DataType.String:
+            return Object.assign(new StringColumn(''), column);
     }
 }
