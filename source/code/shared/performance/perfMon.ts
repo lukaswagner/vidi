@@ -7,12 +7,12 @@ export class PerfMon {
     protected _zero = Date.now();
     protected _samples: Timestamp[] = [];
 
-    public sample(id: number, label?: string): void {
-        this._samples.push({
+    public sample(id: number, label?: string): Timestamp {
+        return this._samples[this._samples.push({
             id,
             time: Date.now() - this._zero,
             label,
-        });
+        }) - 1];
     }
 
     public toColumns(): Column[] {
@@ -34,5 +34,13 @@ export class PerfMon {
             col.push(chunks[index] as BaseChunk<any>);
             return col;
         });
+    }
+
+    public toCsv(): string {
+        let result = 'id,time,label\n';
+        this._samples.forEach((s) => {
+            result += `${s.id},${s.time},${s.label}\n`;
+        });
+        return result;
     }
 }

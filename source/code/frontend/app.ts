@@ -357,15 +357,14 @@ export class TopicMapApp extends Initializable {
     }
 
     protected loadCsv(info: LoadInfo<CsvLoaderOptions>): Promise<void> {
-        const start = Date.now();
         const loader = new CsvMultiThreadedLoader(info);
         return new Promise<void>((resolve) => {
-            loader.load(() => this._renderer.updateData()).then((res) => {
-                const end = Date.now();
-                console.log(`loaded ${res.length} columns with ${res[0].length} rows in ${end - start} ms`);
-                this.dataReady(res);
-                resolve();
-            });
+            loader
+                .load(() => this._renderer.updateData())
+                .then((res) => {
+                    this.dataReady(res);
+                    resolve();
+                });
         });
     }
 

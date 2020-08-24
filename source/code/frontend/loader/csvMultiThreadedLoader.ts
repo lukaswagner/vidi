@@ -123,7 +123,7 @@ export class CsvMultiThreadedLoader {
                 }
                 this._numWorkers = workerId;
                 this._progress.steps[1].total = this._numWorkers;
-                this._progress.steps[2].total = this._numWorkers;
+                this._progress.steps[2].total = 1;
                 this._progress.applyValue();
                 this._numChunks = numChunks;
                 this._perf.sample(-1, 'load done');
@@ -299,8 +299,18 @@ export class CsvMultiThreadedLoader {
             this._columns.map((c, ci) => c.push(chunks[ci] as BaseChunk<any>));
         }
 
+        this._progress.steps[2].progress = 1;
+        this._progress.applyValue();
+
         this._progress.visible = false;
-        this._perf.sample(-1, 'done');
+        const sample = this._perf.sample(-1, 'done');
+        console.log(
+            `loaded ${this._columns.length} columns with ${this._columns[0].length} rows in ${sample.time} ms`);
+
+        console.groupCollapsed('loader performance data');
+        console.log(this._perf.toCsv());
+        console.groupEnd();
+
         this._invalidate();
     }
 }
