@@ -107,16 +107,3 @@ export function buildColumn(name: string, type: DataType): Column {
             return new StringColumn(name);
     }
 }
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function rebuildColumn(column: any): Column {
-    column._chunks = column._chunks.map((c: any) => rebuildChunk(c));
-    switch (column.type as DataType) {
-        case DataType.Number:
-            return Object.assign(new NumberColumn(''), column);
-        case DataType.Color:
-            return Object.assign(new NumberColumn(''), column);
-        case DataType.String:
-            return Object.assign(new StringColumn(''), column);
-    }
-}

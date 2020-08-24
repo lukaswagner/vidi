@@ -111,9 +111,10 @@ export function buildChunk(type: DataType, length: number): Chunk {
     }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function rebuildChunk(chunk: any): Chunk {
-    switch (chunk._type as DataType) {
+export function rebuildChunk(chunk: unknown): Chunk {
+    const c = chunk as any;
+    if(c._type === undefined) return undefined;
+    switch (c._type as DataType) {
         case DataType.Number:
             return Object.assign(new NumberChunk(0), chunk);
         case DataType.Color:
