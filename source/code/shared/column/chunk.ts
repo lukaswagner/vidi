@@ -99,6 +99,7 @@ export class StringChunk extends BaseChunk<string> {
 }
 
 export type Chunk = NumberChunk | ColorChunk | StringChunk;
+export type AnyChunk = NumberChunk & ColorChunk & StringChunk;
 
 export function buildChunk(type: DataType, length: number): Chunk {
     switch (type) {
@@ -112,7 +113,7 @@ export function buildChunk(type: DataType, length: number): Chunk {
 }
 
 export function rebuildChunk(chunk: unknown): Chunk {
-    const c = chunk as any;
+    const c = chunk as { _type: DataType };
     if(c._type === undefined) return undefined;
     switch (c._type as DataType) {
         case DataType.Number:

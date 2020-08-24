@@ -1,4 +1,4 @@
-import { BaseChunk, NumberChunk, rebuildChunk } from './chunk';
+import { BaseChunk, NumberChunk } from './chunk';
 import { DataType } from './dataType';
 import { GLclampf4 } from 'shared/types/tuples';
 

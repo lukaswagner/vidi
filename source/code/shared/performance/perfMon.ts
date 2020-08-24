@@ -1,4 +1,4 @@
-import { BaseChunk, NumberChunk, buildChunk } from 'shared/column/chunk';
+import { AnyChunk, NumberChunk, buildChunk } from 'shared/column/chunk';
 import { Column, buildColumn } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { Timestamp } from './timestamp';
@@ -31,7 +31,7 @@ export class PerfMon {
         const headers = ['time', 'id'];
         return chunks.map((chunk, index) => {
             const col = buildColumn(headers[index], chunk.type);
-            col.push(chunks[index] as BaseChunk<any>);
+            col.push(chunks[index] as AnyChunk);
             return col;
         });
     }

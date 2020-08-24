@@ -1,5 +1,5 @@
 import {
-    BaseChunk,
+    AnyChunk,
     buildChunk,
     rebuildChunk,
 } from 'shared/column/chunk';
@@ -259,7 +259,7 @@ export class CsvMultiThreadedLoader {
                 this._decoder.decode(result.startRemainder));
         }
 
-        this._columns.map((c, ci) => c.push(fixed[ci] as BaseChunk<any>));
+        this._columns.map((c, ci) => c.push(fixed[ci] as AnyChunk));
         this._lastRemainder = result.endRemainder;
 
         this._invalidate();
@@ -296,7 +296,7 @@ export class CsvMultiThreadedLoader {
                 storeLine(r, ri, this._options.delimiter, chunks);
             });
 
-            this._columns.map((c, ci) => c.push(chunks[ci] as BaseChunk<any>));
+            this._columns.map((c, ci) => c.push(chunks[ci] as AnyChunk));
         }
 
         this._progress.steps[2].progress = 1;
