@@ -379,9 +379,9 @@ export class PointPass extends Initializable {
 
     protected get dataAltered(): boolean {
         return (
-            (this._positions && this._positions.some((c) => c && c.altered)) ||
-            (this._vertexColors && this._vertexColors.altered) ||
-            (this._variablePointSize && this._variablePointSize.altered)
+            this._positions?.some((c) => c?.altered) ||
+            this._vertexColors?.altered ||
+            this._variablePointSize?.altered
         );
     }
 }
