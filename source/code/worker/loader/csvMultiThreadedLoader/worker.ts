@@ -157,5 +157,5 @@ function parse(chunks: ArrayBuffer[], ri: RemainderInfo): string[] {
     remainder = parseChunk(dec.decode(chunk), lines, remainder);
     // last chunk does not end with newline
     lines.push(remainder);
-    return lines;
+    return lines;;;;;
 }
