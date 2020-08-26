@@ -20,6 +20,8 @@ export function storeLine(
             case DataType.Color:
                 (column as ColorChunk).set(index, hex2rgba(cell));
                 break;
+            case DataType.String:
+                break;
         }
     });
 }

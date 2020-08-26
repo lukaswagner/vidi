@@ -5,9 +5,11 @@ import './icons.ts';
 import {
     Canvas,
     Color,
+    Context,
+    Controller,
     Initializable,
     Wizard,
-    viewer
+    viewer,
 } from 'webgl-operate';
 
 import {
@@ -38,7 +40,14 @@ import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
-declare let window: any;
+declare global {
+    interface Window {
+        canvas: Canvas
+        context: Context
+        controller: Controller
+        renderer: TopicMapRenderer
+    }
+}
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -222,12 +231,19 @@ export class TopicMapApp extends Initializable {
     }
 
     protected fetchAvailable(datasetsUrl: string): Promise<void> {
+        type Dataset = {
+            id: string,
+            user: string,
+            job_id: string,
+            format: string,
+            args: unknown,
+        }
         return new Promise<void>((resolve) => {
             fetch(datasetsUrl).then((res) => {
                 res.json().then((j) => {
                     const csv = j
-                        .filter((d: any) => d.format === 'csv')
-                        .map((d: any) => {
+                        .filter((d: Dataset) => d.format === 'csv')
+                        .map((d: Dataset) => {
                             return {
                                 id: d.id,
                                 url: `${datasetsUrl}/${d.id}/data`,
@@ -423,9 +439,4 @@ export class TopicMapApp extends Initializable {
         this._renderer.variablePointSize =
             this._data.getVariablePointSize(sizeAxis);
     }
-}
-
-const m = module as any;
-if(m.hot !== undefined) {
-    m.hot.decline();
 }

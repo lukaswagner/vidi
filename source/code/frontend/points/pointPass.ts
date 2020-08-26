@@ -252,10 +252,10 @@ export class PointPass extends Initializable {
         }));
 
         const newChunks = columns.map(
-            (c) => c ? c.getChunks(start, end) : undefined);
+            (c) => c?.getChunks(start, end));
 
         for(let i = 0; i < end - start; i++) {
-            const chunks = newChunks.map((nc) => nc ? nc[i] : undefined);
+            const chunks = newChunks.map((nc) => nc?.[i]);
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(
@@ -379,9 +379,9 @@ export class PointPass extends Initializable {
 
     protected get dataAltered(): boolean {
         return (
-            (this._positions && this._positions.some((c) => c && c.altered)) ||
-            (this._vertexColors && this._vertexColors.altered) ||
-            (this._variablePointSize && this._variablePointSize.altered)
+            this._positions?.some((c) => c?.altered) ||
+            this._vertexColors?.altered ||
+            this._variablePointSize?.altered
         );
     }
 }
