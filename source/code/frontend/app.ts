@@ -38,6 +38,7 @@ import { Data } from './data/data';
 import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
+import { Dataset, fetchAvailable, fetchPresets } from './util/api';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -74,7 +75,7 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { id: string; url: string; format: string }[];
+    private _datasets: Dataset[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -114,9 +115,11 @@ export class TopicMapApp extends Initializable {
         this.initControls();
         const userUrl = `${API_URL}/users/${API_USER}`;
         const datasetsUrl = userUrl + '/datasets';
-        this.fetchAvailable(datasetsUrl).then(() => {
-            this.fetchPresets(datasetsUrl);
-        });
+        fetchAvailable(datasetsUrl, this._controls)
+            .then((datasets: Dataset[]) => {
+                this._datasets = datasets;
+                fetchPresets(datasetsUrl, this._controls, this._datasets);
+            });
 
         // expose canvas, context, and renderer for console access
         window.canvas = this._canvas;
@@ -230,60 +233,6 @@ export class TopicMapApp extends Initializable {
             this.updateVariablePointSize.bind(this);
     }
 
-    protected fetchAvailable(datasetsUrl: string): Promise<void> {
-        type Dataset = {
-            id: string,
-            user: string,
-            job_id: string,
-            format: string,
-            args: unknown,
-        }
-        return new Promise<void>((resolve) => {
-            fetch(datasetsUrl).then((res) => {
-                res.json().then((j) => {
-                    const csv = j
-                        .filter((d: Dataset) => d.format === 'csv')
-                        .map((d: Dataset) => {
-                            return {
-                                id: d.id,
-                                url: `${datasetsUrl}/${d.id}/data`,
-                                format: d.format
-                            };
-                        });
-                    this._datasets = csv;
-                    this._controls.data.setOptions(
-                        this._datasets.map((d) => d.id));
-                    resolve();
-                });
-            });
-        });
-    }
-
-    protected fetchPresets(datasetsUrl: string): void {
-        fetch(datasetsUrl + '/presets/data').then((res) => {
-            res.json().then((presets: Preset[]) => {
-                const handler = (): void => {
-                    const selected = this._controls.presets.value;
-                    const preset = presets.find((p) => p.name === selected);
-                    const data =
-                        this._datasets.find((d) => d.id === preset.data);
-                    if (preset.data !== undefined && data !== undefined) {
-                        this._controls.data.setValue(preset.data, false);
-                        this.load(data.url, data.format).then(() => {
-                            this._controls.applyPreset(preset);
-                        });
-                    } else {
-                        this._controls.applyPreset(preset);
-                    }
-                };
-
-                this._controls.presetButton.handler = handler;
-                this._controls.presets.setOptions(presets.map((p) => p.name));
-                handler();
-            });
-        });
-    }
-
     protected deductSeparator(format: string): string {
         switch (format.toLowerCase()) {
             case 'csv':
@@ -310,7 +259,7 @@ export class TopicMapApp extends Initializable {
         });
     }
 
-    protected loadCustom(): Promise<void>{
+    protected loadCustom(): Promise<void> {
         switch (this._controls.customDataSourceSelect.value) {
             case 'File':
                 return this.loadCustomFromFile();
@@ -346,7 +295,7 @@ export class TopicMapApp extends Initializable {
         const pass = this._controls.customDataUrlPassInput.value;
 
         const headers = new Headers();
-        if(user !== '' && pass !== '') {
+        if (user !== '' && pass !== '') {
             headers.set(
                 'Authorization',
                 'Basic ' + btoa(user + ':' + pass));
