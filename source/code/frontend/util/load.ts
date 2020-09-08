@@ -1,4 +1,3 @@
-import { Progress } from "frontend/ui/progress";
 import { Controls } from "frontend/controls";
 import { LoadInfo, CsvLoaderOptions } from "shared/csvLoader/options";
 import { CsvMultiThreadedLoader } from "frontend/loader/csvMultiThreadedLoader";
