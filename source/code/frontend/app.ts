@@ -39,6 +39,7 @@ import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 import { Dataset, fetchAvailable, fetchPresets } from './util/api';
+import { loadFromServer, deductSeparator, loadCustom } from './util/load';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -141,7 +142,10 @@ export class TopicMapApp extends Initializable {
         // data
         this._controls.dataButton.handler = () => {
             const toLoad = this._datasets[this._controls.data.selectedIndex];
-            this.load(toLoad.url, toLoad.format);
+            loadFromServer(
+                toLoad.url, toLoad.format,
+                this._controls, () => this._renderer.updateData())
+                .then((d) => this.dataReady(d));
         };
 
         // custom data
@@ -170,13 +174,15 @@ export class TopicMapApp extends Initializable {
         this._controls.customDataFile.handler = (v) => {
             const splitName = v[0].name.split('.');
             const format = splitName[splitName.length - 1];
-            const delimiter = this.deductSeparator(format) || 'custom';
+            const delimiter = deductSeparator(format) || 'custom';
             this._controls.customDataDelimiterSelect.setValue(delimiter, true);
         };
         this._controls.customDataIncludesHeader.setValue(true);
         this._controls.customDataIncludesHeader.setDefault(true);
-        this._controls.customDataUploadButton.handler =
-            this.loadCustom.bind(this);
+        this._controls.customDataUploadButton.handler = () => {
+            loadCustom(this._controls, () => this._renderer.updateData())
+                .then((d) => this.dataReady(d));
+        }
 
         // point size
         this._controls.pointSize.handler = (v: number) => {
@@ -231,106 +237,6 @@ export class TopicMapApp extends Initializable {
 
         this._controls.variablePointSizeColumn.handler =
             this.updateVariablePointSize.bind(this);
-    }
-
-    protected deductSeparator(format: string): string {
-        switch (format.toLowerCase()) {
-            case 'csv':
-                return ',';
-            case 'tsv':
-                return '\t';
-            default:
-                return undefined;
-        }
-    }
-
-    protected load(url: string, format: string): Promise<void> {
-        console.log('loading', url);
-
-        return fetch(url).then((res) => {
-            return this.loadCsv({
-                stream: res.body,
-                options: {
-                    delimiter: this.deductSeparator(format) || ',',
-                    includesHeader: true
-                },
-                progress: this._controls.dataProgress
-            });
-        });
-    }
-
-    protected loadCustom(): Promise<void> {
-        switch (this._controls.customDataSourceSelect.value) {
-            case 'File':
-                return this.loadCustomFromFile();
-            case 'URL':
-                return this.loadCustomFromUrl();
-            default:
-                break;
-        }
-    }
-
-    protected loadCustomFromFile(): Promise<void> {
-        const file = this._controls.customDataFile.files[0];
-        let delimiter = this._controls.customDataDelimiterSelect.value;
-        if (delimiter === 'custom') {
-            delimiter = this._controls.customDataDelimiterInput.value;
-        }
-        const includesHeader = this._controls.customDataIncludesHeader.value;
-        console.log('loading custom file', file.name);
-
-        return this.loadCsv({
-            stream: file.stream(),
-            size: file.size,
-            options: {
-                delimiter,
-                includesHeader
-            },
-            progress: this._controls.customDataProgress
-        });
-    }
-    protected loadCustomFromUrl(): Promise<void> {
-        const url = this._controls.customDataUrlInput.value;
-        const user = this._controls.customDataUrlUserInput.value;
-        const pass = this._controls.customDataUrlPassInput.value;
-
-        const headers = new Headers();
-        if (user !== '' && pass !== '') {
-            headers.set(
-                'Authorization',
-                'Basic ' + btoa(user + ':' + pass));
-        }
-
-        let delimiter = this._controls.customDataDelimiterSelect.value;
-        if (delimiter === 'custom') {
-            delimiter = this._controls.customDataDelimiterInput.value;
-        }
-        const includesHeader = this._controls.customDataIncludesHeader.value;
-
-        console.log('loading from url', url);
-
-        return fetch(url, { headers }).then((res) => {
-            return this.loadCsv({
-                stream: res.body,
-                options: {
-                    delimiter,
-                    includesHeader
-                },
-                progress: this._controls.customDataProgress
-            });
-        });
-    }
-
-    protected loadCsv(info: LoadInfo<CsvLoaderOptions>): Promise<void> {
-        const loader = new CsvMultiThreadedLoader(info);
-        return new Promise<void>((resolve) => {
-            loader
-                .load(() => this._renderer.updateData())
-                .then((res) => {
-                    this.dataReady(res);
-                    resolve();
-                });
-        });
     }
 
     protected dataReady(columns: Column[]): void {
