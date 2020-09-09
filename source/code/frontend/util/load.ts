@@ -1,7 +1,10 @@
-import { Controls } from "frontend/controls";
-import { LoadInfo, CsvLoaderOptions } from "shared/csvLoader/options";
-import { CsvMultiThreadedLoader } from "frontend/loader/csvMultiThreadedLoader";
-import { Column } from "shared/column/column";
+import {
+    CsvLoaderOptions,
+    LoadInfo
+} from 'shared/csvLoader/options';
+import { Column } from 'shared/column/column';
+import { Controls } from 'frontend/controls';
+import { CsvMultiThreadedLoader } from 'frontend/loader/csvMultiThreadedLoader';
 
 type Invalidate = (force: boolean) => void;
 

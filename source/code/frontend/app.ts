@@ -28,18 +28,22 @@ import {
 } from './controls';
 
 import {
-    CsvLoaderOptions,
-    LoadInfo
-} from '../shared/csvLoader/options';
+    Dataset,
+    fetchAvailable,
+    fetchPresets
+} from './util/api';
+
+import {
+    deductSeparator,
+    loadCustom,
+    loadFromServer
+} from './util/load';
 
 import { Column } from 'shared/column/column';
-import { CsvMultiThreadedLoader } from './loader/csvMultiThreadedLoader';
 import { Data } from './data/data';
 import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
-import { Dataset, fetchAvailable, fetchPresets } from './util/api';
-import { deductSeparator, loadCustom, loadFromServer } from './util/load';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
