@@ -39,7 +39,7 @@ import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
 import { Dataset, fetchAvailable, fetchPresets } from './util/api';
-import { loadFromServer, deductSeparator, loadCustom } from './util/load';
+import { deductSeparator, loadCustom, loadFromServer } from './util/load';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -77,6 +77,7 @@ export class TopicMapApp extends Initializable {
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
     private _datasets: Dataset[];
+    private _presets: Preset[];
     private _data: Data;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
@@ -114,12 +115,16 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         this.initControls();
-        const userUrl = `${API_URL}/users/${API_USER}`;
-        const datasetsUrl = userUrl + '/datasets';
-        fetchAvailable(datasetsUrl, this._controls)
+        fetchAvailable()
             .then((datasets: Dataset[]) => {
                 this._datasets = datasets;
-                fetchPresets(datasetsUrl, this._controls, this._datasets);
+                this._controls.data.setOptions(datasets.map((d) => d.id));
+                return fetchPresets();
+            })
+            .then((presets: Preset[]) => {
+                this._presets = presets;
+                this._controls.presets.setOptions(presets.map((p) => p.name));
+                this._controls.presetButton.invoke();
             });
 
         // expose canvas, context, and renderer for console access
@@ -182,7 +187,7 @@ export class TopicMapApp extends Initializable {
         this._controls.customDataUploadButton.handler = () => {
             loadCustom(this._controls, () => this._renderer.updateData())
                 .then((d) => this.dataReady(d));
-        }
+        };
 
         // point size
         this._controls.pointSize.handler = (v: number) => {
@@ -237,6 +242,25 @@ export class TopicMapApp extends Initializable {
 
         this._controls.variablePointSizeColumn.handler =
             this.updateVariablePointSize.bind(this);
+
+        // presets
+        this._controls.presetButton.handler = (): void => {
+            const selected = this._controls.presets.value;
+            const preset = this._presets.find((p) => p.name === selected);
+            if(!preset) return;
+            const data = this._datasets.find((d) => d.id === preset.data);
+            if (preset.data !== undefined && data !== undefined) {
+                this._controls.data.setValue(preset.data, false);loadFromServer(
+                    data.url, data.format,
+                    this._controls, () => this._renderer.updateData())
+                    .then((d) => {
+                        this.dataReady(d);
+                        this._controls.applyPreset(preset);
+                    } );
+            } else {
+                this._controls.applyPreset(preset);
+            }
+        };
     }
 
     protected dataReady(columns: Column[]): void {
