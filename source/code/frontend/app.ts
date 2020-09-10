@@ -23,6 +23,11 @@ import {
 } from './points/colorMode';
 
 import {
+    ColumnUsage,
+    Columns
+} from './data/columns';
+
+import {
     Controls,
     Preset
 } from './controls';
@@ -40,7 +45,6 @@ import {
 } from './util/load';
 
 import { Column } from 'shared/column/column';
-import { Data } from './data/data';
 import { DataType } from 'shared/column/dataType';
 import { GridHelper } from './grid/gridHelper';
 import { TopicMapRenderer } from './renderer';
@@ -82,7 +86,7 @@ export class TopicMapApp extends Initializable {
     private _controls: Controls;
     private _datasets: Dataset[];
     private _presets: Preset[];
-    private _data: Data;
+    private _columns: Columns;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('version:', COMMIT);
@@ -213,7 +217,8 @@ export class TopicMapApp extends Initializable {
 
         // axes
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].handler = this.updatePositions.bind(this, i);
+            this._controls.axes[i].handler = 
+                this.updateColumn.bind(this, ColumnUsage.X_AXIS + i);
         }
 
         // colors
@@ -233,7 +238,8 @@ export class TopicMapApp extends Initializable {
         this._controls.colorMapping.setDefault(ColorMappingDefault.toString());
         this._controls.colorMapping.setValue(ColorMappingDefault.toString());
 
-        this._controls.colorColumn.handler = this.updateColors.bind(this);
+        this._controls.colorColumn.handler =
+            this.updateColumn.bind(this, ColumnUsage.PER_POINT_COLOR);
 
         // variable point size
         this._controls.variablePointSizeStrength.handler = (v: number) => {
@@ -245,7 +251,7 @@ export class TopicMapApp extends Initializable {
             vsc.default, vsc.min, vsc.max, vsc.step);
 
         this._controls.variablePointSizeColumn.handler =
-            this.updateVariablePointSize.bind(this);
+            this.updateColumn.bind(this, ColumnUsage.VARIABLE_POINT_SIZE);
 
         // presets
         this._controls.presetButton.handler = (): void => {
@@ -267,59 +273,66 @@ export class TopicMapApp extends Initializable {
         };
     }
 
+    protected getId(column: Column): string {
+        return column ?.name ?? '__NONE__';
+    }
+
     protected dataReady(columns: Column[]): void {
-        this._data = new Data(columns);
+        this._columns = new Columns(columns);
+        this.initColumns();
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Number);
+        const numberColumnNames = this._columns.getColumnNames(DataType.Number);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
             this._controls.axes[i].setOptions(
                 numberIds, numberLabels, false);
             this._controls.axes[i].setValue(
-                this._data.selectedColumn(i), false);
+                this.getId(this._columns.selectedColumn(i)), false);
         }
-        this.updatePositions();
 
         // set up vertex color controls
-        const colorColumnNames = this._data.getColumnNames(DataType.Color);
+        const colorColumnNames = this._columns.getColumnNames(DataType.Color);
         const colorIds = ['__NONE__'].concat(colorColumnNames);
         const colorLabels = ['None'].concat(colorColumnNames);
-        this._controls.colorColumn.setOptions(colorIds, colorLabels);
+        this._controls.colorColumn.setOptions(colorIds, colorLabels, false);
 
         // set up variable point size controls
         this._controls.variablePointSizeColumn.setOptions(
-            numberIds, numberLabels);
+            numberIds, numberLabels, false);
     }
 
-    protected updatePositions(updatedAxis = -1): void {
-        if (updatedAxis > -1) {
-            this._data.selectColumn(
-                updatedAxis, this._controls.axes[updatedAxis].value);
-        }
-        this._renderer.positions = this._data.getCoordinates();
-        const extents = [
+    protected updateColumn(updatedColumn: ColumnUsage, name: string): void {
+        console.log('updating', updatedColumn);
+        this._columns.selectColumn(updatedColumn, name);
+        this._renderer.setColumn(
+            updatedColumn,
+            this._columns.selectedColumn(updatedColumn));
+        this.updateGrid();
+    }
+
+    protected initColumns(): void {
+        this._renderer.columns = this._columns.selectedColumns;
+        this.updateGrid();
+    }
+
+    protected updateGrid(
+        extents = [
             { min: -1, max: 1 },
             { min: -1, max: 1 },
             { min: -1, max: 1 }
-        ];
-        const subdivisions = 12;
+        ],
+        subdivisions = 10,
+    ): void {
         this._renderer.grid = GridHelper.buildGrid(
-            [0, 1, 2].map((i) => this._data.selectedColumn(i)),
+            this._columns.selectedColumns
+                .slice(0, 3)
+                .map((c) => this.getId(c)),
             extents,
             subdivisions,
             false
         );
         this._renderer.updateGrid();
-    }
-
-    protected updateColors(colorAxis: string): void {
-        this._renderer.vertexColors = this._data.getColors(colorAxis);
-    }
-
-    protected updateVariablePointSize(sizeAxis: string): void {
-        this._renderer.variablePointSize =
-            this._data.getVariablePointSize(sizeAxis);
     }
 }

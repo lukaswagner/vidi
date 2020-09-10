@@ -10,7 +10,7 @@ import {
 } from 'webgl-operate';
 
 import {
-    ColorColumn,
+    Column,
     NumberColumn
 } from 'shared/column/column';
 
@@ -23,16 +23,14 @@ export class PointPass extends Initializable {
 
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
-        positions: false,
+        columns: false,
         aspectRatio: false,
         cutoffPosition: false,
         pointSize: false,
         useDiscard: false,
         colorMode: false,
         colorMapping: false,
-        vertexColors: false,
         variablePointSizeStrength: false,
-        variablePointSize: false,
     });
 
     protected _context: Context;
@@ -68,9 +66,7 @@ export class PointPass extends Initializable {
     protected _uVariablePointSizeStrength: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
-    protected _positions: NumberColumn[];
-    protected _vertexColors: ColorColumn;
-    protected _variablePointSize: NumberColumn;
+    protected _columns: Column[];
 
     public constructor(context: Context) {
         super();
@@ -140,10 +136,7 @@ export class PointPass extends Initializable {
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        const rebuildGeometries =
-            this._altered.positions ||
-            this._altered.vertexColors ||
-            this._altered.variablePointSize;
+        const rebuildGeometries = this._altered.columns;
         if (override || rebuildGeometries) {
             this._geometries.forEach((g) => g.uninitialize());
             this._geometries = [];
@@ -151,7 +144,7 @@ export class PointPass extends Initializable {
 
         this._program.bind();
 
-        const newGeometries = this.dataAltered;
+        const newGeometries = this.columnsAltered;
         if (override || rebuildGeometries || newGeometries) {
             this.buildGeometries();
         }
@@ -198,7 +191,7 @@ export class PointPass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
-        if (this._positions === undefined || this._positions.length === 0) {
+        if (this._columns === undefined || this._columns.length === 0) {
             return;
         }
 
@@ -236,22 +229,20 @@ export class PointPass extends Initializable {
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
+    public setColumn(index: number, column: Column): void {
+        this.assertInitialized();
+        this._columns[index] = column;
+        this._altered.alter('columns');
+    }
+
     protected buildGeometries(): void {
         const start = this._geometries.length;
 
-        const columns = [
-            this._positions[0],
-            this._positions[1],
-            this._positions[2],
-            this._vertexColors,
-            this._variablePointSize
-        ];
-
-        const end = Math.min(...columns.map((c) => {
+        const end = Math.min(...this._columns.map((c) => {
             return c ? c.chunkCount : Number.POSITIVE_INFINITY;
         }));
 
-        const newChunks = columns.map(
+        const newChunks = this._columns.map(
             (c) => c?.getChunks(start, end));
 
         for(let i = 0; i < end - start; i++) {
@@ -267,7 +258,7 @@ export class PointPass extends Initializable {
             ));
         }
 
-        const limits = this._positions.map((c) => c ?
+        const limits = this._columns.slice(0, 3).map((c: NumberColumn) => c ?
             {offset: -c.min, scale: 1 / (c.max - c.min)} :
             {offset: 0, scale: 0});
         const model = mat4.create();
@@ -285,17 +276,15 @@ export class PointPass extends Initializable {
         ]);
         this._gl.uniformMatrix4fv(this._uModel, false, model);
 
-        columns.forEach((c) => {
+        this._columns.forEach((c) => {
             if(c) c.altered = false;
         });
     }
 
-    public set positions(positions: NumberColumn[]) {
+    public set columns(columns: Column[]) {
         this.assertInitialized();
-        this._positions = [
-            positions[0], positions[2], positions[1]
-        ];
-        this._altered.alter('positions');
+        this._columns = columns;
+        this._altered.alter('columns');
     }
 
     public set target(target: Framebuffer) {
@@ -342,22 +331,10 @@ export class PointPass extends Initializable {
         this._altered.alter('colorMapping');
     }
 
-    public set vertexColors(colors: ColorColumn) {
-        this.assertInitialized();
-        this._vertexColors = colors;
-        this._altered.alter('vertexColors');
-    }
-
     public set variablePointSizeStrength(strength: GLfloat) {
         this.assertInitialized();
         this._variablePointSizeStrength = strength;
         this._altered.alter('variablePointSizeStrength');
-    }
-
-    public set variablePointSize(pointSize: NumberColumn) {
-        this.assertInitialized();
-        this._variablePointSize = pointSize;
-        this._altered.alter('variablePointSize');
     }
 
     public set camera(camera: Camera) {
@@ -374,14 +351,10 @@ export class PointPass extends Initializable {
     }
 
     public get altered(): boolean {
-        return this._altered.any || this.dataAltered;
+        return this._altered.any || this.columnsAltered;
     }
 
-    protected get dataAltered(): boolean {
-        return (
-            this._positions?.some((c) => c?.altered) ||
-            this._vertexColors?.altered ||
-            this._variablePointSize?.altered
-        );
+    protected get columnsAltered(): boolean {
+        return this._columns?.some((c) => c?.altered);
     }
 }

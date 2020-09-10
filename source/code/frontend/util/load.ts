@@ -107,6 +107,5 @@ function loadCsv(
     info: LoadInfo<CsvLoaderOptions>, invalidate: Invalidate
 ): Promise<Column[]> {
     const loader = new CsvMultiThreadedLoader(info);
-    console.log(invalidate);
     return loader.load(invalidate);
 }

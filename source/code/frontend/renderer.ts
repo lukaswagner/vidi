@@ -18,16 +18,12 @@ import {
 } from 'webgl-operate';
 
 import {
-    ColorColumn,
-    NumberColumn
-} from 'shared/column/column';
-
-import {
     ExtendedGridInfo,
     GridInfo,
     calculateExtendedGridInfo
 } from './grid/gridInfo';
 
+import { Column } from 'shared/column/column';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
@@ -79,6 +75,13 @@ export class TopicMapRenderer extends Renderer {
 
     public updateData(): void {
         this.invalidate();
+    }
+
+    public setColumn(index: number, column: Column): void {
+        this._pointPass.setColumn(index, column);
+        if (this.initialized) {
+            this.invalidate();
+        }
     }
 
     /**
@@ -304,9 +307,8 @@ export class TopicMapRenderer extends Renderer {
         console.warn('got discarded');
     }
 
-    public set positions(positions: NumberColumn[]) {
-        this._pointPass.positions = positions;
-
+    public set columns(columns: Column[]) {
+        this._pointPass.columns = columns;
         if (this.initialized) {
             this.invalidate();
         }
@@ -340,18 +342,8 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set vertexColors(colors: ColorColumn) {
-        this._pointPass.vertexColors = colors;
-        this.invalidate();
-    }
-
     public set variablePointSizeStrength(strength: number) {
         this._pointPass.variablePointSizeStrength = strength;
-        this.invalidate();
-    }
-
-    public set variablePointSize(pointSize: NumberColumn) {
-        this._pointPass.variablePointSize = pointSize;
         this.invalidate();
     }
 }
