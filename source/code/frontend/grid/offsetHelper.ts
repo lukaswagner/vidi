@@ -32,8 +32,6 @@ export class GridOffsetHelper extends Initializable {
     protected _gridLabelPass: GridLabelPass;
     protected _pointPass: PointPass;
 
-    protected _normals: vec3[];
-    protected _offsets: [number, number][];
     protected _lastIndices: number[];
 
     public constructor(
@@ -73,48 +71,94 @@ export class GridOffsetHelper extends Initializable {
     }
 
     protected prepareOffsets(): void {
-        this._normals = this._gridInfo.map((g) => g.normal);
-        this._offsets = this._gridInfo.map((g) => g.offsets);
         this._lastIndices = this._gridInfo.map(() => -1);
     }
 
     protected updateOffsets(override: boolean): void {
-        const indices = this._normals.length === 1 ? [
-            (this._camera.eye[1] >
-                (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-            this._camera.eye[2] > 0 ? 0 : 1,
-            this._camera.eye[0] < 0 ? 0 : 1
-        ] : [
-            (this._camera.eye[1] >
-                    (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-            (this._camera.eye[2] >
-                    (this._offsets[1][0] + this._offsets[1][1]) / 2) ? 0 : 1,
-            (this._camera.eye[0] <
-                    (this._offsets[2][0] + this._offsets[2][1]) / 2) ? 0 : 1
-        ];
-        const changed = indices.reduce(
-            (acc, index, i) => acc || index !== this._lastIndices[i], false);
+        const centers = this._gridInfo.map((grid) =>
+            grid.enabled ? (grid.offsets[0] + grid.offsets[1]) / 2 : 0
+        );
+
+        const indices = centers.map((center, i) =>
+            this._camera.eye[(i + 2) % 3] > center ? 0 : 1
+        );
+
+        const changed = indices.reduce((result, newIndex, i) => 
+            result || newIndex !== this._lastIndices[i], false
+        );
+        if(!changed && !override) return;
+
         this._lastIndices = indices;
-        if (changed || override) {
-            const offsets = indices
-                .slice(0, this._normals.length)
-                .map((index, i) => this._offsets[i][index]);
-            this._gridPass.gridOffsets = offsets;
-            if (offsets.length === 1) {
-                this._pointPass.cutoffPosition = [
-                    { value: 0, mask: 0 },
-                    { value: offsets[0], mask: 1 },
-                    { value: 0, mask: 0 },
-                ];
-            } else {
-                this._pointPass.cutoffPosition = [
-                    { value: -offsets[2], mask: 1 },
-                    { value: offsets[0], mask: 1 },
-                    { value: offsets[1], mask: 1 },
-                ];
+
+        const offsets = this._gridInfo.map((grid, i) =>
+            grid.enabled ? grid.offsets[indices[i]] : 0
+        );
+        this._gridPass.gridOffsets = offsets;
+
+        this._pointPass.cutoffPosition = [0, 1, 2].map((i) => {
+            return { value: offsets[i], mask: 1 };
+        });
+
+        console.log({
+            centers, indices, offsets
+        });
+
+        this.updateLabels(offsets);
+    }
+
+    protected updateLabels2(indices: number[]): void {
+        const xyPlaneEnabled = this._gridInfo[0].enabled;
+        const yzPlaneEnabled = this._gridInfo[1].enabled;
+        const zxPlaneEnabled = this._gridInfo[2].enabled;
+
+        const xOffsetNeeded = xyPlaneEnabled || zxPlaneEnabled;
+        const yOffsetNeeded = xyPlaneEnabled || yzPlaneEnabled;
+        const zOffsetNeeded = yzPlaneEnabled || zxPlaneEnabled;
+
+        const xAxisExtents =
+            this._gridInfo[0].firstAxis?.extents ??
+            this._gridInfo[2].secondAxis?.extents;
+        const yAxisExtents =
+            this._gridInfo[1].firstAxis?.extents ??
+            this._gridInfo[0].secondAxis?.extents;
+        const zAxisExtents =
+            this._gridInfo[2].firstAxis?.extents ??
+            this._gridInfo[1].secondAxis?.extents;
+
+        const selectCoord = (
+            eye: number, a: number, b: number, closer: boolean
+        ): number => {
+            return (Math.abs(eye - a) < Math.abs(eye - b) && closer) ? a : b;
+        };
+
+        const xOffset = xOffsetNeeded ?
+            selectCoord(
+                this._camera.eye[0], xAxisExtents.min, xAxisExtents.max, false
+            ) : 0;
+        const yOffset = yOffsetNeeded ?
+            selectCoord(
+                this._camera.eye[1], yAxisExtents.min, yAxisExtents.max, true
+            ) : 0;
+        const zOffset = zOffsetNeeded ?
+            selectCoord(
+                this._camera.eye[2], zAxisExtents.min, zAxisExtents.max, false
+            ) : 0;
+
+        const xAxisLabelPos = vec3.fromValues(
+            xAxisExtents.center, yOffset, zOffset
+        );
+        const yAxisLabelPos = vec3.fromValues(
+            xOffset, yAxisExtents.center, zOffset
+        );
+        const zAxisLabelPos = vec3.fromValues(
+            zOffset, yOffset, zAxisExtents.center
+        );
+
+        const labels: LabelSet[] = [
+            {
+                
             }
-            this.updateLabels(offsets);
-        }
+        ];
     }
 
     protected updateLabels(offsets: number[]): void {

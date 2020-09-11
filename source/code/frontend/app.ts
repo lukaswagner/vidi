@@ -304,7 +304,6 @@ export class TopicMapApp extends Initializable {
     }
 
     protected updateColumn(updatedColumn: ColumnUsage, name: string): void {
-        console.log('updating', updatedColumn);
         this._columns.selectColumn(updatedColumn, name);
         this._renderer.setColumn(
             updatedColumn,
@@ -330,8 +329,7 @@ export class TopicMapApp extends Initializable {
                 .slice(0, 3)
                 .map((c) => this.getId(c)),
             extents,
-            subdivisions,
-            false
+            subdivisions
         );
         this._renderer.updateGrid();
     }

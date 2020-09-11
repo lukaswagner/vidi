@@ -13,16 +13,15 @@ export class GridHelper {
     public static buildGrid(
         columns: string[],
         extents: Extents[],
-        subdivisions: number,
-        force2D: boolean
+        subdivisions: number
     ): GridInfo[] {
         const invalid = '__NONE__';
         const valid = columns.map((c) => c !== invalid);
 
         const directions = [
             vec3.fromValues(1, 0, 0),
-            vec3.fromValues(0, 0, -1),
             vec3.fromValues(0, 1, 0),
+            vec3.fromValues(0, 0, 1)
         ];
         const axes = valid.map((v, i) => {
             if(!v) {
@@ -36,36 +35,17 @@ export class GridHelper {
             };
         });
 
-        const result: GridInfo[] = [];
-
-        if(valid[0] && valid[1]) {
-            result.push({
-                firstAxis: axes[0],
-                secondAxis: axes[1],
-                normal: vec3.fromValues(0, 1, 0),
-                offsets: this.getOffsets(axes[2])
-            });
-        }
-
-        if(valid[0] && valid[2] && !force2D) {
-            result.push({
-                firstAxis: axes[0],
-                secondAxis: axes[2],
-                normal: vec3.fromValues(0, 0, 1),
-                offsets: this.getOffsets(axes[1])
-            });
-        }
-
-        if(valid[1] && valid[2] && !force2D) {
-            result.push({
-                firstAxis: axes[1],
-                secondAxis: axes[2],
-                normal: vec3.fromValues(-1, 0, 0),
-                offsets: this.getOffsets(axes[0])
-            });
-        }
-
-        return result;
+        return [0, 1, 2].map(
+            (i) => {
+                return {
+                    enabled: valid[i] && valid[(i + 1) % 3],
+                    firstAxis: axes[i],
+                    secondAxis: axes[(i + 1) % 3],
+                    normal: directions[(i + 2) % 3],
+                    offsets: this.getOffsets(axes[2 - i])
+                };
+            }
+        );
     }
 
     protected static getOffsets(axis: AxisInfo): [number, number] {

@@ -8,6 +8,7 @@ export type AxisInfo = {
 }
 
 export type GridInfo = {
+    enabled: boolean;
     firstAxis: AxisInfo;
     secondAxis: AxisInfo;
     normal: vec3;
@@ -23,13 +24,14 @@ export type ExtendedAxisInfo = {
 }
 
 export type ExtendedGridInfo = {
+    enabled: boolean;
     firstAxis: ExtendedAxisInfo;
     secondAxis: ExtendedAxisInfo;
     normal: vec3;
     offsets: [number, number];
 }
 
-type ExtendedExtents = {
+export type ExtendedExtents = {
     center: number;
     extentPositions: { min: vec3; max: vec3; center: vec3 };
 }
@@ -50,6 +52,16 @@ function calcExtendedExtents(self: AxisInfo): ExtendedExtents {
 }
 
 export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
+    if(!grid.enabled) {
+        return {
+            enabled: false,
+            firstAxis: undefined,
+            secondAxis: undefined,
+            normal: undefined,
+            offsets: undefined,
+        };
+    }
+
     const first = grid.firstAxis;
     const second = grid.secondAxis;
 
@@ -57,6 +69,7 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
     const secondExtendedExtents = calcExtendedExtents(second);
 
     return {
+        enabled: true,
         firstAxis: {
             name: first.name,
             direction: first.direction,

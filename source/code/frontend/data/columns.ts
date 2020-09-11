@@ -77,7 +77,6 @@ export class Columns {
             initZ ? (match?.[2] ?? fallback[2] ?? -1) : -1;
         this._selectedColumns[ColumnUsage.VARIABLE_POINT_SIZE] = -1;
         this._selectedColumns[ColumnUsage.PER_POINT_COLOR] = -1;
-        console.log(this._selectedColumns);
     }
 
     public get selectedColumns(): Column[] {
