@@ -1,5 +1,6 @@
 import {
     AxisInfo,
+    ExtendedAxisInfo,
     ExtendedGridInfo,
 } from './gridInfo';
 import {
@@ -103,62 +104,67 @@ export class GridOffsetHelper extends Initializable {
             centers, indices, offsets
         });
 
-        this.updateLabels(offsets);
+        this.updateLabels2(indices);
     }
 
     protected updateLabels2(indices: number[]): void {
-        const xyPlaneEnabled = this._gridInfo[0].enabled;
-        const yzPlaneEnabled = this._gridInfo[1].enabled;
-        const zxPlaneEnabled = this._gridInfo[2].enabled;
+        const gi = this._gridInfo;
 
-        const xOffsetNeeded = xyPlaneEnabled || zxPlaneEnabled;
-        const yOffsetNeeded = xyPlaneEnabled || yzPlaneEnabled;
-        const zOffsetNeeded = yzPlaneEnabled || zxPlaneEnabled;
+        const next = (i: number): number => (i + 1) % 3;
+        const prev = (i: number): number => (i + 2) % 3;
 
-        const xAxisExtents =
-            this._gridInfo[0].firstAxis?.extents ??
-            this._gridInfo[2].secondAxis?.extents;
-        const yAxisExtents =
-            this._gridInfo[1].firstAxis?.extents ??
-            this._gridInfo[0].secondAxis?.extents;
-        const zAxisExtents =
-            this._gridInfo[2].firstAxis?.extents ??
-            this._gridInfo[1].secondAxis?.extents;
+        const gEn = gi.map((g) => g.enabled);
+        const aEn = gEn.map((e, i) => e || gEn[prev(i)]);
+        const a = gi.map((g, i) => g.firstAxis ?? gi[prev(i)].secondAxis);
 
-        const selectCoord = (
-            eye: number, a: number, b: number, closer: boolean
-        ): number => {
-            return (Math.abs(eye - a) < Math.abs(eye - b) && closer) ? a : b;
-        };
+        const o = a.map((a, i) => !aEn[i] ? 0 :
+            indices[next(i)] === 0 ? a.extents.min : a.extents.max);
 
-        const xOffset = xOffsetNeeded ?
-            selectCoord(
-                this._camera.eye[0], xAxisExtents.min, xAxisExtents.max, false
-            ) : 0;
-        const yOffset = yOffsetNeeded ?
-            selectCoord(
-                this._camera.eye[1], yAxisExtents.min, yAxisExtents.max, true
-            ) : 0;
-        const zOffset = zOffsetNeeded ?
-            selectCoord(
-                this._camera.eye[2], zAxisExtents.min, zAxisExtents.max, false
-            ) : 0;
+        const labels: LabelSet[] = [];
 
-        const xAxisLabelPos = vec3.fromValues(
-            xAxisExtents.center, yOffset, zOffset
-        );
-        const yAxisLabelPos = vec3.fromValues(
-            xOffset, yAxisExtents.center, zOffset
-        );
-        const zAxisLabelPos = vec3.fromValues(
-            zOffset, yOffset, zAxisExtents.center
-        );
+        const slightOffset = 1e-6;
+        if(aEn[0]) {
+            const me = a[0];
+            const c = me.extents.center;
+            const name = me.name;
+            const offset = o[1] + Math.sign(o[1]) * this.labelOffset;
+            const up = vec3.fromValues(0, 1, 0);
+            const p1 = vec3.fromValues(
+                c, offset, aEn[2] ? a[2].extents.min : slightOffset);
+            const d1 = vec3.cross(vec3.create(), p1, up);
+            const p2 = vec3.fromValues(
+                c, offset, aEn[2] ? a[2].extents.max : -slightOffset);
+            const d2 = vec3.cross(vec3.create(), p2, up);
+            labels.push({
+                labels: [
+                    {name, dir: d1, pos: p1, up },
+                    {name, dir: d2, pos: p2, up}],
+                useNearest: false
+            });
+        }
 
-        const labels: LabelSet[] = [
-            {
-                
-            }
-        ];
+        if(aEn[1]) {
+            const me = a[1];
+            const c = me.extents.center;
+            const name = me.name;
+            const offset = o[0] + Math.sign(o[0]) * this.labelOffset;
+            const up = vec3.fromValues(-o[0], 0, 0);
+            const p1 = vec3.fromValues(
+                offset, c, aEn[2] ? a[2].extents.min : slightOffset);
+            const d1 = vec3.cross(vec3.create(), p1, up);
+            const p2 = vec3.fromValues(
+                offset, c, aEn[2] ? a[2].extents.max : -slightOffset);
+            const d2 = vec3.cross(vec3.create(), p2, up);
+            labels.push({
+                labels: [
+                    {name, dir: d1, pos: p1, up },
+                    {name, dir: d2, pos: p2, up}],
+                useNearest: false
+            });
+        }
+
+        console.log(labels);
+        this._gridLabelPass.labelInfo = labels;
     }
 
     protected updateLabels(offsets: number[]): void {
