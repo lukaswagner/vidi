@@ -42,7 +42,7 @@ export class GridHelper {
                     firstAxis: axes[i],
                     secondAxis: axes[(i + 1) % 3],
                     normal: directions[(i + 2) % 3],
-                    offsets: this.getOffsets(axes[2 - i])
+                    offsets: this.getOffsets(axes[(i + 2) % 3])
                 };
             }
         );

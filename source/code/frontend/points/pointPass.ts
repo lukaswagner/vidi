@@ -259,20 +259,20 @@ export class PointPass extends Initializable {
         }
 
         const limits = this._columns.slice(0, 3).map((c: NumberColumn) => c ?
-            {offset: -c.min, scale: 1 / (c.max - c.min)} :
+            {offset: c.min, scale: 1 / (c.max - c.min)} :
             {offset: 0, scale: 0});
         const model = mat4.create();
-        mat4.translate(model, model, [-1, limits[1].scale === 0 ? 0 : -1, 1]);
-        mat4.scale(model, model, [2, 2, 2]);
+        mat4.translate(model, model,
+            new Float32Array(limits.map((l) => Math.sign(l.offset))));
         mat4.scale(model, model, [
-            limits[0].scale,
-            limits[1].scale,
-            -limits[2].scale
+            limits[0].scale * 2,
+            limits[1].scale * 2,
+            limits[2].scale * 2
         ]);
         mat4.translate(model, model, [
-            limits[0].offset,
-            limits[1].offset,
-            limits[2].offset
+            -limits[0].offset,
+            -limits[1].offset,
+            -limits[2].offset
         ]);
         this._gl.uniformMatrix4fv(this._uModel, false, model);
 
