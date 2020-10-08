@@ -128,7 +128,6 @@ export class GridOffsetHelper extends Initializable {
                     this.oneGrid(axes[2], axes[0], 1);
                 break;
             case 7:
-                this._gridLabelPass.labelInfo = [];
                 this._gridLabelPass.labelInfo =
                     this.allGrids(axes, indices, offsets);
                 break;
@@ -182,9 +181,11 @@ export class GridOffsetHelper extends Initializable {
     }
 
     protected allGrids(
-        axes: ExtendedAxisInfo[], indices: number[], offsets: number[]
+        axes: ExtendedAxisInfo[],
+        axisCenterStep: number[],
+        gridOffsetValues: number[]
     ): LabelSet[] {
-        console.log(offsets);
+        console.log(gridOffsetValues);
         // negate vector
         function n(v: vec3): vec3 {
             return vec3.negate(vec3.create(), v);
@@ -192,98 +193,72 @@ export class GridOffsetHelper extends Initializable {
 
         // place x/z labels on horizontal plane
 
-        const xN = axes[0].name;
-        const zN = axes[2].name;
-        const xD = axes[0].direction;
-        const zD = axes[2].direction;
+        const xName = axes[0].name;
+        const zName = axes[2].name;
+        const xDir = axes[0].direction;
+        const zDir = axes[2].direction;
 
-        // on lower-z side of zx-plane
-        const xP1 = vec3.fromValues(
-            0, offsets[2], axes[2].extents.min - this.labelOffset);
-        // on upper-z side of zx-plane
-        const xP2 = vec3.fromValues(
-            0, offsets[2], axes[2].extents.max + this.labelOffset);
+        // pos on lower-z side of zx-plane
+        const xPos1 = vec3.fromValues(
+            0, gridOffsetValues[2], axes[2].extents.min - this.labelOffset);
+        // pos on upper-z side of zx-plane
+        const xPos2 = vec3.fromValues(
+            0, gridOffsetValues[2], axes[2].extents.max + this.labelOffset);
+        // flip up vector if viewed from below
+        const xUp = axisCenterStep[1] === 0 ? zDir : n(zDir);
+        // choose zx-plane x label based on xy-plane position on z axis
+        const xLabel = axisCenterStep[2] === 1 ?
+            { name: xName, dir: n(xDir), pos: xPos1, up: xUp }:
+            { name: xName, dir: xDir, pos: xPos2, up: n(xUp) };
 
-        // on lower-x side of zx-plane
-        const zP1 = vec3.fromValues(
-            axes[0].extents.min - this.labelOffset, offsets[2], 0);
-        // on upper-x side of zx-plane
-        const zP2 = vec3.fromValues(
-            axes[0].extents.max + this.labelOffset, offsets[2], 0);
-
-        const xU = indices[1] === 0 ? zD : n(zD);
-        const zU = indices[1] === 0 ? xD : n(xD);
+        // pos on lower-x side of zx-plane
+        const zPos1 = vec3.fromValues(
+            axes[0].extents.min - this.labelOffset, gridOffsetValues[2], 0);
+        // pos on upper-x side of zx-plane
+        const zPos2 = vec3.fromValues(
+            axes[0].extents.max + this.labelOffset, gridOffsetValues[2], 0);
+        // flip up vector if viewed from below
+        const zUp = axisCenterStep[1] === 0 ? xDir : n(xDir);
+        // choose zx-plane z label based on yz-plane position on x axis
+        const zLabel = axisCenterStep[0] === 1 ?
+            { name: zName, dir: zDir, pos: zPos1, up: zUp }:
+            { name: zName, dir: n(zDir), pos: zPos2, up: n(zUp) };
 
         // place y label on vertical planes
 
-        const yN = axes[1].name;
-        const yD = axes[1].direction;
+        const yName = axes[1].name;
+        const yDir = axes[1].direction;
 
-        // on lower-x side of xy-plane
-        const yP1 = vec3.fromValues(
-            offsets[1], 0, axes[2].extents.min - this.labelOffset);
-        // on upper-x side of xy-plane
-        const yP2 = vec3.fromValues(
-            offsets[1], 0, axes[2].extents.max + this.labelOffset);
-        // on lower-z side of yz-plane
-        const yP3 = vec3.fromValues(
-            axes[0].extents.min - this.labelOffset, 0, offsets[0]);
-        // on upper-z side of yz-plane
-        const yP4 = vec3.fromValues(
-            axes[0].extents.max + this.labelOffset, 0, offsets[0]);
+        // pos on lower-x side of xy-plane
+        const yPosXY1 = vec3.fromValues(
+            axes[0].extents.min - this.labelOffset, 0, gridOffsetValues[0]);
+        // pos on upper-x side of xy-plane
+        const yPosXY2 = vec3.fromValues(
+            axes[0].extents.max + this.labelOffset, 0, gridOffsetValues[0]);
+        // pos on lower-z side of yz-plane
+        const yPosYZ1 = vec3.fromValues(
+            gridOffsetValues[1], 0, axes[2].extents.min - this.labelOffset);
+        // pos on upper-z side of yz-plane
+        const yPosYZ2 = vec3.fromValues(
+            gridOffsetValues[1], 0, axes[2].extents.max + this.labelOffset);
 
-        // do some cross stuff?
-        const yD1 = indices[0] === 0 ? n(yD) : yD;
-        const yU1 = indices[0] === 0 ? n(zD) : zD;
-        // if(indices[2] === 1) {
-        //     yD1 = n(yD1);
-        //     yU1 = n(yU1);
-        // }
-
-        const yD2 = indices[2] === 0 ? yD : n(yD);
-        const yU2 = indices[2] === 0 ? n(xD) : xD;
-        // if(indices[0] === 1) {
-        //     yD2 = n(yD2);
-        //     yU2 = n(yU2);
-        // }
-
-
+        // choose xy-plane y label based on yz-plane position on x axis
+        const yLabelXY = axisCenterStep[0] === 1 ?
+            { name: yName, dir: n(yDir), pos: yPosXY1, up: xDir }:
+            { name: yName, dir: yDir, pos: yPosXY2, up: n(xDir) };
+        // if higher xy-plane is used, the label isn't facing the camera
+        if(axisCenterStep[2] === 1) yLabelXY.dir = n(yLabelXY.dir);
+        // choose yz-plane y label based on xy-plane position on z axis
+        const yLabelYZ = axisCenterStep[2] === 1 ?
+            { name: yName, dir: yDir, pos: yPosYZ1, up: zDir }:
+            { name: yName, dir: n(yDir), pos: yPosYZ2, up: n(zDir) };
+        // if higher yz-plane is used, the label isn't facing the camera
+        if(axisCenterStep[0] === 1) yLabelYZ.dir = n(yLabelYZ.dir);
 
         return [
-            {
-                labels: [
-                    // choose zx-plane x label based on z index
-                    indices[2] === 1 ?
-                        { name: xN, dir: n(xD), pos: xP1, up: xU }:
-                        { name: xN, dir: xD, pos: xP2, up: n(xU) }
-                ],
-                // doesn't matter, as only one option is passed
-                useNearest: true
-            },
-            {
-                labels:  [
-                    // choose xy-plane option based on z index
-                    indices[2] === 1 ?
-                        { name: yN, dir: n(yD1), pos: yP1, up: yU1 }:
-                        { name: yN, dir: yD1, pos: yP2, up: n(yU1) },
-                    // choose yz-plane option based on x index
-                    indices[0] === 1 ?
-                        { name: yN, dir: n(yD2), pos: yP3, up: yU2 }:
-                        { name: yN, dir: yD2, pos: yP4, up: n(yU2) }
-                ],
-                // use the one further away for better readability
-                useNearest: false
-            },
-            {
-                labels: [
-                    // choose zx-plane z label based on x index
-                    indices[0] === 1 ?
-                        { name: zN, dir: zD, pos: zP1, up: zU }:
-                        { name: zN, dir: n(zD), pos: zP2, up: n(zU) }
-                ],
-                // doesn't matter, as only one option is passed
-                useNearest: true
-            },
+            { labels: [xLabel], useNearest: true },
+            { labels: [yLabelXY, yLabelYZ], useNearest: false },
+            { labels: [zLabel], useNearest: true },
         ];
     }
 
