@@ -138,7 +138,6 @@ export class GridGeometry extends Geometry {
     }
 
     public buildGrid(gridInfo: ExtendedGridInfo[]): void {
-        console.log('buildGrid gridInfo:', gridInfo);
         const transformTemp = new Float32Array(gridInfo.length * 16);
         const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 

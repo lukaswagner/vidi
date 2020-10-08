@@ -102,10 +102,6 @@ export class GridOffsetHelper extends Initializable {
             return { value: offsets[i], mask: +gi[(i + 1) % 3].enabled };
         });
 
-        // console.log({
-        //     centers, indices, offsets
-        // });
-
         const prev = (i: number): number => (i + 2) % 3;
 
         const gridEnabled = gi.map((g) => g.enabled);
@@ -185,7 +181,6 @@ export class GridOffsetHelper extends Initializable {
         axisCenterStep: number[],
         gridOffsetValues: number[]
     ): LabelSet[] {
-        console.log(gridOffsetValues);
         // negate vector
         function n(v: vec3): vec3 {
             return vec3.negate(vec3.create(), v);
