@@ -1,19 +1,20 @@
 import {
-    AxisInfo,
-    ExtendedAxisInfo,
-    ExtendedGridInfo,
-} from './gridInfo';
-import {
     Camera,
     ChangeLookup,
     Initializable,
     vec3,
 } from 'webgl-operate';
+
+import {
+    ExtendedAxisInfo,
+    ExtendedGridInfo,
+} from './gridInfo';
+
 import {
     GridLabelPass,
-    LabelInfo,
     LabelSet
 } from './gridLabelPass';
+
 import { GridPass } from './gridPass';
 import { PointPass } from 'frontend/points/pointPass';
 
@@ -98,8 +99,8 @@ export class GridOffsetHelper extends Initializable {
         );
         this._gridPass.gridOffsets = offsets;
 
-        this._pointPass.cutoffPosition = [0, 1, 2].map((i) => {
-            return { value: offsets[i], mask: +gi[(i + 1) % 3].enabled };
+        this._pointPass.cutoffPosition = [1, 2, 0].map((i) => {
+            return { value: offsets[i], mask: +gi[i].enabled };
         });
 
         const prev = (i: number): number => (i + 2) % 3;
