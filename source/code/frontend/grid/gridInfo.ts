@@ -1,5 +1,7 @@
 import { vec3 } from 'webgl-operate';
 
+export type GridExtents = { min: number, max: number }[];
+
 export type AxisInfo = {
     name: string;
     direction: vec3;

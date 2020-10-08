@@ -16,6 +16,7 @@ import {
 
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
+import { GridExtents } from 'frontend/grid/gridInfo';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -24,6 +25,7 @@ export class PointPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         columns: false,
+        gridExtents: false,
         aspectRatio: false,
         cutoffPosition: false,
         pointSize: false,
@@ -67,6 +69,7 @@ export class PointPass extends Initializable {
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
+    protected _gridExtents: GridExtents;
 
     public constructor(context: Context) {
         super();
@@ -147,6 +150,12 @@ export class PointPass extends Initializable {
         const newGeometries = this.columnsAltered;
         if (override || rebuildGeometries || newGeometries) {
             this.buildGeometries();
+        }
+
+        if (override || rebuildGeometries ||
+            newGeometries || this._altered.gridExtents
+        ) {
+            this.buildModelMat();
         }
 
         if (override || this._altered.aspectRatio) {
@@ -258,33 +267,37 @@ export class PointPass extends Initializable {
             ));
         }
 
-        const limits = this._columns.slice(0, 3).map((c: NumberColumn) => c ?
-            {offset: c.min, scale: 1 / (c.max - c.min)} :
-            {offset: 0, scale: 0});
-        const model = mat4.create();
-        mat4.translate(model, model,
-            new Float32Array(limits.map((l) => Math.sign(l.offset))));
-        mat4.scale(model, model, [
-            limits[0].scale * 2,
-            limits[1].scale * 2,
-            limits[2].scale * 2
-        ]);
-        mat4.translate(model, model, [
-            -limits[0].offset,
-            -limits[1].offset,
-            -limits[2].offset
-        ]);
-        this._gl.uniformMatrix4fv(this._uModel, false, model);
-
         this._columns.forEach((c) => {
             if(c) c.altered = false;
         });
+    }
+
+    protected buildModelMat(): void {
+        const c = this._columns.slice(0, 3) as NumberColumn[];
+        const g = this._gridExtents;
+        const gridOffset = g.map((e, i) => c[i] ? e.min : 0);
+        const gridScale = g.map((e, i) => c[i] ? (e.max - e.min) : 0);
+        const valueScale = c.map((c) => c ? 1 / (c.max - c.min) : 0);
+        const valueOffset = c.map((c) => c ? -c.min : 0);
+
+        const model = mat4.create();
+        mat4.translate(model, model, new Float32Array(gridOffset));
+        mat4.scale(model, model, new Float32Array(gridScale));
+        mat4.scale(model, model, new Float32Array(valueScale));
+        mat4.translate(model, model, new Float32Array(valueOffset));
+        this._gl.uniformMatrix4fv(this._uModel, false, model);
     }
 
     public set columns(columns: Column[]) {
         this.assertInitialized();
         this._columns = columns;
         this._altered.alter('columns');
+    }
+
+    public set gridExtents(gridExtents: GridExtents) {
+        this.assertInitialized();
+        this._gridExtents = gridExtents;
+        this._altered.alter('gridExtents');
     }
 
     public set target(target: Framebuffer) {
