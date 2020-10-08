@@ -1,18 +1,20 @@
 import {
-    AxisInfo,
-    ExtendedGridInfo,
-} from './gridInfo';
-import {
     Camera,
     ChangeLookup,
     Initializable,
     vec3,
 } from 'webgl-operate';
+
+import {
+    ExtendedAxisInfo,
+    ExtendedGridInfo,
+} from './gridInfo';
+
 import {
     GridLabelPass,
-    LabelInfo,
     LabelSet
 } from './gridLabelPass';
+
 import { GridPass } from './gridPass';
 import { PointPass } from 'frontend/points/pointPass';
 
@@ -32,8 +34,6 @@ export class GridOffsetHelper extends Initializable {
     protected _gridLabelPass: GridLabelPass;
     protected _pointPass: PointPass;
 
-    protected _normals: vec3[];
-    protected _offsets: [number, number][];
     protected _lastIndices: number[];
 
     public constructor(
@@ -73,160 +73,189 @@ export class GridOffsetHelper extends Initializable {
     }
 
     protected prepareOffsets(): void {
-        this._normals = this._gridInfo.map((g) => g.normal);
-        this._offsets = this._gridInfo.map((g) => g.offsets);
         this._lastIndices = this._gridInfo.map(() => -1);
     }
 
     protected updateOffsets(override: boolean): void {
-        const indices = this._normals.length === 1 ? [
-            (this._camera.eye[1] >
-                (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-            this._camera.eye[2] > 0 ? 0 : 1,
-            this._camera.eye[0] < 0 ? 0 : 1
-        ] : [
-            (this._camera.eye[1] >
-                    (this._offsets[0][0] + this._offsets[0][1]) / 2) ? 0 : 1,
-            (this._camera.eye[2] >
-                    (this._offsets[1][0] + this._offsets[1][1]) / 2) ? 0 : 1,
-            (this._camera.eye[0] <
-                    (this._offsets[2][0] + this._offsets[2][1]) / 2) ? 0 : 1
-        ];
-        const changed = indices.reduce(
-            (acc, index, i) => acc || index !== this._lastIndices[i], false);
+        const gi = this._gridInfo;
+
+        const centers = gi.map((grid) =>
+            grid.enabled ? (grid.offsets[0] + grid.offsets[1]) / 2 : 0
+        );
+
+        const indices = centers.map((center, i) =>
+            this._camera.eye[i] > center ? 0 : 1
+        );
+
+        const changed = indices.reduce((result, newIndex, i) => 
+            result || newIndex !== this._lastIndices[i], false
+        );
+        if(!changed && !override) return;
+
         this._lastIndices = indices;
-        if (changed || override) {
-            const offsets = indices
-                .slice(0, this._normals.length)
-                .map((index, i) => this._offsets[i][index]);
-            this._gridPass.gridOffsets = offsets;
-            if (offsets.length === 1) {
-                this._pointPass.cutoffPosition = [
-                    { value: 0, mask: 0 },
-                    { value: offsets[0], mask: 1 },
-                    { value: 0, mask: 0 },
-                ];
-            } else {
-                this._pointPass.cutoffPosition = [
-                    { value: -offsets[2], mask: 1 },
-                    { value: offsets[0], mask: 1 },
-                    { value: offsets[1], mask: 1 },
-                ];
-            }
-            this.updateLabels(offsets);
-        }
-    }
 
-    protected updateLabels(offsets: number[]): void {
-        const labels = new Array<LabelSet>();
-
-        const base = this._gridInfo[0];
-
-        const firstOptionA = this.buildLabelInfo(
-            base.firstAxis, base.secondAxis, 1, [0, offsets[0], 0], true, 1
+        const offsets = gi.map((grid, i) =>
+            grid.enabled ? grid.offsets[indices[(i + 2) % 3]] : 0
         );
+        this._gridPass.gridOffsets = offsets;
 
-        const firstOptionB = this.buildLabelInfo(
-            base.firstAxis, base.secondAxis, -1, [0, offsets[0], 0], false, -1
-        );
-
-        const secondOptionA = this.buildLabelInfo(
-            base.secondAxis, base.firstAxis, -1, [0, offsets[0], 0], true, 1
-        );
-
-        const secondOptionB = this.buildLabelInfo(
-            base.secondAxis, base.firstAxis, 1, [0, offsets[0], 0], false, -1
-        );
-
-        const firstGridBackface = offsets[0] > this._camera.eye[1];
-        if (firstGridBackface) {
-            vec3.scale(firstOptionA.up, firstOptionA.up, -1);
-            vec3.scale(firstOptionB.up, firstOptionB.up, -1);
-            vec3.scale(secondOptionA.up, secondOptionA.up, -1);
-            vec3.scale(secondOptionB.up, secondOptionB.up, -1);
-        }
-
-        labels.push({
-            labels: [firstOptionA, firstOptionB],
-            useNearest: true,
-        }, {
-            labels: [secondOptionA, secondOptionB],
-            useNearest: true,
+        this._pointPass.cutoffPosition = [1, 2, 0].map((i) => {
+            return { value: offsets[i], mask: +gi[i].enabled };
         });
 
-        if (offsets.length > 1) {
-            const sg = this._gridInfo[1];
-            const tg = this._gridInfo[2];
+        const prev = (i: number): number => (i + 2) % 3;
 
-            const secondGridLeft = this.buildLabelInfo(
-                sg.secondAxis, sg.firstAxis, -1, [0, 0, offsets[1]], true, 1
-            );
+        const gridEnabled = gi.map((g) => g.enabled);
+        const axes = gi.map((g, i) => g.firstAxis ?? gi[prev(i)].secondAxis);
 
-            const secondGridRight = this.buildLabelInfo(
-                sg.secondAxis, sg.firstAxis, 1, [0, 0, offsets[1]], false, -1
-            );
+        const mode = gridEnabled.reduce((prev, curr, index) =>
+            prev | (+curr << index), 0);
 
-            const secondGridBackface = offsets[1] > this._camera.eye[2];
-            if (secondGridBackface) {
-                vec3.scale(secondGridLeft.dir, secondGridLeft.dir, -1);
-                vec3.scale(secondGridRight.dir, secondGridRight.dir, -1);
-            }
-
-            const thirdGridLeft = this.buildLabelInfo(
-                tg.secondAxis, tg.firstAxis, -1, [-offsets[2], 0, 0], false, -1
-            );
-
-            const thirdGridRight = this.buildLabelInfo(
-                tg.secondAxis, tg.firstAxis, 1, [-offsets[2], 0, 0], true, 1
-            );
-
-            const thirdGridBackface = -offsets[2] < this._camera.eye[0];
-            if (thirdGridBackface) {
-                vec3.scale(thirdGridLeft.dir, thirdGridLeft.dir, -1);
-                vec3.scale(thirdGridRight.dir, thirdGridRight.dir, -1);
-            }
-
-            const thirdOptionA = (
-                vec3.dist(secondGridLeft.pos, this._camera.eye) <
-                    vec3.dist(secondGridRight.pos, this._camera.eye) ?
-                    secondGridLeft : secondGridRight
-            );
-
-            const thirdOptionB = (
-                vec3.dist(thirdGridLeft.pos, this._camera.eye) <
-                    vec3.dist(thirdGridRight.pos, this._camera.eye) ?
-                    thirdGridLeft : thirdGridRight
-            );
-
-            labels.push({
-                labels: [thirdOptionA, thirdOptionB],
-                useNearest: false,
-            });
+        switch (mode) {
+            case 1:
+                this._gridLabelPass.labelInfo =
+                    this.oneGrid(axes[0], axes[1], 0);
+                break;
+            case 2:
+                this._gridLabelPass.labelInfo =
+                    this.oneGrid(axes[1], axes[2], 2);
+                break;
+            case 4:
+                this._gridLabelPass.labelInfo =
+                    this.oneGrid(axes[2], axes[0], 1);
+                break;
+            case 7:
+                this._gridLabelPass.labelInfo =
+                    this.allGrids(axes, indices, offsets);
+                break;
+            default:
+                this._gridLabelPass.labelInfo = [];
+                break;
         }
-
-        this._gridLabelPass.labelInfo = labels;
     }
 
-    protected buildLabelInfo(
-        firstAxis: AxisInfo,
-        secondAxis: AxisInfo,
-        dirFactor: number,
-        offset: [number, number, number],
-        min: boolean,
-        upFactor: number,
-    ): LabelInfo {
-        return {
-            name: firstAxis.name,
-            dir: vec3.scale(vec3.create(), firstAxis.direction, dirFactor),
-            pos: vec3.scaleAndAdd(
-                vec3.create(),
-                vec3.clone(offset),
-                secondAxis.direction,
-                min ?
-                    (secondAxis.extents.min - this.labelOffset) :
-                    (secondAxis.extents.max + this.labelOffset)),
-            up: vec3.scale(vec3.create(), secondAxis.direction, upFactor),
-        };
+    protected oneGrid(
+        a: ExtendedAxisInfo, b: ExtendedAxisInfo, shift: number
+    ): LabelSet[] {
+        // create vector with axis shift
+        function v(values: number[], shift: number): vec3 {
+            const l = values.length;
+            return vec3.fromValues(
+                values[(0 + shift) % l],
+                values[(1 + shift) % l],
+                values[(2 + shift) % l]
+            );
+        }
+        // negate vector
+        function n(v: vec3): vec3 {
+            return vec3.negate(vec3.create(), v);
+        }
+        // small delta to displace labels by
+        const d = 1e-6;
+
+        const aN = a.name;
+        const aD = a.direction;
+        const aE = a.extents.min - this.labelOffset;
+        const bN = b.name;
+        const bD = b.direction;
+        const bE = b.extents.min - this.labelOffset;
+        return [
+            {
+                labels: [
+                    { name: aN, dir: aD, pos: v([0, aE, d], shift), up: bD },
+                    { name: aN, dir: n(aD), pos: v([0, aE, -d], shift), up: bD }
+                ],
+                useNearest: true
+            },
+            {
+                labels: [
+                    { name: bN, dir: n(bD), pos: v([bE, 0, d], shift), up: aD },
+                    { name: bN, dir: bD, pos: v([bE, 0, -d], shift), up: aD }
+                ],
+                useNearest: true
+            }
+        ];
+    }
+
+    protected allGrids(
+        axes: ExtendedAxisInfo[],
+        axisCenterStep: number[],
+        gridOffsetValues: number[]
+    ): LabelSet[] {
+        // negate vector
+        function n(v: vec3): vec3 {
+            return vec3.negate(vec3.create(), v);
+        }
+
+        // place x/z labels on horizontal plane
+
+        const xName = axes[0].name;
+        const zName = axes[2].name;
+        const xDir = axes[0].direction;
+        const zDir = axes[2].direction;
+
+        // pos on lower-z side of zx-plane
+        const xPos1 = vec3.fromValues(
+            0, gridOffsetValues[2], axes[2].extents.min - this.labelOffset);
+        // pos on upper-z side of zx-plane
+        const xPos2 = vec3.fromValues(
+            0, gridOffsetValues[2], axes[2].extents.max + this.labelOffset);
+        // flip up vector if viewed from below
+        const xUp = axisCenterStep[1] === 0 ? zDir : n(zDir);
+        // choose zx-plane x label based on xy-plane position on z axis
+        const xLabel = axisCenterStep[2] === 1 ?
+            { name: xName, dir: n(xDir), pos: xPos1, up: xUp }:
+            { name: xName, dir: xDir, pos: xPos2, up: n(xUp) };
+
+        // pos on lower-x side of zx-plane
+        const zPos1 = vec3.fromValues(
+            axes[0].extents.min - this.labelOffset, gridOffsetValues[2], 0);
+        // pos on upper-x side of zx-plane
+        const zPos2 = vec3.fromValues(
+            axes[0].extents.max + this.labelOffset, gridOffsetValues[2], 0);
+        // flip up vector if viewed from below
+        const zUp = axisCenterStep[1] === 0 ? xDir : n(xDir);
+        // choose zx-plane z label based on yz-plane position on x axis
+        const zLabel = axisCenterStep[0] === 1 ?
+            { name: zName, dir: zDir, pos: zPos1, up: zUp }:
+            { name: zName, dir: n(zDir), pos: zPos2, up: n(zUp) };
+
+        // place y label on vertical planes
+
+        const yName = axes[1].name;
+        const yDir = axes[1].direction;
+
+        // pos on lower-x side of xy-plane
+        const yPosXY1 = vec3.fromValues(
+            axes[0].extents.min - this.labelOffset, 0, gridOffsetValues[0]);
+        // pos on upper-x side of xy-plane
+        const yPosXY2 = vec3.fromValues(
+            axes[0].extents.max + this.labelOffset, 0, gridOffsetValues[0]);
+        // pos on lower-z side of yz-plane
+        const yPosYZ1 = vec3.fromValues(
+            gridOffsetValues[1], 0, axes[2].extents.min - this.labelOffset);
+        // pos on upper-z side of yz-plane
+        const yPosYZ2 = vec3.fromValues(
+            gridOffsetValues[1], 0, axes[2].extents.max + this.labelOffset);
+
+        // choose xy-plane y label based on yz-plane position on x axis
+        const yLabelXY = axisCenterStep[0] === 1 ?
+            { name: yName, dir: n(yDir), pos: yPosXY1, up: xDir }:
+            { name: yName, dir: yDir, pos: yPosXY2, up: n(xDir) };
+        // if higher xy-plane is used, the label isn't facing the camera
+        if(axisCenterStep[2] === 1) yLabelXY.dir = n(yLabelXY.dir);
+        // choose yz-plane y label based on xy-plane position on z axis
+        const yLabelYZ = axisCenterStep[2] === 1 ?
+            { name: yName, dir: yDir, pos: yPosYZ1, up: zDir }:
+            { name: yName, dir: n(yDir), pos: yPosYZ2, up: n(zDir) };
+        // if higher yz-plane is used, the label isn't facing the camera
+        if(axisCenterStep[0] === 1) yLabelYZ.dir = n(yLabelYZ.dir);
+
+        return [
+            { labels: [xLabel], useNearest: true },
+            { labels: [yLabelXY, yLabelYZ], useNearest: false },
+            { labels: [zLabel], useNearest: true },
+        ];
     }
 
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {

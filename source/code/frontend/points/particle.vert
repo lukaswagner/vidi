@@ -57,9 +57,9 @@ vec3 positionBasedColor()
         return v_pos + 0.5;
     } else if (u_colorMapping == COLOR_MAPPING_HSL_CYLINDER) {
         return hsl2rgb(
-            vec3(atan(v_pos.z, v_pos.x) * TWO_PI_INV,
-            length(vec2(v_pos.z, v_pos.x)),
-            v_pos.y * 0.25 + 0.5)
+            vec3(atan(v_pos.y, v_pos.x) * TWO_PI_INV,
+            length(vec2(v_pos.y, v_pos.x)),
+            v_pos.z * 0.25 + 0.5)
         );
     }
 }
