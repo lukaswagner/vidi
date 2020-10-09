@@ -15,8 +15,8 @@ import {
 } from 'shared/column/column';
 
 import { GLfloat2 } from 'shared/types/tuples';
-import { PointCloudGeometry } from './pointCloudGeometry';
 import { GridExtents } from 'frontend/grid/gridInfo';
+import { PointCloudGeometry } from './pointCloudGeometry';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -256,6 +256,7 @@ export class PointPass extends Initializable {
 
         for(let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc?.[i]);
+            console.log(chunks);
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(

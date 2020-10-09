@@ -46,9 +46,8 @@ import {
 
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
-import { GridHelper } from './grid/gridHelper';
-import { TopicMapRenderer } from './renderer';
 import { GridExtents } from './grid/gridInfo';
+import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
 declare global {

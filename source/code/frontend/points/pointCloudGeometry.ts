@@ -5,6 +5,8 @@ import {
     Geometry,
     Initializable,
 } from 'webgl-operate';
+
+import { ColumnUsage } from 'frontend/data/columns';
 import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class PointCloudGeometry extends Geometry {
@@ -61,11 +63,12 @@ export class PointCloudGeometry extends Geometry {
         data: ArrayBuffer[]
     ): PointCloudGeometry {
         const g = new PointCloudGeometry(context);
-        g._xCoord = new Float32Array(data[0]);
-        g._yCoord = new Float32Array(data[1]);
-        g._zCoord = new Float32Array(data[2]);
-        g._vertexColors = new Float32Array(data[3]);
-        g._variablePointSize = new Float32Array(data[4]);
+        g._xCoord = new Float32Array(data[ColumnUsage.X_AXIS]);
+        g._yCoord = new Float32Array(data[ColumnUsage.Y_AXIS]);
+        g._zCoord = new Float32Array(data[ColumnUsage.Z_AXIS]);
+        g._vertexColors = new Float32Array(data[ColumnUsage.PER_POINT_COLOR]);
+        g._variablePointSize =
+            new Float32Array(data[ColumnUsage.VARIABLE_POINT_SIZE]);
         g.initialize();
         return g;
     }
