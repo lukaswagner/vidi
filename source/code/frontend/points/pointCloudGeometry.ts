@@ -116,8 +116,7 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[2].data(this._yCoord, this._gl.STATIC_DRAW);
         this._buffers[3].data(this._zCoord, this._gl.STATIC_DRAW);
         this._buffers[4].data(this._vertexColors, this._gl.STATIC_DRAW);
-        this._buffers[5].data(
-            this._variablePointSizeLocation, this._gl.STATIC_DRAW);
+        this._buffers[5].data(this._variablePointSize, this._gl.STATIC_DRAW);
 
         return valid;
     }

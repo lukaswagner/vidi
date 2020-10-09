@@ -256,7 +256,6 @@ export class PointPass extends Initializable {
 
         for(let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc?.[i]);
-            console.log(chunks);
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(

@@ -6,7 +6,7 @@ precision lowp float;
     attribute float a_xCoord;
     attribute float a_yCoord;
     attribute float a_zCoord;
-    attribute vec3 a_vertexColor;
+    attribute vec4 a_vertexColor;
     attribute float a_variablePointSize;
 #else
     #define varying out
@@ -14,7 +14,7 @@ precision lowp float;
     layout(location = 1) in float a_xCoord;
     layout(location = 2) in float a_yCoord;
     layout(location = 3) in float a_zCoord;
-    layout(location = 4) in vec3 a_vertexColor;
+    layout(location = 4) in vec4 a_vertexColor;
     layout(location = 5) in float a_variablePointSize;
 #endif
 
@@ -71,7 +71,7 @@ vec3 color()
     } else if (u_colorMode == COLOR_MODE_POSITION_BASED) {
         return positionBasedColor();
     } else if (u_colorMode == COLOR_MODE_VERTEX_COLOR) {
-        return a_vertexColor;
+        return a_vertexColor.rgb;
     }
 }
 
@@ -89,7 +89,7 @@ void main()
 
     vec2 pointSize =
         vec2(u_pointSize, u_pointSize / u_aspectRatio) *
-        mix(1.0, a_variablePointSize, u_variablePointSizeStrength) /
+        mix(1.0, log(a_variablePointSize), u_variablePointSizeStrength) /
         position.z;
     position.xy = position.xy + a_uv * pointSize * vec2(position.w);
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
