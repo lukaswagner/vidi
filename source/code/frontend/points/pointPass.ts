@@ -14,6 +14,7 @@ import {
     NumberColumn
 } from 'shared/column/column';
 
+import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
 import { GridExtents } from 'frontend/grid/gridInfo';
 import { PointCloudGeometry } from './pointCloudGeometry';
@@ -33,6 +34,7 @@ export class PointPass extends Initializable {
         colorMode: false,
         colorMapping: false,
         variablePointSizeStrength: false,
+        variablePointSizeOutputRange: false,
     });
 
     protected _context: Context;
@@ -50,6 +52,7 @@ export class PointPass extends Initializable {
     protected _colorMapping: number;
     protected _ndcOffset: GLfloat2 = [0.0, 0.0];
     protected _variablePointSizeStrength: GLfloat = 1;
+    protected _variablePointSizeOutputRange: GLfloat2 = [0.0, 10.0];
 
     protected _program: Program;
 
@@ -66,6 +69,8 @@ export class PointPass extends Initializable {
     protected _uColorMode: WebGLUniformLocation;
     protected _uColorMapping: WebGLUniformLocation;
     protected _uVariablePointSizeStrength: WebGLUniformLocation;
+    protected _uVariablePointSizeInputRange: WebGLUniformLocation;
+    protected _uVariablePointSizeOutputRange: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -110,6 +115,10 @@ export class PointPass extends Initializable {
         this._uColorMapping = this._program.uniform('u_colorMapping');
         this._uVariablePointSizeStrength =
             this._program.uniform('u_variablePointSizeStrength');
+        this._uVariablePointSizeInputRange =
+            this._program.uniform('u_variablePointSizeInputRange');
+        this._uVariablePointSizeOutputRange =
+            this._program.uniform('u_variablePointSizeOutputRange');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -148,14 +157,28 @@ export class PointPass extends Initializable {
         this._program.bind();
 
         const newGeometries = this.columnsAltered;
-        if (override || rebuildGeometries || newGeometries) {
+        const geomAltered = override || rebuildGeometries || newGeometries;
+        if (geomAltered) {
             this.buildGeometries();
         }
 
-        if (override || rebuildGeometries ||
-            newGeometries || this._altered.gridExtents
-        ) {
+        if (geomAltered || this._altered.gridExtents) {
             this.buildModelMat();
+        }
+
+        if (geomAltered || this._altered.variablePointSizeOutputRange) {
+            const col =
+                this._columns[ColumnUsage.VARIABLE_POINT_SIZE] as NumberColumn;
+            this._gl.uniform3fv(
+                this._uVariablePointSizeInputRange,
+                col ? [col.min, col.max, 1 / (col.max - col.min)] : [0, 0, 0]);
+            console.log(col);
+            this._gl.uniform3f(
+                this._uVariablePointSizeOutputRange,
+                this._variablePointSizeOutputRange[0],
+                this._variablePointSizeOutputRange[1],
+                this._variablePointSizeOutputRange[1] -
+                    this._variablePointSizeOutputRange[0]);
         }
 
         if (override || this._altered.aspectRatio) {
@@ -192,8 +215,6 @@ export class PointPass extends Initializable {
         }
 
         this._program.unbind();
-
-        // this._geometries.forEach((g) => g.update());
 
         this._altered.reset();
     }

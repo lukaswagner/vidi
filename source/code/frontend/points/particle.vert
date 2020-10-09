@@ -25,6 +25,8 @@ uniform vec2 u_ndcOffset;
 uniform float u_aspectRatio;
 uniform float u_pointSize;
 uniform float u_variablePointSizeStrength;
+uniform vec3 u_variablePointSizeInputRange;
+uniform vec3 u_variablePointSizeOutputRange;
 
 const int COLOR_MODE_SINGLE_COLOR = 0;
 const int COLOR_MODE_POSITION_BASED = 1;
@@ -87,9 +89,16 @@ void main()
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
 
+    float variablePointSize =
+        pow(
+            (a_variablePointSize - u_variablePointSizeInputRange.x) *
+            u_variablePointSizeInputRange.z,
+            0.3) *
+        u_variablePointSizeOutputRange.z +
+        u_variablePointSizeOutputRange.x;
     vec2 pointSize =
         vec2(u_pointSize, u_pointSize / u_aspectRatio) *
-        mix(1.0, log(a_variablePointSize), u_variablePointSizeStrength) /
+        mix(1.0, variablePointSize, u_variablePointSizeStrength) /
         position.z;
     position.xy = position.xy + a_uv * pointSize * vec2(position.w);
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
