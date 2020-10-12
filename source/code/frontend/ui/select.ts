@@ -1,5 +1,5 @@
 import { ControlBase } from './base';
-import { Dict } from '../util/dict';
+import { Dict } from 'frontend/util/dict';
 
 export class Select extends ControlBase<string> {
     public constructor(id: string) {
@@ -31,7 +31,9 @@ export class Select extends ControlBase<string> {
         this.setValue(ids[0], invokeHandler);
     }
 
-    public fromDict(options: Dict<any, any>, invokeHandler = true): void {
+    public fromDict(
+        options: Dict<unknown, unknown>, invokeHandler = true
+    ): void {
         this.setOptions(
             options.map((m) => m[0].toString()),
             options.map((m) => m[1].toString()),
@@ -50,5 +52,9 @@ export class Select extends ControlBase<string> {
     public set handler(f: (v: string) => void) {
         this.setHandler(f);
         this._element.addEventListener('change', () => f(this.value));
+    }
+
+    public get selectedIndex(): number {
+        return (this._element as HTMLSelectElement).selectedIndex;
     }
 }

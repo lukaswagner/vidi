@@ -5,9 +5,11 @@ import './icons.ts';
 import {
     Canvas,
     Color,
+    Context,
+    Controller,
     Initializable,
     Wizard,
-    viewer
+    viewer,
 } from 'webgl-operate';
 
 import {
@@ -21,17 +23,41 @@ import {
 } from './points/colorMode';
 
 import {
+    ColumnUsage,
+    Columns
+} from './data/columns';
+
+import {
     Controls,
     Preset
 } from './controls';
 
 import {
-    Data,
-    DataType
-} from './data';
+    Dataset,
+    fetchAvailable,
+    fetchPresets
+} from './util/api';
 
-import { GridHelper } from './grid/gridHelper';
+import {
+    deductSeparator,
+    loadCustom,
+    loadFromServer
+} from './util/load';
+
+import { Column } from 'shared/column/column';
+import { DataType } from 'shared/column/dataType';
+import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
+
+// for exposing canvas, controller, context, and renderer
+declare global {
+    interface Window {
+        canvas: Canvas
+        context: Context
+        controller: Controller
+        renderer: TopicMapRenderer
+    }
+}
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
@@ -58,16 +84,19 @@ export class TopicMapApp extends Initializable {
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
-    private _datasets: { name: string, path: string }[];
-    private _data: Data;
+    private _datasets: Dataset[];
+    private _presets: Preset[];
+    private _columns: Columns;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
+        console.log('version:', COMMIT);
+
         this._canvas = new Canvas(element, { antialias: false });
         this._canvas.controller.multiFrameNumber = 8;
-        this._canvas.framePrecision = Wizard.Precision.half;
+        this._canvas.framePrecision = Wizard.Precision.byte;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
-        var bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
+        const bgComponents = /^rgb\((\d+), (\d+), (\d+)\)$/i.exec(bgColor);
         this._canvas.clearColor = new Color([
             Number(bgComponents[1]) / 255,
             Number(bgComponents[2]) / 255,
@@ -91,12 +120,26 @@ export class TopicMapApp extends Initializable {
                     this._controls.scale.step
                 )
             );
-            e.preventDefault();
-        }, { capture: true });
+        }, { capture: true, passive: true });
 
         this.initControls();
-        this.fetchAvailable();
-        this.fetchPresets();
+        fetchAvailable()
+            .then((datasets: Dataset[]) => {
+                this._datasets = datasets;
+                this._controls.data.setOptions(datasets.map((d) => d.id));
+                return fetchPresets();
+            })
+            .then((presets: Preset[]) => {
+                this._presets = presets;
+                this._controls.presets.setOptions(presets.map((p) => p.name));
+                this._controls.presetButton.invoke();
+            });
+
+        // expose canvas, context, and renderer for console access
+        window.canvas = this._canvas;
+        window.context = this._canvas.context;
+        window.controller = this._canvas.controller;
+        window.renderer = this._renderer;
 
         return true;
     }
@@ -110,10 +153,49 @@ export class TopicMapApp extends Initializable {
         this._controls = new Controls();
 
         // data
-        this._controls.data.handler = this.load.bind(this);
+        this._controls.dataButton.handler = () => {
+            const toLoad = this._datasets[this._controls.data.selectedIndex];
+            loadFromServer(
+                toLoad.url, toLoad.format,
+                this._controls, () => this._renderer.updateData())
+                .then((d) => this.dataReady(d));
+        };
 
         // custom data
-        this._controls.customData.handler = this.loadCustom.bind(this);
+        this._controls.customDataSourceSelect.setOptions(['File', 'URL']);
+        this._controls.customDataSourceSelect.handler = (v: string) => {
+            switch (v) {
+                case 'File':
+                    document.getElementById('custom-data-file-wrapper')
+                        .classList.remove('d-none');
+                    document.getElementById('custom-data-url-wrapper')
+                        .classList.add('d-none');
+                    break;
+                case 'URL':
+                    document.getElementById('custom-data-file-wrapper')
+                        .classList.add('d-none');
+                    document.getElementById('custom-data-url-wrapper')
+                        .classList.remove('d-none');
+                    break;
+                default:
+                    break;
+            }
+        };
+
+        this._controls.customDataDelimiterSelect.setOptions(
+            [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
+        this._controls.customDataFile.handler = (v) => {
+            const splitName = v[0].name.split('.');
+            const format = splitName[splitName.length - 1];
+            const delimiter = deductSeparator(format) || 'custom';
+            this._controls.customDataDelimiterSelect.setValue(delimiter, true);
+        };
+        this._controls.customDataIncludesHeader.setValue(true);
+        this._controls.customDataIncludesHeader.setDefault(true);
+        this._controls.customDataUploadButton.handler = () => {
+            loadCustom(this._controls, () => this._renderer.updateData())
+                .then((d) => this.dataReady(d));
+        };
 
         // point size
         this._controls.pointSize.handler = (v: number) => {
@@ -135,7 +217,8 @@ export class TopicMapApp extends Initializable {
 
         // axes
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].handler = this.updatePositions.bind(this, i);
+            this._controls.axes[i].handler = 
+                this.updateColumn.bind(this, ColumnUsage.X_AXIS + i);
         }
 
         // colors
@@ -155,7 +238,8 @@ export class TopicMapApp extends Initializable {
         this._controls.colorMapping.setDefault(ColorMappingDefault.toString());
         this._controls.colorMapping.setValue(ColorMappingDefault.toString());
 
-        this._controls.colorColumn.handler = this.updateColors.bind(this);
+        this._controls.colorColumn.handler =
+            this.updateColumn.bind(this, ColumnUsage.PER_POINT_COLOR);
 
         // variable point size
         this._controls.variablePointSizeStrength.handler = (v: number) => {
@@ -167,109 +251,84 @@ export class TopicMapApp extends Initializable {
             vsc.default, vsc.min, vsc.max, vsc.step);
 
         this._controls.variablePointSizeColumn.handler =
-            this.updateVariablePointSize.bind(this);
-    }
+            this.updateColumn.bind(this, ColumnUsage.VARIABLE_POINT_SIZE);
 
-    protected fetchAvailable(): void {
-        fetch('/ls').then((res) => {
-            res.json().then((j) => {
-                this._datasets = j;
-                this._controls.data.setOptions(
-                    this._datasets.map((d) => d.name));
-            });
-        });
-    }
-
-    protected fetchPresets(): void {
-        fetch('/data/presets.json').then((res) => {
-            res.json().then((presets: Preset[]) => {
-                this._controls.presetButton.handler = () => {
-                    const selected = this._controls.presets.value;
-                    const preset = presets.find((p) => p.name === selected);
-                    if (preset.data !== undefined) {
-                        this._controls.data.setValue(preset.data, false);
-                        this.load(preset.data).then(() => {
-                            this._controls.applyPreset(preset);
-                        });
-                    } else {
+        // presets
+        this._controls.presetButton.handler = (): void => {
+            const selected = this._controls.presets.value;
+            const preset = this._presets.find((p) => p.name === selected);
+            if(!preset) return;
+            const data = this._datasets.find((d) => d.id === preset.data);
+            if (preset.data !== undefined && data !== undefined) {
+                this._controls.data.setValue(preset.data, false);loadFromServer(
+                    data.url, data.format,
+                    this._controls, () => this._renderer.updateData())
+                    .then((d) => {
+                        this.dataReady(d);
                         this._controls.applyPreset(preset);
-                    }
-                };
-
-                this._controls.presets.setOptions(presets.map((p) => p.name));
-            });
-        });
+                    } );
+            } else {
+                this._controls.applyPreset(preset);
+            }
+        };
     }
 
-    protected load(name: string): Promise<void> {
-        const path = this._datasets.find((d) => d.name === name)?.path;
-        if (path === undefined) {
-            console.log('can\'t load', name, '- path unknown');
-            return;
-        }
-        console.log('loading', name, 'from', path);
-        return fetch(path)
-            .then((r) => r.text())
-            .then((csv) => this.prepareData(csv));
+    protected getId(column: Column): string {
+        return column ?.name ?? '__NONE__';
     }
 
-    protected loadCustom(files: FileList): Promise<void> {
-        const file = files[0];
-        console.log('loading custom file', file.name);
-        return file.text()
-            .then((csv) => this.prepareData(csv));
-    }
-
-    protected prepareData(csv: string): void {
-        this._data = new Data(csv);
+    protected dataReady(columns: Column[]): void {
+        this._columns = new Columns(columns);
+        this.initColumns();
 
         // set up axis controls
-        const numberColumnNames = this._data.getColumnNames(DataType.Number);
+        const numberColumnNames = this._columns.getColumnNames(DataType.Number);
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
             this._controls.axes[i].setOptions(
                 numberIds, numberLabels, false);
             this._controls.axes[i].setValue(
-                this._data.selectedColumn(i), false);
+                this.getId(this._columns.selectedColumn(i)), false);
         }
-        this.updatePositions();
 
         // set up vertex color controls
-        const colorColumnNames = this._data.getColumnNames(DataType.Color);
+        const colorColumnNames = this._columns.getColumnNames(DataType.Color);
         const colorIds = ['__NONE__'].concat(colorColumnNames);
         const colorLabels = ['None'].concat(colorColumnNames);
-        this._controls.colorColumn.setOptions(colorIds, colorLabels);
+        this._controls.colorColumn.setOptions(colorIds, colorLabels, false);
 
         // set up variable point size controls
         this._controls.variablePointSizeColumn.setOptions(
-            numberIds, numberLabels);
+            numberIds, numberLabels, false);
     }
 
-    protected updatePositions(updatedAxis: number = -1): void {
-        if (updatedAxis > -1) {
-            this._data.selectColumn(
-                updatedAxis, this._controls.axes[updatedAxis].value);
-        }
-        const { positions, extents } = this._data.getCoordinates(
-            [{ min: -1, max: 1 }, { min: -1, max: 1 }, { min: -1, max: 1 }]);
-        this._renderer.positions = positions;
-        const subdivisions = 12;
-        this._renderer.grid = GridHelper.buildGrid(
-            [0, 1, 2].map((i) => this._data.selectedColumn(i)),
+    protected updateColumn(updatedColumn: ColumnUsage, name: string): void {
+        this._columns.selectColumn(updatedColumn, name);
+        this._renderer.setColumn(
+            updatedColumn,
+            this._columns.selectedColumn(updatedColumn));
+        this.updateGrid();
+    }
+
+    protected initColumns(): void {
+        this._renderer.columns = this._columns.selectedColumns;
+        this.updateGrid();
+    }
+
+    protected updateGrid(
+        extents: GridExtents = [
+            { min: -1, max: 1 },
+            { min: -1, max: 1 },
+            { min: -1, max: 1 }
+        ],
+        subdivisions = 10,
+    ): void {
+        this._renderer.updateGrid(
+            this._columns.selectedColumns
+                .slice(0, 3)
+                .map((c) => this.getId(c)),
             extents,
-            subdivisions,
-            false
-        );
-        this._renderer.updateGrid();
-    }
-
-    protected updateColors(colorAxis: string): void {
-        this._renderer.vertexColors = this._data.getColors(colorAxis);
-    }
-
-    protected updateVariablePointSize(sizeAxis: string): void {
-        this._renderer.variablePointSize =
-            this._data.getVariablePointSize(sizeAxis);
+            subdivisions);
     }
 }

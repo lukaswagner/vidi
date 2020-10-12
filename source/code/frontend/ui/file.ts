@@ -11,4 +11,8 @@ export class FileInput {
     public set handler(f: (files: FileList) => void) {
         this._element.addEventListener('change', () => f(this._element.files));
     }
+
+    public get files(): FileList {
+        return this._element.files;
+    }
 }

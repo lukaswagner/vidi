@@ -6,11 +6,10 @@ import {
     Initializable,
     Program,
     Shader,
-    tuples,
 } from 'webgl-operate';
-import GLfloat2 = tuples.GLfloat2;
 
 import { ExtendedGridInfo } from './gridInfo';
+import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
 
 export class GridPass extends Initializable {
@@ -77,7 +76,7 @@ export class GridPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.gridInfo) {
             this._geometry.buildGrid(this._gridInfo);
         }

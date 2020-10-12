@@ -9,7 +9,7 @@ export class InputSlider extends ControlBase<number> {
     public constructor(id: string) {
         super(id + '-input');
         this._sliderElement =
-            document.getElementById(id + '-range') as HTMLInputElement;
+            document.getElementById(id + '-slider') as HTMLInputElement;
 
         this._element.addEventListener('change', () => {
             this._sliderElement.value = this.element.value;

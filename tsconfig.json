@@ -3,9 +3,34 @@
         "outDir": "./build/",
         "noImplicitAny": true,
         "module": "commonjs",
-        "target": "es5",
+        "target": "ES2019",
         "sourceMap": true,
         "esModuleInterop": true,
-        "experimentalDecorators": true
-    }
+        "experimentalDecorators": true,
+        "lib": [
+            "DOM",
+            "ES2019"
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "shared/*": [
+                "source/code/shared/*"
+            ],
+            "frontend/*": [
+                "source/code/frontend/*"
+            ],
+            "worker/*": [
+                "source/code/worker/*"
+            ],
+            "loader/*": [
+                "source/code/worker/loader/*"
+            ],
+        }
+    },
+    "include": [
+        "source/code/frontend/*.ts",
+        "source/code/frontend/**/*.ts",
+        "source/code/typings/*.ts",
+        "source/code/shared/**/*.ts"
+    ]
 }

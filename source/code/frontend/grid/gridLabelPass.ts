@@ -13,15 +13,15 @@ import {
 } from 'webgl-operate';
 
 export type LabelInfo = {
-    name: string,
-    pos: vec3,
-    dir: vec3,
-    up: vec3
+    name: string;
+    pos: vec3;
+    dir: vec3;
+    up: vec3;
 }
 
 export type LabelSet = {
-    labels: LabelInfo[],
-    useNearest: boolean,
+    labels: LabelInfo[];
+    useNearest: boolean;
 }
 
 export class GridLabelPass extends LabelRenderPass {
@@ -49,23 +49,8 @@ export class GridLabelPass extends LabelRenderPass {
         this._gl = context.gl;
     }
 
-    public loadFont(font: string, invalidate: (force?: boolean) => void): void {
-        FontFace.fromFile(font, this._context)
-            .then((fontFace) => {
-                this._fontFace = fontFace;
-                this._labelsAltered.alter('fontFace');
-                invalidate();
-            });
-    }
-
-    public set labelInfo(labels: LabelSet[]) {
-        this._labelSets = labels;
-        this._lastIndices = new Array<number>(labels.length).fill(-1);
-        this._labelsAltered.alter('sets');
-    }
-
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._labelsAltered.sets || this._camera.altered) {
             this.updateLabels();
         }
@@ -93,6 +78,21 @@ export class GridLabelPass extends LabelRenderPass {
         this._gl.cullFace(this._gl.BACK);
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.BLEND);
+    }
+
+    public loadFont(font: string, invalidate: (force?: boolean) => void): void {
+        FontFace.fromFile(font, this._context)
+            .then((fontFace) => {
+                this._fontFace = fontFace;
+                this._labelsAltered.alter('fontFace');
+                invalidate();
+            });
+    }
+
+    public set labelInfo(labels: LabelSet[]) {
+        this._labelSets = labels;
+        this._lastIndices = new Array<number>(labels.length).fill(-1);
+        this._labelsAltered.alter('sets');
     }
 
     protected updateLabels(): void {

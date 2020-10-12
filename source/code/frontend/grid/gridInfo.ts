@@ -1,37 +1,41 @@
 import { vec3 } from 'webgl-operate';
 
+export type GridExtents = { min: number, max: number }[];
+
 export type AxisInfo = {
-    name: string,
-    direction: vec3,
-    extents: { min: number, max: number },
-    subdivisions: number
+    name: string;
+    direction: vec3;
+    extents: { min: number; max: number };
+    subdivisions: number;
 }
 
 export type GridInfo = {
-    firstAxis: AxisInfo,
-    secondAxis: AxisInfo,
-    normal: vec3,
-    offsets: [number, number]
+    enabled: boolean;
+    firstAxis: AxisInfo;
+    secondAxis: AxisInfo;
+    normal: vec3;
+    offsets: [number, number];
 }
 
 export type ExtendedAxisInfo = {
-    name: string,
-    direction: vec3,
-    extents: { min: number, max: number, center: number },
-    extentPositions: { min: vec3, max: vec3, center: vec3 },
-    subdivisions: number
+    name: string;
+    direction: vec3;
+    extents: { min: number; max: number; center: number };
+    extentPositions: { min: vec3; max: vec3; center: vec3 };
+    subdivisions: number;
 }
 
 export type ExtendedGridInfo = {
-    firstAxis: ExtendedAxisInfo,
-    secondAxis: ExtendedAxisInfo,
-    normal: vec3,
-    offsets: [number, number]
+    enabled: boolean;
+    firstAxis: ExtendedAxisInfo;
+    secondAxis: ExtendedAxisInfo;
+    normal: vec3;
+    offsets: [number, number];
 }
 
-type ExtendedExtents = {
-    center: number,
-    extentPositions: { min: vec3, max: vec3, center: vec3 }
+export type ExtendedExtents = {
+    center: number;
+    extentPositions: { min: vec3; max: vec3; center: vec3 };
 }
 
 function calcExtendedExtents(self: AxisInfo): ExtendedExtents {
@@ -50,6 +54,16 @@ function calcExtendedExtents(self: AxisInfo): ExtendedExtents {
 }
 
 export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
+    if(!grid.enabled) {
+        return {
+            enabled: false,
+            firstAxis: undefined,
+            secondAxis: undefined,
+            normal: undefined,
+            offsets: undefined,
+        };
+    }
+
     const first = grid.firstAxis;
     const second = grid.secondAxis;
 
@@ -57,6 +71,7 @@ export function calculateExtendedGridInfo(grid: GridInfo): ExtendedGridInfo {
     const secondExtendedExtents = calcExtendedExtents(second);
 
     return {
+        enabled: true,
         firstAxis: {
             name: first.name,
             direction: first.direction,

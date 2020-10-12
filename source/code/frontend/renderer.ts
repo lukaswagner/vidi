@@ -5,29 +5,27 @@ import {
     Camera,
     Context,
     DefaultFramebuffer,
+    EventProvider,
     Framebuffer,
     Invalidate,
-    MouseEventProvider,
     Navigation,
     Renderbuffer,
     Renderer,
     Texture2D,
     Wizard,
-    tuples,
     vec3,
     viewer
 } from 'webgl-operate';
 
-// can't use destructuring, so we have to import this manually
-// see https://github.com/microsoft/TypeScript/issues/13135
-import GLfloat2 = tuples.GLfloat2;
-
 import {
     ExtendedGridInfo,
-    GridInfo,
-    calculateExtendedGridInfo
+    GridExtents,
+    GridInfo, calculateExtendedGridInfo
 } from './grid/gridInfo';
 
+import { Column } from 'shared/column/column';
+import { GLfloat2 } from 'shared/types/tuples' ;
+import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
@@ -63,7 +61,15 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.useDiscard = !viewer.Fullscreen.active();
     }
 
-    public updateGrid(): void {
+    public updateGrid(
+        columns: string[], extents: GridExtents, subdivisions: number
+    ): void {
+        this._gridInfo = GridHelper.buildGrid(
+            columns,
+            extents,
+            subdivisions
+        );
+
         const extendedGridInfo = new Array<ExtendedGridInfo>();
 
         this._gridInfo.forEach((grid) => {
@@ -73,7 +79,19 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.gridInfo = extendedGridInfo;
         this._gridOffsetHelper.gridInfo = extendedGridInfo;
+        this._pointPass.gridExtents = extents;
         this.invalidate();
+    }
+
+    public updateData(): void {
+        this.invalidate();
+    }
+
+    public setColumn(index: number, column: Column): void {
+        this._pointPass.setColumn(index, column);
+        if (this.initialized) {
+            this.invalidate();
+        }
     }
 
     /**
@@ -81,13 +99,13 @@ export class TopicMapRenderer extends Renderer {
      * with program.
      * @param context - valid context to create the object for.
      * @param identifier - meaningful name for identification of this instance.
-     * @param mouseEventProvider - required for mouse interaction
+     * @param eventProvider - required for mouse interaction
      * @returns - whether initialization was successful
      */
     protected onInitialize(
         context: Context,
         callback: Invalidate,
-        mouseEventProvider: MouseEventProvider
+        eventProvider: EventProvider
     ): boolean {
         const gl = context.gl as WebGLRenderingContext;
         const gl2facade = this._context.gl2facade;
@@ -103,22 +121,27 @@ export class TopicMapRenderer extends Renderer {
         this._camera.near = 0.1;
         this._camera.far = 64.0;
 
-        this._navigation = new Navigation(callback, mouseEventProvider);
+        this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
+        // @ts-expect-error: webgl-operate mouse wheel zoom is broken
+        delete this._navigation._wheelZoom;
 
         // set up intermediate rendering
+
+        // usually precision is provided by canvas, but this._framePrecision is
+        // defined only after initialization.
         const internalFormatAndType = Wizard.queryInternalTextureFormat(
-            this._context, gl.RGBA, Wizard.Precision.half);
+            this._context, gl.RGB, Wizard.Precision.byte);
 
         this._colorRenderTexture = new Texture2D(
             this._context, 'ColorRenderTexture');
         this._colorRenderTexture.initialize(
-            1, 1, internalFormatAndType[0], gl.RGBA, internalFormatAndType[1]);
-        this._colorRenderTexture.filter(gl.LINEAR, gl.LINEAR);
+            1, 1, internalFormatAndType[0], gl.RGB, internalFormatAndType[1]);
+        this._colorRenderTexture.filter(gl.NEAREST, gl.NEAREST);
 
         this._depthRenderbuffer = new Renderbuffer(
             this._context, 'DepthRenderbuffer');
-        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_COMPONENT16);
+        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_STENCIL);
 
         this._intermediateFBO = new Framebuffer(
             this._context, 'IntermediateFBO');
@@ -281,24 +304,24 @@ export class TopicMapRenderer extends Renderer {
     }
 
     protected onSwap(): void {
-        this._blitPass.framebuffer =
+        const fb =
             this._accumulatePass.framebuffer ?
                 this._accumulatePass.framebuffer :
                 this._intermediateFBO;
+        if(!fb.initialized) return;
+        this._blitPass.framebuffer = fb;
         this._blitPass.frame();
     }
 
-    public set positions(positions: Float32Array) {
-        this._pointPass.positions = positions;
+    protected onDiscarded(): void {
+        console.warn('got discarded');
+    }
 
+    public set columns(columns: Column[]) {
+        this._pointPass.columns = columns;
         if (this.initialized) {
             this.invalidate();
         }
-    }
-
-    public set grid(gridInfo: GridInfo[]) {
-        this._gridInfo = gridInfo;
-        this.invalidate();
     }
 
     public set pointSize(size: number) {
@@ -324,18 +347,8 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
-    public set vertexColors(colors: Float32Array) {
-        this._pointPass.vertexColors = colors;
-        this.invalidate();
-    }
-
     public set variablePointSizeStrength(strength: number) {
         this._pointPass.variablePointSizeStrength = strength;
-        this.invalidate();
-    }
-
-    public set variablePointSize(pointSize: Float32Array) {
-        this._pointPass.variablePointSize = pointSize;
         this.invalidate();
     }
 }

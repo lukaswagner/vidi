@@ -84,6 +84,7 @@ export class GridGeometry extends Geometry {
      * @param globalPosLocation - Attribute binding point for vertices.
      * @param normalLocation - Attribute binding point for vertex normal.
      */
+    @Initializable.initialize()
     public initialize(
         localPosLocation: GLuint = 0,
         uvLocation: GLuint = 1,
@@ -121,11 +122,10 @@ export class GridGeometry extends Geometry {
     }
 
     @Initializable.assert_initialized()
-    public update(override: boolean = false): void {
+    public update(override = false): void {
         if (override || this._altered.offsets) {
             this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
         }
-
         this._altered.reset();
     }
 
@@ -141,52 +141,54 @@ export class GridGeometry extends Geometry {
         const transformTemp = new Float32Array(gridInfo.length * 16);
         const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 
-        gridInfo.forEach((grid, i) => {
-            const x = grid.firstAxis;
-            const y = grid.secondAxis;
-            const xe = x.extents;
-            const ye = y.extents;
+        gridInfo
+            .filter((grid) => grid.enabled)
+            .forEach((grid, i) => {
+                const x = grid.firstAxis;
+                const y = grid.secondAxis;
+                const xe = x.extents;
+                const ye = y.extents;
 
-            const w = GridGeometry.FADED_GRID_WIDTH;
-            const ww = w * 2;
+                const w = GridGeometry.FADED_GRID_WIDTH;
+                const ww = w * 2;
 
-            const center = vec3.fromValues(
-                xe.center,
-                ye.center,
-                0
-            );
+                const center = vec3.fromValues(
+                    xe.center,
+                    ye.center,
+                    0
+                );
 
-            const rotation = quat.rotationTo(
-                quat.create(),
-                vec3.fromValues(0, 0, 1),
-                grid.normal
-            );
+                const rotation = quat.rotationTo(
+                    quat.create(),
+                    vec3.fromValues(0, 0, 1),
+                    grid.normal
+                );
 
-            const extents = vec3.fromValues(
-                (xe.max - xe.min + ww) * 0.5,
-                (ye.max - ye.min + ww) * 0.5,
-                1
-            );
+                const extents = vec3.fromValues(
+                    (xe.max - xe.min + ww) * 0.5,
+                    (ye.max - ye.min + ww) * 0.5,
+                    1
+                );
 
-            const m = mat4.fromRotationTranslationScale(
-                mat4.create(),
-                rotation,
-                center,
-                extents
-            );
+                const m = mat4.fromRotationTranslationScale(
+                    mat4.create(),
+                    rotation,
+                    center,
+                    extents
+                );
 
-            const gridInfo = new Float32Array([
-                xe.min - w, -ye.min + w,
-                xe.max + w, -ye.max - w,
-                xe.min, -ye.min,
-                xe.max, -ye.max,
-                x.subdivisions,
-                y.subdivisions
-            ]);
+                const gridInfo = new Float32Array([
+                    xe.min - w, -ye.min + w,
+                    xe.max + w, -ye.max - w,
+                    xe.min, -ye.min,
+                    xe.max, -ye.max,
+                    x.subdivisions,
+                    y.subdivisions
+                ]);
 
-            transformTemp.set(m, i * 16);
-            gridInfoTemp.set(gridInfo, i * 10);
-        });
+                transformTemp.set(m, i * 16);
+                gridInfoTemp.set(gridInfo, i * 10);
+            });
 
         this._numGrids = gridInfo.length;
         this._transform = transformTemp;

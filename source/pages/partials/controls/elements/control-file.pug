@@ -1,0 +1,13 @@
+mixin control-file(id, text)
+    input.d-none.form-control(type='file',accept='.csv,.tsv',id=id+'-file')
+    button.btn.btn-primary.control-button.form-control(id=id+'-button', class=attributes.class, type='button')= text
+    script.
+        const button = document.getElementById('#{id}-button');
+        const file = document.getElementById('#{id}-file');
+        button.onclick = () => file.click();
+        file.onchange = () => {
+            const label = document.getElementById('#{id}-label');
+            if(label !== undefined && label !== null) {
+                label.innerText = file.files[0].name;
+            }
+        };

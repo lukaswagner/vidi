@@ -52,6 +52,11 @@ input.slider::-webkit-slider-thumb {
     -webkit-appearance: none;
 }
 
+input[type='checkbox'] {
+    width: 38px;
+    height: 38px;
+}
+
 body {
     overflow: hidden;
 }
@@ -84,4 +89,41 @@ canvas {
 .button-label {
     vertical-align: middle;
     padding: .375rem .75rem;
+}
+
+.progress {
+    height: 38px!important;
+    width: 100%;
+    font-size: 1rem!important;
+}
+
+.pr-back .pr-front .pr-box {
+    height: 38px!important;
+    display: block;
+    margin: 0;
+}
+
+.pr-back {
+    position: absolute;
+    text-align: center;
+    line-height: 38px;
+    width: 100%;
+    color: black;
+}
+
+.pr-front {
+    position: absolute;
+    line-height: 38px;
+    left: 0;
+    top: 0;
+    color: white;
+}
+
+.pr-box {
+    position: absolute;
+    height: 38px;
+    left: 0;
+    top: 0;
+    overflow: hidden;
+    transition: width .6s ease;
 }

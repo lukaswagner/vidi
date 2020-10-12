@@ -1,4 +1,4 @@
-import { Dict } from '../util/dict';
+import { Dict } from 'frontend/util/dict';
 export const ColorMode: Dict<number, string> = [
     [0, 'Single color'],
     [1, 'Position-based'],
