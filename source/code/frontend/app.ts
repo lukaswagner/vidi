@@ -46,7 +46,7 @@ import {
 
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
-import { GridHelper } from './grid/gridHelper';
+import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -317,20 +317,18 @@ export class TopicMapApp extends Initializable {
     }
 
     protected updateGrid(
-        extents = [
+        extents: GridExtents = [
             { min: -1, max: 1 },
             { min: -1, max: 1 },
             { min: -1, max: 1 }
         ],
         subdivisions = 10,
     ): void {
-        this._renderer.grid = GridHelper.buildGrid(
+        this._renderer.updateGrid(
             this._columns.selectedColumns
                 .slice(0, 3)
                 .map((c) => this.getId(c)),
             extents,
-            subdivisions
-        );
-        this._renderer.updateGrid();
+            subdivisions);
     }
 }

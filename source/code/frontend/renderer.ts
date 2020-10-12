@@ -19,12 +19,13 @@ import {
 
 import {
     ExtendedGridInfo,
-    GridInfo,
-    calculateExtendedGridInfo
+    GridExtents,
+    GridInfo, calculateExtendedGridInfo
 } from './grid/gridInfo';
 
 import { Column } from 'shared/column/column';
 import { GLfloat2 } from 'shared/types/tuples' ;
+import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
@@ -60,7 +61,15 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.useDiscard = !viewer.Fullscreen.active();
     }
 
-    public updateGrid(): void {
+    public updateGrid(
+        columns: string[], extents: GridExtents, subdivisions: number
+    ): void {
+        this._gridInfo = GridHelper.buildGrid(
+            columns,
+            extents,
+            subdivisions
+        );
+
         const extendedGridInfo = new Array<ExtendedGridInfo>();
 
         this._gridInfo.forEach((grid) => {
@@ -70,6 +79,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.gridInfo = extendedGridInfo;
         this._gridOffsetHelper.gridInfo = extendedGridInfo;
+        this._pointPass.gridExtents = extents;
         this.invalidate();
     }
 
@@ -312,11 +322,6 @@ export class TopicMapRenderer extends Renderer {
         if (this.initialized) {
             this.invalidate();
         }
-    }
-
-    public set grid(gridInfo: GridInfo[]) {
-        this._gridInfo = gridInfo;
-        this.invalidate();
     }
 
     public set pointSize(size: number) {
