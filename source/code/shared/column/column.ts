@@ -20,6 +20,12 @@ export abstract class BaseColumn<T> {
         this._altered = true;
     }
 
+    public reset(): void {
+        this._chunks = [];
+        this._length = 0;
+        this._altered = true;
+    }
+
     public getChunk(index: number): BaseChunk<T> {
         return this._chunks[index];
     }
@@ -72,6 +78,12 @@ export class NumberColumn extends BaseColumn<number> {
         const nc = chunk as NumberChunk;
         if (nc.min < this._min) this._min = nc.min;
         if (nc.max > this._max) this._max = nc.max;
+    }
+
+    public reset(): void {
+        super.reset();
+        this._min = Number.POSITIVE_INFINITY;
+        this._max = Number.NEGATIVE_INFINITY;
     }
 
     public get min(): number {

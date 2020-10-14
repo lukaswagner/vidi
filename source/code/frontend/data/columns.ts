@@ -14,11 +14,13 @@ export class Columns {
 
     protected _selectedColumns: number[] = [];
 
-    public constructor(
-        columns: Array<Column>
-    ) {
+    public constructor(columns: Array<Column>) {
         this._columns = columns;
         this.initSelectedColumns(true);
+    }
+
+    public addColumns(columns: Array<Column>): void {
+        this._columns.push(...columns);
     }
 
     public getColumnNames(type: DataType): string[] {

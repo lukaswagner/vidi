@@ -259,7 +259,7 @@ export class CsvMultiThreadedLoader {
                 this._decoder.decode(result.startRemainder));
         }
 
-        this._columns.map((c, ci) => c.push(fixed[ci] as AnyChunk));
+        fixed.map((c, ci) => this._columns[ci].push(c as AnyChunk));
         this._lastRemainder = result.endRemainder;
 
         this._invalidate();

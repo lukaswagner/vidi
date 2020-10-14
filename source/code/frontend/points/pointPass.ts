@@ -172,7 +172,6 @@ export class PointPass extends Initializable {
             this._gl.uniform3fv(
                 this._uVariablePointSizeInputRange,
                 col ? [col.min, col.max, 1 / (col.max - col.min)] : [0, 0, 0]);
-            console.log(col);
             this._gl.uniform3f(
                 this._uVariablePointSizeOutputRange,
                 this._variablePointSizeOutputRange[0],

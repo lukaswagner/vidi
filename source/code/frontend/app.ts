@@ -48,6 +48,7 @@ import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
+import { Processing } from './processing';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -87,6 +88,7 @@ export class TopicMapApp extends Initializable {
     private _datasets: Dataset[];
     private _presets: Preset[];
     private _columns: Columns;
+    private _processing: Processing;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('version:', COMMIT);
@@ -149,6 +151,11 @@ export class TopicMapApp extends Initializable {
         this._renderer.uninitialize();
     }
 
+    protected handleDataUpdate(): void {
+        this._renderer.updateData();
+        this._processing.updateData();
+    }
+
     protected initControls(): void {
         this._controls = new Controls();
 
@@ -157,7 +164,7 @@ export class TopicMapApp extends Initializable {
             const toLoad = this._datasets[this._controls.data.selectedIndex];
             loadFromServer(
                 toLoad.url, toLoad.format,
-                this._controls, () => this._renderer.updateData())
+                this._controls, this.handleDataUpdate.bind(this))
                 .then((d) => this.dataReady(d));
         };
 
@@ -193,7 +200,7 @@ export class TopicMapApp extends Initializable {
         this._controls.customDataIncludesHeader.setValue(true);
         this._controls.customDataIncludesHeader.setDefault(true);
         this._controls.customDataUploadButton.handler = () => {
-            loadCustom(this._controls, () => this._renderer.updateData())
+            loadCustom(this._controls, this.handleDataUpdate.bind(this))
                 .then((d) => this.dataReady(d));
         };
 
@@ -262,7 +269,7 @@ export class TopicMapApp extends Initializable {
             if (preset.data !== undefined && data !== undefined) {
                 this._controls.data.setValue(preset.data, false);loadFromServer(
                     data.url, data.format,
-                    this._controls, () => this._renderer.updateData())
+                    this._controls, this.handleDataUpdate.bind(this))
                     .then((d) => {
                         this.dataReady(d);
                         this._controls.applyPreset(preset);
@@ -280,6 +287,10 @@ export class TopicMapApp extends Initializable {
     protected dataReady(columns: Column[]): void {
         this._columns = new Columns(columns);
         this.initColumns();
+
+        this._processing = new Processing();
+        this._processing.initialize(this._columns);
+        this._columns.addColumns(this._processing.getOutputs());
 
         // set up axis controls
         const numberColumnNames = this._columns.getColumnNames(DataType.Number);
@@ -309,6 +320,7 @@ export class TopicMapApp extends Initializable {
             updatedColumn,
             this._columns.selectedColumn(updatedColumn));
         this.updateGrid();
+        // this._processing.updateColumnConfig(updatedColumn);
     }
 
     protected initColumns(): void {
