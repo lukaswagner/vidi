@@ -1,4 +1,4 @@
-import { BaseChunk, NumberChunk } from './chunk';
+import { BaseChunk, Chunk, NumberChunk, rebuildChunk } from './chunk';
 import { DataType } from './dataType';
 import { GLclampf4 } from 'shared/types/tuples';
 
@@ -50,7 +50,7 @@ export abstract class BaseColumn<T> {
         return this._chunks;
     }
 
-    public getChunks(start: number, end: number): BaseChunk<T>[] {
+    public getChunks(start = 0, end = -1): BaseChunk<T>[] {
         return this._chunks.slice(start, end);
     }
 
@@ -117,5 +117,23 @@ export function buildColumn(name: string, type: DataType): Column {
             return new ColorColumn(name);
         case DataType.String:
             return new StringColumn(name);
+    }
+}
+
+export function rebuildColumn(column: unknown): Column {
+    const c = column as {
+        _type: DataType,
+        _chunks: Chunk[],
+        _name: string
+    };
+    if(c._type === undefined) return undefined;
+    c._chunks = c._chunks.map((c) => rebuildChunk(c));
+    switch (c._type as DataType) {
+        case DataType.Number:
+            return Object.assign(new NumberColumn(c._name), c);
+        case DataType.Color:
+            return Object.assign(new ColorColumn(c._name), c);
+        case DataType.String:
+            return Object.assign(new StringColumn(c._name), c);
     }
 }

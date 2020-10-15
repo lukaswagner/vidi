@@ -1,5 +1,6 @@
-import { ColorChunk, NumberChunk, rebuildChunk } from 'shared/column/chunk';
+import { ColorChunk, NumberChunk } from 'shared/column/chunk';
 import { MessageData, StartData } from 'interface';
+import { NumberColumn, rebuildColumn } from 'shared/column/column';
 import { MessageType } from 'shared/types/messageType';
 
 self.addEventListener('message', (m: MessageEvent) => {
@@ -15,9 +16,23 @@ self.addEventListener('message', (m: MessageEvent) => {
     }
 });
 
-function process(data: StartData): ColorChunk {
-    const chunks = data.chunks.map((c) => rebuildChunk(c) as NumberChunk);
-    const rows = chunks[0].length;
+function process(data: StartData): ColorChunk[] {
+    const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    const result =  new Array<ColorChunk>();
+    const limits = cols.map((c) => [c.min, c.max]);
+    for(let i = 0; i < cols[0].chunkCount; i++) {
+        result.push(processChunks(
+            cols.map((c) => c.getChunk(i) as NumberChunk),
+            limits,
+            data.options.resolution));
+    }
+    return result;
+}
+
+function processChunks(
+    input: NumberChunk[], limits: number[][], resolution: number[]
+): ColorChunk {
+    const rows = input[0].length;
     const result = new ColorChunk(rows);
     const map = (
         value: number, limits: number[], res: number
@@ -28,10 +43,10 @@ function process(data: StartData): ColorChunk {
     };
     for(let i = 0; i < rows; i++) {
         const c = [0, 1, 2]
-            .map((j) => chunks[j] ? map(
-                chunks[j].get(i),
-                data.options.limits[j],
-                data.options.resolution[j]) : 0
+            .map((j) => input[j] ? map(
+                input[j].get(i),
+                limits[j],
+                resolution[j]) : 0
             );
         result.set(i, [c[0], c[1], c[2], 1]);
     }

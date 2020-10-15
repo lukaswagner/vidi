@@ -1,18 +1,18 @@
-import { Chunk, ColorChunk, } from 'shared/column/chunk';
+import { ColorChunk } from 'shared/column/chunk';
+import { Column } from 'shared/column/column';
 import { MessageType } from 'shared/types/messageType';
 
 export type Options = {
-    limits: number[][],
     resolution: number[]
 }
 
 export type StartData = {
-    chunks: Chunk[],
+    columns: Column[],
     options: Options
 }
 
 export type FinishedData = {
-    colors: ColorChunk
+    colors: ColorChunk[]
 }
 
 export type MessageData = {

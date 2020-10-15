@@ -1,6 +1,6 @@
 import * as BinningInterface from 'worker/processors/binning/interface';
-import { Chunk, ColorChunk, rebuildChunk } from 'shared/column/chunk';
-import { ColorColumn, Column, NumberColumn } from 'shared/column/column';
+import { ColorChunk, rebuildChunk } from 'shared/column/chunk';
+import { ColorColumn, Column } from 'shared/column/column';
 import { ColumnUsage, Columns } from './data/columns';
 import BinningWorker from 'worker-loader!worker/processors/binning/binning';
 import { MessageType } from 'shared/types/messageType';
@@ -27,7 +27,6 @@ export class Processing {
         this._binning = {
             worker: new BinningWorker,
             options: {
-                limits: [[]],
                 resolution: [3, 3, 3]
             },
             inputs: [
@@ -61,49 +60,26 @@ export class Processing {
         }
 
         const w = worker.worker;
-        worker.options.limits = inputs.map((c: NumberColumn) => [c.min, c.max]);
 
-        let chunkIndex = 0;
-
-        const send = (): void => {
-            const data = {
-                type: MessageType.Start,
-                data: {
-                    chunks: inputs.map((c) => c.getChunk(chunkIndex) as Chunk),
-                    options: worker.options
-                }
-            };
-            w.postMessage(data);
-            chunkIndex++;
-        };
-
-        const step = (msg: MessageEvent): void => {
-            console.log('worker step');
+        const done = (msg: MessageEvent): void => {
+            console.log('worker done');
             const msgData = msg.data as MessageData;
             const finData = msgData.data as BinningInterface.FinishedData;
-            const colors = rebuildChunk(finData.colors) as ColorChunk;
-            (worker.outputs[0] as ColorColumn).push(colors);
-            
-            if(chunkIndex < inputs[0].chunkCount) {
-                send();
-            } else {
-                console.log('worker done');
-                w.onmessage === undefined;
+            finData.colors.forEach((c) => {
+                const chunk = rebuildChunk(c) as ColorChunk;
+                (worker.outputs[0] as ColorColumn).push(chunk);
+            });
+            w.removeEventListener('message', done);
+        };
+        w.addEventListener('message', done);
+
+        const data = {
+            type: MessageType.Start,
+            data: {
+                columns: inputs,
+                options: worker.options
             }
-        };
-
-        const start = (): void => {
-            worker.outputs.forEach((o) => o.reset());
-            console.log('worker start');
-            w.onmessage = step;
-            send();
-        };
-
-        if(w.onmessage) {
-            console.log('Worker still working! Trying to take over.');
-            w.onmessage = start;
-        } else {
-            start();
-        }
+        } as MessageData;
+        w.postMessage(data);
     }
 }
