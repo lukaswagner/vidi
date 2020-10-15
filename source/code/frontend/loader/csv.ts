@@ -12,9 +12,9 @@ import {
     MessageData,
     MessageType,
     StartData,
-} from 'loader/csvMultiThreadedLoader/interface';
+} from 'loader/csv/interface';
 import { Column } from 'shared/column/column';
-import LoadWorker from 'worker-loader!loader/csvMultiThreadedLoader/csv';
+import LoadWorker from 'worker-loader!loader/csv/csv';
 import { PerfMon } from 'shared/performance/perfMon';
 import { Progress } from 'frontend/ui/progress';
 import { ProgressStep } from 'frontend/ui/progressStep';
