@@ -2,7 +2,7 @@ import { DataType } from './dataType';
 import { RGBA } from 'shared/types/tuples';
 
 export abstract class BaseChunk<T> {
-    protected _data: ArrayBuffer;
+    protected _data: SharedArrayBuffer;
     protected _type: DataType;
     protected _length: number;
     public constructor(type: DataType, length: number) {
@@ -18,11 +18,7 @@ export abstract class BaseChunk<T> {
         return this._length;
     }
 
-    public get transferable(): Array<Transferable> {
-        return [this._data];
-    }
-
-    public get data(): ArrayBuffer {
+    public get data(): SharedArrayBuffer {
         return this._data;
     }
 
@@ -45,8 +41,8 @@ export class NumberChunk extends BaseChunk<number> {
 
     public constructor(length: number) {
         super(DataType.Number, length);
-        this._view = new Float32Array(length);
-        this._data = this._view.buffer;
+        this._data = new SharedArrayBuffer(length * 4);
+        this._view = new Float32Array(this._data);
         this._min = Number.POSITIVE_INFINITY;
         this._max = Number.NEGATIVE_INFINITY;
     }
@@ -67,8 +63,8 @@ export class ColorChunk extends BaseChunk<RGBA> {
 
     public constructor(length: number) {
         super(DataType.Color, length);
-        this._view = new Float32Array(length * 4);
-        this._data = this._view.buffer;
+        this._data = new SharedArrayBuffer(length * 4 * 4);
+        this._view = new Float32Array(this._data);
     }
 
     public get(index: number): RGBA {
@@ -85,7 +81,7 @@ export class ColorChunk extends BaseChunk<RGBA> {
 export class StringChunk extends BaseChunk<string> {
     public constructor(length: number) {
         super(DataType.String, length);
-        this._data = new ArrayBuffer(0);
+        this._data = new SharedArrayBuffer(0);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

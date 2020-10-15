@@ -11,8 +11,7 @@ self.addEventListener('message', (m: MessageEvent) => {
             type: MessageType.Finished,
             data: { colors: result }
         };
-        postMessage(
-            d, { transfer: result.transferable });
+        postMessage(d);
     }
 });
 

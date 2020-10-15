@@ -60,7 +60,7 @@ export class PointCloudGeometry extends Geometry {
 
     public static fromColumns(
         context: Context,
-        data: ArrayBuffer[]
+        data: SharedArrayBuffer[]
     ): PointCloudGeometry {
         const g = new PointCloudGeometry(context);
         g._xCoord = new Float32Array(data[ColumnUsage.X_AXIS]);

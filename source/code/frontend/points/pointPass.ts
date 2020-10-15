@@ -279,7 +279,7 @@ export class PointPass extends Initializable {
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(
-                (c) => c ? c.data : new ArrayBuffer(len * 4));
+                (c) => c ? c.data : new SharedArrayBuffer(len * 4));
 
             this._geometries.push(PointCloudGeometry.fromColumns(
                 this._context,
