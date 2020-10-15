@@ -17,7 +17,6 @@ self.addEventListener('message', (m: MessageEvent) => {
 });
 
 function process(data: StartData): ColorChunk {
-    console.log(data);
     const chunks = data.chunks.map((c) => rebuildChunk(c) as NumberChunk);
     const rows = chunks[0].length;
     const result = new ColorChunk(rows);

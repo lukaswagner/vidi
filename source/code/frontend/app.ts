@@ -47,8 +47,8 @@ import {
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
-import { TopicMapRenderer } from './renderer';
 import { Processing } from './processing';
+import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -153,7 +153,6 @@ export class TopicMapApp extends Initializable {
 
     protected handleDataUpdate(): void {
         this._renderer.updateData();
-        this._processing.updateData();
     }
 
     protected initControls(): void {
@@ -202,6 +201,11 @@ export class TopicMapApp extends Initializable {
         this._controls.customDataUploadButton.handler = () => {
             loadCustom(this._controls, this.handleDataUpdate.bind(this))
                 .then((d) => this.dataReady(d));
+        };
+
+        // processing
+        this._controls.processAllButton.handler = () => {
+            this._processing.runWorkers();
         };
 
         // point size
@@ -320,7 +324,6 @@ export class TopicMapApp extends Initializable {
             updatedColumn,
             this._columns.selectedColumn(updatedColumn));
         this.updateGrid();
-        // this._processing.updateColumnConfig(updatedColumn);
     }
 
     protected initColumns(): void {

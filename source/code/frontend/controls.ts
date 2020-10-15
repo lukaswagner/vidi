@@ -39,6 +39,9 @@ export class Controls {
     public customDataUploadButton: Button;
     public customDataProgress: Progress;
 
+    public processAllButton: Button;
+    public processAllProgress: Progress;
+
     public axes: Select[];
 
     public scale: InputSlider;
@@ -77,6 +80,9 @@ export class Controls {
             new Checkbox('custom-data-header-checkbox');
         this.customDataUploadButton = new Button('custom-data-upload-button');
         this.customDataProgress = new Progress('custom-data-progress');
+
+        this.processAllButton = new Button('process-all-button');
+        this.processAllProgress = new Progress('process-all-progress');
 
         this.axes = [
             new Select('x-axis-select'),

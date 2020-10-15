@@ -50,31 +50,8 @@ export class Processing {
         return this._workers.flatMap((w) => w.outputs);
     }
 
-    public updateColumnConfig(usage: ColumnUsage): void {
-        const column = this._columnConfig.selectedColumn(usage);
-        
-        switch (usage) {
-            case ColumnUsage.X_AXIS:
-                this._binning.inputs[0] = column;
-                this.runWorker(this._binning);
-                break;
-            case ColumnUsage.Y_AXIS:
-                this._binning.inputs[1] = column;
-                this.runWorker(this._binning);
-                break;
-            case ColumnUsage.Z_AXIS:
-                this._binning.inputs[2] = column;
-                this.runWorker(this._binning);
-                break;
-            default:
-                break;
-        }
-    }
-
-    public updateData(): void {
-        this._workers
-            .filter((w) => (w.inputs.some((c) => c?.altered)))
-            .forEach((w) => this.runWorker(w));
+    public runWorkers(): void {
+        this._workers.forEach((w) => this.runWorker(w));
     }
 
     protected async runWorker(worker: WorkerConfig): Promise<void> {
@@ -97,7 +74,6 @@ export class Processing {
                     options: worker.options
                 }
             };
-            console.log(data);
             w.postMessage(data);
             chunkIndex++;
         };
