@@ -1,9 +1,9 @@
 import * as BinningInterface from 'worker/processors/binning/interface';
+import { Chunk, ColorChunk, rebuildChunk } from 'shared/column/chunk';
 import { ColorColumn, Column, NumberColumn } from 'shared/column/column';
 import { ColumnUsage, Columns } from './data/columns';
 import BinningWorker from
-    'worker-loader?inline=fallback!worker/processors/binning/worker';
-import { Chunk, ColorChunk, rebuildChunk } from 'shared/column/chunk';
+    'worker-loader!worker/processors/binning/binning';
 import { MessageType } from 'shared/types/messageType';
 
 type Worker = BinningWorker;
