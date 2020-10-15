@@ -1,4 +1,4 @@
-import { RGBA } from 'shared/types/tuples';
+import { GLclampf3, RGBA } from 'shared/types/tuples';
 
 // excerpt from webgl-operate
 // https://github.com/cginternals/webgl-operate/blob/master/source/color.ts
@@ -49,4 +49,49 @@ export function hex2rgba(hex: string): RGBA {
             `expected well formated hexadecimal RGBA string, given '${hex}'`);
     }
     return rgba;
+}
+
+/**
+ * Converts a color from HSL space to RGB space.
+ * @param hsl - HSL color tuple: hue, saturation, and lightness,
+ * each in [0.0, 1.0].
+ * @returns - RGB color tuple: red, green, and blue, each in [0.0, 1.0].
+ */
+export function hsl2rgb(hsl: GLclampf3): GLclampf3 {
+    if (hsl[1] === 0.0) {
+        return [hsl[2], hsl[2], hsl[2]];
+    }
+
+    const q = hsl[2] < 0.5 ?
+        hsl[2] * (1.0 + hsl[1]) :
+        (hsl[2] + hsl[1]) - (hsl[1] * hsl[2]);
+    const p = 2.0 * hsl[2] - q;
+
+    return [
+        hue2rgb(p, q, hsl[0] + (1.0 / 3.0)),
+        hue2rgb(p, q, hsl[0]),
+        hue2rgb(p, q, hsl[0] - (1.0 / 3.0))
+    ];
+}
+
+/**
+ * Converts a hue value into an rgb value.
+ */
+function hue2rgb(p: GLfloat, q: GLfloat, t: GLfloat): GLfloat {
+    if (t < 0.0) {
+        t += 1.0;
+    } else if (t > 1.0) {
+        t -= 1.0;
+    }
+
+    if ((6.0 * t) < 1.0) {
+        return p + (q - p) * 6.0 * t;
+    }
+    if ((2.0 * t) < 1.0) {
+        return q;
+    }
+    if ((3.0 * t) < 2.0) {
+        return p + (q - p) * 6.0 * (2.0 / 3.0 - t);
+    }
+    return p;
 }

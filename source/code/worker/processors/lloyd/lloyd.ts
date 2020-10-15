@@ -3,6 +3,7 @@ import { NumberColumn, rebuildColumn } from 'shared/column/column';
 import { ColorChunk } from 'shared/column/chunk';
 import { MessageType } from 'shared/types/messageType';
 import { RGBA } from 'shared/types/tuples';
+import { hsl2rgb } from 'shared/helper/color';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;
@@ -102,8 +103,15 @@ function toPos(entry: Entry, cols: NumberColumn[]): Pos {
 }
 
 function genColors(clusters: Pos[]): RGBA[] {
-    return clusters.map(
-        () => [Math.random(), Math.random(), Math.random(), 1]);
+    return clusters.map((_, i) => {
+        const hue = i / clusters.length;
+        const rgb = hsl2rgb([
+            hue,
+            0.7 + Math.random() * 0.3,
+            0.3 + Math.random() * 0.4
+        ]);
+        return [rgb[0], rgb[1], rgb[2], 1];
+    });
 }
 
 function buildResult(
