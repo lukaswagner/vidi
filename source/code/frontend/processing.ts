@@ -24,7 +24,7 @@ type WorkerConfig = {
 export class Processing {
     protected _columnConfig: Columns;
     protected _binning: WorkerConfig;
-    protected _knn: WorkerConfig;
+    protected _lloyd: WorkerConfig;
     protected _workers: WorkerConfig[];
 
     public initialize(columns: Columns): void {
@@ -45,11 +45,11 @@ export class Processing {
             ]
         };
 
-        this._knn = {
+        this._lloyd = {
             worker: new LloydWorker,
             options: {
                 clusters: 15,
-                iterations: 30
+                iterations: 10
             },
             inputs: [
                 this._columnConfig.selectedColumn(ColumnUsage.X_AXIS),
@@ -63,7 +63,7 @@ export class Processing {
 
         this._workers = [
             this._binning,
-            this._knn
+            this._lloyd
         ];
     }
 
@@ -105,11 +105,13 @@ export class Processing {
         switch (worker) {
             // same interface
             case this._binning:
-            case this._knn: {
+            case this._lloyd: {
                 const d = data.data as BinningInterface.FinishedData;
+                const column = worker.outputs[0] as ColorColumn;
+                column.reset();
                 d.colors.forEach((c) => {
                     const chunk = rebuildChunk(c) as ColorChunk;
-                    (worker.outputs[0] as ColorColumn).push(chunk);
+                    column.push(chunk);
                 });
                 break;
             }
