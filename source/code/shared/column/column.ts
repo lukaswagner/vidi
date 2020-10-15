@@ -50,7 +50,7 @@ export abstract class BaseColumn<T> {
         return this._chunks;
     }
 
-    public getChunks(start = 0, end = -1): BaseChunk<T>[] {
+    public getChunks(start = 0, end?: number): BaseChunk<T>[] {
         return this._chunks.slice(start, end);
     }
 
