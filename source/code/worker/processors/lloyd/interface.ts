@@ -1,6 +1,6 @@
-import { ColorChunk } from 'shared/column/chunk';
 import { Column } from 'shared/column/column';
 import { MessageType } from 'shared/types/messageType';
+import { NumberChunk } from 'shared/column/chunk';
 
 export type Options = {
     clusters: number,
@@ -13,7 +13,11 @@ export type StartData = {
 }
 
 export type FinishedData = {
-    colors: ColorChunk[]
+    clusterIds: NumberChunk[],
+    clusterInfo: {
+        center: number[],
+        size: number[][]
+    }[]
 }
 
 export type MessageData = {

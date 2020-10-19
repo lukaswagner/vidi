@@ -1,9 +1,7 @@
-import { MessageData, StartData } from 'interface';
+import { FinishedData, MessageData, StartData } from 'interface';
 import { NumberColumn, rebuildColumn } from 'shared/column/column';
-import { ColorChunk } from 'shared/column/chunk';
 import { MessageType } from 'shared/types/messageType';
-import { RGBA } from 'shared/types/tuples';
-import { hsl2rgb } from 'shared/helper/color';
+import { NumberChunk } from 'shared/column/chunk';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;
@@ -12,7 +10,7 @@ self.addEventListener('message', (m: MessageEvent) => {
         const result = process(message.data as StartData);
         const d: MessageData = {
             type: MessageType.Finished,
-            data: { colors: result }
+            data: result
         };
         postMessage(d);
     }
@@ -25,7 +23,7 @@ type Entry = {
 
 type Pos = [number, number, number];
 
-function process(data: StartData): ColorChunk[] {
+function process(data: StartData): FinishedData {
     const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
 
     let clusters = init(cols, data.options.clusters);
@@ -36,8 +34,10 @@ function process(data: StartData): ColorChunk[] {
         selections = assign(cols, clusters);
     }
 
-    const colors = genColors(clusters);
-    return buildResult(cols, selections, colors);
+    return {
+        clusterIds: selectionsToIds(cols[0], selections),
+        clusterInfo: buildClusterInfo(cols, selections)
+    };
 }
 
 function init(cols: NumberColumn[], clusters: number): Pos[] {
@@ -102,25 +102,34 @@ function toPos(entry: Entry, cols: NumberColumn[]): Pos {
             cols[i].getChunk(entry.chunk).get(entry.row) : 0) as Pos;
 }
 
-function genColors(clusters: Pos[]): RGBA[] {
-    return clusters.map((_, i) => {
-        const hue = i / clusters.length;
-        const rgb = hsl2rgb([
-            hue,
-            0.7 + Math.random() * 0.3,
-            0.3 + Math.random() * 0.4
-        ]);
-        return [rgb[0], rgb[1], rgb[2], 1];
+function selectionsToIds(
+    exampleColumn: NumberColumn, selections: Entry[][]
+): NumberChunk[] {
+    const result = exampleColumn.getChunks().map(
+        (chunk) => new NumberChunk(chunk.length));
+    selections.forEach((cluster, id) => {
+        cluster.forEach((entry) => result[entry.chunk].set(entry.row, id));
     });
+    return result;
 }
 
-function buildResult(
-    cols: NumberColumn[], selections: Entry[][], colors: RGBA[]
-): ColorChunk[] {
-    const chunks = cols[0].getChunks().map((c) => new ColorChunk(c.length));
-    selections.forEach((s, i) => {
-        const col = colors[i];
-        s.forEach((e) => chunks[e.chunk].set(e.row, col));
-    });
-    return chunks;
+function buildClusterInfo(
+    cols: NumberColumn[], selections: Entry[][]
+): { center: number[], size: number[][] }[] {
+    return selections.map((cluster) => cluster.reduce(
+        (prev, curr) => {
+            const pos = toPos(curr, cols);
+            return {
+                center: pos.map((p, i) => 
+                    prev?.center[i] ?
+                        p / cluster.length + prev.center[i] :
+                        p / cluster.length),
+                size: pos.map((p, i) =>
+                    prev.size[i] ?
+                        [Math.min(prev.size[i][0]), Math.max(prev.size[i][1])] :
+                        [p, p]
+                )
+            };
+        },
+        { center: [] as number[], size: [] as number[][]}));
 }
