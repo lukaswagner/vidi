@@ -1,5 +1,5 @@
+import { BinningOptions, MessageData, StartData } from 'interface';
 import { ColorChunk, NumberChunk } from 'shared/column/chunk';
-import { MessageData, StartData } from 'interface';
 import { NumberColumn, rebuildColumn } from 'shared/column/column';
 import { MessageType } from 'shared/types/messageType';
 
@@ -18,13 +18,15 @@ self.addEventListener('message', (m: MessageEvent) => {
 
 function process(data: StartData): ColorChunk[] {
     const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    const options = data.options as BinningOptions;
+
     const result =  new Array<ColorChunk>();
     const limits = cols.map((c) => [c.min, c.max]);
     for(let i = 0; i < cols[0].chunkCount; i++) {
         result.push(processChunks(
             cols.map((c) => c.getChunk(i) as NumberChunk),
             limits,
-            data.options.resolution));
+            options.resolution));
     }
     return result;
 }

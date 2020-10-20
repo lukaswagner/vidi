@@ -15,8 +15,7 @@
         "project": [
             "./tsconfig.eslint.json",
             "./source/code/worker/loader/csv/tsconfig.json",
-            "./source/code/worker/processors/binning/tsconfig.json",
-            "./source/code/worker/processors/lloyd/tsconfig.json"
+            "./source/code/worker/clustering/tsconfig.json"
         ]
     },
     "plugins": [

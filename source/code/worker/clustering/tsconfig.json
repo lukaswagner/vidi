@@ -14,16 +14,16 @@
         "baseUrl": ".",
         "paths": {
             "shared/*": [
-                "../../../shared/*"
+                "../../shared/*"
             ],
             "frontend/*": [
-                "../../../frontend/*"
+                "../../frontend/*"
             ],
         }
     },
     "include": [
         "./*.ts",
-        "../../../typings/*.ts",
-        "../../../shared/**/*.ts"
+        "../../typings/*.ts",
+        "../../shared/**/*.ts"
     ]
 }

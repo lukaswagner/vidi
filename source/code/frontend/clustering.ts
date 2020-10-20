@@ -1,18 +1,15 @@
-import * as BinningInterface from 'worker/processors/binning/interface';
-import * as LloydInterface from 'worker/processors/lloyd/interface';
 
 import { ColorChunk, rebuildChunk } from 'shared/column/chunk';
 import { ColorColumn, Column } from 'shared/column/column';
 import { ColumnUsage, Columns } from './data/columns';
 
-import BinningWorker from 'worker-loader!worker/processors/binning/binning';
-import LloydWorker from 'worker-loader!worker/processors/lloyd/lloyd';
+import BinningWorker from 'worker-loader!worker/clustering/binning';
+import LloydWorker from 'worker-loader!worker/clustering/lloyd';
 
 import { MessageType } from 'shared/types/messageType';
+import { FinishedData, MessageData, Options } from 'worker/clustering/interface';
 
 type Worker = BinningWorker | LloydWorker;
-type Options = BinningInterface.Options | LloydInterface.Options;
-type MessageData = BinningInterface.MessageData | LloydInterface.MessageData;
 
 type WorkerConfig = {
     worker: Worker,
@@ -106,13 +103,13 @@ export class Processing {
             // same interface
             case this._binning:
             case this._lloyd: {
-                const d = data.data as BinningInterface.FinishedData;
+                const d = data.data as FinishedData;
                 const column = worker.outputs[0] as ColorColumn;
                 column.reset();
-                d.colors.forEach((c) => {
-                    const chunk = rebuildChunk(c) as ColorChunk;
-                    column.push(chunk);
-                });
+                // d.colors.forEach((c) => {
+                //     const chunk = rebuildChunk(c) as ColorChunk;
+                //     column.push(chunk);
+                // });
                 break;
             }
             default:

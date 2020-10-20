@@ -1,4 +1,4 @@
-import { FinishedData, MessageData, StartData } from 'interface';
+import { FinishedData, KMeansOptions, MessageData, StartData } from 'interface';
 import { NumberColumn, rebuildColumn } from 'shared/column/column';
 import { MessageType } from 'shared/types/messageType';
 import { NumberChunk } from 'shared/column/chunk';
@@ -25,11 +25,12 @@ type Pos = [number, number, number];
 
 function process(data: StartData): FinishedData {
     const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    const options = data.options as KMeansOptions;
 
-    let clusters = init(cols, data.options.clusters);
+    let clusters = init(cols, options.clusters);
     let selections = assign(cols, clusters);
 
-    for(let i = 0; i < data.options.iterations; i++) {
+    for(let i = 0; i < options.iterations; i++) {
         clusters = update(cols, selections);
         selections = assign(cols, clusters);
     }
