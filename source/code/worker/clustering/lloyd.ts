@@ -116,7 +116,7 @@ function selectionsToIds(
 
 function buildClusterInfo(
     cols: NumberColumn[], selections: Entry[][]
-): { center: number[], size: number[][] }[] {
+): { center: number[], extents: number[][] }[] {
     return selections.map((cluster) => cluster.reduce(
         (prev, curr) => {
             const pos = toPos(curr, cols);
@@ -125,12 +125,15 @@ function buildClusterInfo(
                     prev?.center[i] ?
                         p / cluster.length + prev.center[i] :
                         p / cluster.length),
-                size: pos.map((p, i) =>
-                    prev.size[i] ?
-                        [Math.min(prev.size[i][0]), Math.max(prev.size[i][1])] :
+                extents: pos.map((p, i) =>
+                    prev.extents[i] ?
+                        [
+                            Math.min(prev.extents[i][0], p),
+                            Math.max(prev.extents[i][1], p)
+                        ] :
                         [p, p]
                 )
             };
         },
-        { center: [] as number[], size: [] as number[][]}));
+        { center: [] as number[], extents: [] as number[][]}));
 }

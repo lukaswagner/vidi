@@ -1,7 +1,14 @@
-import { BinningOptions, MessageData, StartData } from 'interface';
-import { ColorChunk, NumberChunk } from 'shared/column/chunk';
+import {
+    BinningOptions,
+    ClusterInfo,
+    FinishedData,
+    MessageData,
+    StartData
+} from './interface';
 import { NumberColumn, rebuildColumn } from 'shared/column/column';
+import { FakeColumn } from './fakeColumn';
 import { MessageType } from 'shared/types/messageType';
+import { NumberChunk } from 'shared/column/chunk';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;
@@ -10,17 +17,20 @@ self.addEventListener('message', (m: MessageEvent) => {
         const result = process(message.data as StartData);
         const d: MessageData = {
             type: MessageType.Finished,
-            data: { colors: result }
+            data: result
         };
         postMessage(d);
     }
 });
 
-function process(data: StartData): ColorChunk[] {
+function process(data: StartData): FinishedData {
     const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    while(cols.length < 3) {
+        cols.push(FakeColumn.fromActualColumn(cols[0]));
+    }
     const options = data.options as BinningOptions;
 
-    const result =  new Array<ColorChunk>();
+    const result =  new Array<NumberChunk>();
     const limits = cols.map((c) => [c.min, c.max]);
     for(let i = 0; i < cols[0].chunkCount; i++) {
         result.push(processChunks(
@@ -28,14 +38,17 @@ function process(data: StartData): ColorChunk[] {
             limits,
             options.resolution));
     }
-    return result;
+    return {
+        clusterIds: result,
+        clusterInfo: buildClusterInfo(limits, options.resolution)
+    };
 }
 
 function processChunks(
     input: NumberChunk[], limits: number[][], resolution: number[]
-): ColorChunk {
+): NumberChunk {
     const rows = input[0].length;
-    const result = new ColorChunk(rows);
+    const result = new NumberChunk(rows);
     const map = (
         value: number, limits: number[], res: number
     ): number => {
@@ -50,7 +63,49 @@ function processChunks(
                 limits[j],
                 resolution[j]) : 0
             );
-        result.set(i, [c[0], c[1], c[2], 1]);
+        result.set(i,
+            c[0] +
+            c[1] * resolution[0] +
+            c[2] * resolution[0] * resolution[1]);
+    }
+    return result;
+}
+
+function buildClusterInfo(
+    limits: number[][], resolution: number[]
+): ClusterInfo[] {
+    const perAxis = resolution.map((r, i) => {
+        const res = [];
+        const step = (limits[i][1] - limits[i][0]) / r;
+        for(let j = 0; j < r; j++) {
+            res.push({
+                center: limits[i][0] + step * (j + 0.5),
+                extents: [
+                    limits[i][0] + step * j,
+                    limits[i][0] + step * (j + 1)
+                ]
+            });
+        }
+        return res;
+    });
+    const result: ClusterInfo[] = [];
+    for(let x = 0; x < resolution[0]; x++) {
+        for(let y = 0; y < resolution[1]; y++) {
+            for(let z = 0; z < resolution[2]; z++) {
+                result.push({
+                    center: [
+                        perAxis[0][x].center,
+                        perAxis[1][y].center,
+                        perAxis[2][z].center
+                    ],
+                    extents: [
+                        perAxis[0][x].extents,
+                        perAxis[1][y].extents,
+                        perAxis[2][z].extents
+                    ]
+                });
+            }
+        }
     }
     return result;
 }

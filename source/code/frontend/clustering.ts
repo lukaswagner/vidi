@@ -1,13 +1,15 @@
-
-import { ColorChunk, rebuildChunk } from 'shared/column/chunk';
-import { ColorColumn, Column } from 'shared/column/column';
+import { ColorColumn, Column, NumberColumn } from 'shared/column/column';
 import { ColumnUsage, Columns } from './data/columns';
+import { 
+    FinishedData,
+    MessageData,
+    Options
+} from 'worker/clustering/interface';
 
 import BinningWorker from 'worker-loader!worker/clustering/binning';
 import LloydWorker from 'worker-loader!worker/clustering/lloyd';
 
 import { MessageType } from 'shared/types/messageType';
-import { FinishedData, MessageData, Options } from 'worker/clustering/interface';
 
 type Worker = BinningWorker | LloydWorker;
 
@@ -18,7 +20,7 @@ type WorkerConfig = {
     outputs: Column[]
 }
 
-export class Processing {
+export class Clustering {
     protected _columnConfig: Columns;
     protected _binning: WorkerConfig;
     protected _lloyd: WorkerConfig;
@@ -38,14 +40,14 @@ export class Processing {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new ColorColumn('binned')
+                new NumberColumn('binned clusters')
             ]
         };
 
         this._lloyd = {
             worker: new LloydWorker,
             options: {
-                clusters: 15,
+                clusters: 10,
                 iterations: 10
             },
             inputs: [
@@ -54,7 +56,7 @@ export class Processing {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new ColorColumn('lloyd k-means')
+                new NumberColumn('lloyd k-means clusters')
             ]
         };
 
@@ -99,21 +101,14 @@ export class Processing {
     }
 
     protected storeResult(worker: WorkerConfig, data: MessageData): void {
-        switch (worker) {
-            // same interface
-            case this._binning:
-            case this._lloyd: {
-                const d = data.data as FinishedData;
-                const column = worker.outputs[0] as ColorColumn;
-                column.reset();
-                // d.colors.forEach((c) => {
-                //     const chunk = rebuildChunk(c) as ColorChunk;
-                //     column.push(chunk);
-                // });
-                break;
-            }
-            default:
-                break;
-        }
+        const d = data.data as FinishedData;
+        const column = worker.outputs[0] as NumberColumn;
+        column.reset();
+
+        console.log(d.clusterInfo);
+        // d.colors.forEach((c) => {
+        //     const chunk = rebuildChunk(c) as ColorChunk;
+        //     column.push(chunk);
+        // });
     }
 }

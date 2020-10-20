@@ -44,10 +44,10 @@ import {
     loadFromServer
 } from './util/load';
 
+import { Clustering } from './clustering';
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
-import { Processing } from './processing';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -88,7 +88,7 @@ export class TopicMapApp extends Initializable {
     private _datasets: Dataset[];
     private _presets: Preset[];
     private _columns: Columns;
-    private _processing: Processing;
+    private _processing: Clustering;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('version:', COMMIT);
@@ -292,7 +292,7 @@ export class TopicMapApp extends Initializable {
         this._columns = new Columns(columns);
         this.initColumns();
 
-        this._processing = new Processing();
+        this._processing = new Clustering();
         this._processing.initialize(this._columns);
         this._columns.addColumns(this._processing.getOutputs());
 

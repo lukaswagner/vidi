@@ -20,7 +20,7 @@ export type StartData = {
 
 export type ClusterInfo = {
     center: number[],
-    size: number[][]
+    extents: number[][]
 }
 
 export type FinishedData = {
