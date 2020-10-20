@@ -1,5 +1,11 @@
-import { FinishedData, KMeansOptions, MessageData, StartData } from 'interface';
+import {
+    FinishedData,
+    KMeansOptions,
+    MessageData,
+    StartData
+} from './interface';
 import { NumberColumn, rebuildColumn } from 'shared/column/column';
+import { FakeColumn } from './fakeColumn';
 import { MessageType } from 'shared/types/messageType';
 import { NumberChunk } from 'shared/column/chunk';
 
@@ -25,6 +31,9 @@ type Pos = [number, number, number];
 
 function process(data: StartData): FinishedData {
     const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    while(cols.length < 3) {
+        cols.push(FakeColumn.fromActualColumn(cols[0]));
+    }
     const options = data.options as KMeansOptions;
 
     let clusters = init(cols, options.clusters);
@@ -56,7 +65,7 @@ function init(cols: NumberColumn[], clusters: number): Pos[] {
     }
     return selection.map(
         (s) => [0, 1, 2].map(
-            (i) => cols[i] ? cols[i].getChunk(s.chunk).get(s.row) : 0) as Pos);
+            (i) => cols[i].getChunk(s.chunk).get(s.row)) as Pos);
 }
 
 function assign(
@@ -64,15 +73,15 @@ function assign(
 ): Entry[][] {
     const selections = clusters.map(() => new Array<Entry>());
     for(let i = 0; i < cols[0].chunkCount; i++) {
-        const chunks = cols.map((c) => c?.getChunk(i));
+        const chunks = cols.map((c) => c.getChunk(i));
         for(let j = 0; j < chunks[0].length; j++) {
-            const v = chunks.map((c) => c?.get(j));
+            const v = chunks.map((c) => c.get(j));
             let minDist = Number.POSITIVE_INFINITY;
             let index = -1;
             for(let k = 0; k < clusters.length; k++) {
                 const c = clusters[k];
                 const d =
-                    [0, 1, 2].map((i) => Math.abs(v[i] ? c[i] - v[i] : 0));
+                    [0, 1, 2].map((i) => Math.abs(c[i] - v[i]));
                 const dist = d.reduce((p, c) => p + c * c, 0);
                 if(dist < minDist) {
                     minDist = dist;
@@ -99,8 +108,7 @@ function update(cols: NumberColumn[], selections: Entry[][]): Pos[] {
 
 function toPos(entry: Entry, cols: NumberColumn[]): Pos {
     return [0, 1, 2].map(
-        (i) => cols[i] ?
-            cols[i].getChunk(entry.chunk).get(entry.row) : 0) as Pos;
+        (i) => cols[i].getChunk(entry.chunk).get(entry.row)) as Pos;
 }
 
 function selectionsToIds(
@@ -122,7 +130,7 @@ function buildClusterInfo(
             const pos = toPos(curr, cols);
             return {
                 center: pos.map((p, i) => 
-                    prev?.center[i] ?
+                    prev.center[i] ?
                         p / cluster.length + prev.center[i] :
                         p / cluster.length),
                 extents: pos.map((p, i) =>
