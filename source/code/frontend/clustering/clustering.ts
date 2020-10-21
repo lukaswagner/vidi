@@ -1,5 +1,5 @@
 import {  Column, NumberColumn } from 'shared/column/column';
-import { ColumnUsage, Columns } from './data/columns';
+import { ColumnUsage, Columns } from '../data/columns';
 import { 
     FinishedData,
     MessageData,

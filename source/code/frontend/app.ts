@@ -44,7 +44,7 @@ import {
     loadFromServer
 } from './util/load';
 
-import { Clustering } from './clustering';
+import { Clustering } from './clustering/clustering';
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
