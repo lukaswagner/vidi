@@ -1,7 +1,7 @@
 import { ClusterGeometry } from './clusterGeometry';
 import { Initializable } from 'webgl-operate';
 
-export class SphereGeometry extends ClusterGeometry {
+export class QuadGeometry extends ClusterGeometry {
     @Initializable.initialize()
     public initialize(aVertex: GLuint = 0): boolean {
         const valid = super.initialize(aVertex);
