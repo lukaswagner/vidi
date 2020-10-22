@@ -1,10 +1,13 @@
-import {  Column, NumberColumn } from 'shared/column/column';
-import { ColumnUsage, Columns } from '../data/columns';
 import { 
+    ClusterInfo,
     FinishedData,
     MessageData,
     Options
 } from 'worker/clustering/interface';
+
+import { Column, NumberColumn } from 'shared/column/column';
+import { ColumnUsage, Columns } from '../data/columns';
+import { NumberChunk, rebuildChunk } from 'shared/column/chunk';
 
 import BinningWorker from 'worker-loader!worker/clustering/binning';
 import LloydWorker from 'worker-loader!worker/clustering/lloyd';
@@ -14,6 +17,7 @@ import { MessageType } from 'shared/types/messageType';
 type Worker = BinningWorker | LloydWorker;
 
 type WorkerConfig = {
+    name: string,
     worker: Worker,
     options: Options,
     inputs: Column[],
@@ -25,11 +29,13 @@ export class Clustering {
     protected _binning: WorkerConfig;
     protected _lloyd: WorkerConfig;
     protected _workers: WorkerConfig[];
+    protected _clusterInfoHandler: (n: string, c: ClusterInfo[]) => void;
 
     public initialize(columns: Columns): void {
         this._columnConfig = columns;
 
         this._binning = {
+            name: 'binning',
             worker: new BinningWorker,
             options: {
                 resolution: [3, 3, 3]
@@ -40,11 +46,12 @@ export class Clustering {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new NumberColumn('binned clusters')
+                new NumberColumn('binning')
             ]
         };
 
         this._lloyd = {
+            name: 'k-means',
             worker: new LloydWorker,
             options: {
                 clusters: 10,
@@ -56,7 +63,7 @@ export class Clustering {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new NumberColumn('lloyd k-means clusters')
+                new NumberColumn('k-means')
             ]
         };
 
@@ -72,6 +79,12 @@ export class Clustering {
 
     public runWorkers(): void {
         this._workers.forEach((w) => this.runWorker(w));
+    }
+
+    public set clusterInfoHandler(
+        handler: (name: string, clusterInfo: ClusterInfo[]) => void
+    ) {
+        this._clusterInfoHandler = handler;
     }
 
     protected async runWorker(worker: WorkerConfig): Promise<void> {
@@ -105,10 +118,11 @@ export class Clustering {
         const column = worker.outputs[0] as NumberColumn;
         column.reset();
 
-        console.log(d.clusterInfo);
-        // d.colors.forEach((c) => {
-        //     const chunk = rebuildChunk(c) as ColorChunk;
-        //     column.push(chunk);
-        // });
+        d.clusterIds.forEach((c) => {
+            const chunk = rebuildChunk(c) as NumberChunk;
+            column.push(chunk);
+        });
+
+        this._clusterInfoHandler(worker.name, d.clusterInfo);
     }
 }

@@ -15,13 +15,9 @@ out vec2 v_uv;
 out vec3 v_normal;
 out vec4 v_vertex;
 
-@import ../util/barycentric;
-
 void main()
 {
     v_uv = vec2(a_vertex.x, 1.0 - a_vertex.y);
-
-    v_barycentric = barycentric(a_barycentric);
 
     float longitude = a_vertex.x * c_twoPi - c_pi;
     float latitude = a_vertex.y * c_pi - c_halfPi;

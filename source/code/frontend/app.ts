@@ -88,7 +88,7 @@ export class TopicMapApp extends Initializable {
     private _datasets: Dataset[];
     private _presets: Preset[];
     private _columns: Columns;
-    private _processing: Clustering;
+    private _clustering: Clustering;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('version:', COMMIT);
@@ -205,7 +205,7 @@ export class TopicMapApp extends Initializable {
 
         // processing
         this._controls.processAllButton.handler = () => {
-            this._processing.runWorkers();
+            this._clustering.runWorkers();
         };
 
         // point size
@@ -292,9 +292,12 @@ export class TopicMapApp extends Initializable {
         this._columns = new Columns(columns);
         this.initColumns();
 
-        this._processing = new Clustering();
-        this._processing.initialize(this._columns);
-        this._columns.addColumns(this._processing.getOutputs());
+        this._clustering = new Clustering();
+        this._clustering.initialize(this._columns);
+        this._columns.addColumns(this._clustering.getOutputs());
+        this._clustering.clusterInfoHandler = (name, clusters) => {
+            this._renderer.setClusterData(name, clusters);
+        };
 
         // set up axis controls
         const numberColumnNames = this._columns.getColumnNames(DataType.Number);

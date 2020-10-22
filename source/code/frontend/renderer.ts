@@ -23,6 +23,7 @@ import {
     GridInfo, calculateExtendedGridInfo
 } from './grid/gridInfo';
 
+import { ClusterInfo } from 'worker/clustering/interface';
 import { ClusterVisualization } from './clustering/clusterVisualization';
 import { Column } from 'shared/column/column';
 import { GLfloat2 } from 'shared/types/tuples' ;
@@ -31,7 +32,6 @@ import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
-import { ClusterInfo } from 'worker/clustering/interface';
 
 export class TopicMapRenderer extends Renderer {
     // scene data

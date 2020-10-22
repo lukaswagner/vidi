@@ -12,6 +12,7 @@ import { SphereClusterPass } from './sphereClusterPass';
 
 export class ClusterVisualization extends Initializable {
     protected _data: {[id: string]: ClusterInfo[]} = {};
+    protected _currentData: ClusterInfo[];
 
     protected _spherePass: SphereClusterPass;
 
@@ -37,6 +38,7 @@ export class ClusterVisualization extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
+        if(!this._currentData) return;
         this._spherePass.frame();
     }
 
@@ -48,13 +50,13 @@ export class ClusterVisualization extends Initializable {
         this._spherePass.invalidate = invalidate;
     }
 
-    @Initializable.assert_initialized()
     public set target(target: Framebuffer) {
+        this.assertInitialized();
         this._spherePass.target = target;
     }
 
-    @Initializable.assert_initialized()
     public set camera(camera: Camera) {
+        this.assertInitialized();
         this._spherePass.camera = camera;
     }
 
@@ -68,7 +70,8 @@ export class ClusterVisualization extends Initializable {
 
     public selectData(name: string): void {
         const data = this._data[name];
-        if(!data) return;
+        if(!data || this._currentData === data) return;
+        this._currentData = data;
         this._spherePass.data = data;
     }
 }
