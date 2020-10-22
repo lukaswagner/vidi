@@ -23,6 +23,7 @@ import {
     GridInfo, calculateExtendedGridInfo
 } from './grid/gridInfo';
 
+import { ClusterVisualization } from './clustering/clusterVisualization';
 import { Column } from 'shared/column/column';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridHelper } from './grid/gridHelper';
@@ -30,6 +31,7 @@ import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
+import { ClusterInfo } from 'worker/clustering/interface';
 
 export class TopicMapRenderer extends Renderer {
     // scene data
@@ -50,6 +52,7 @@ export class TopicMapRenderer extends Renderer {
     protected _pointPass: PointPass;
     protected _gridPass: GridPass;
     protected _gridLabelPass: GridLabelPass;
+    protected _clusterPass: ClusterVisualization;
 
     // final output
     protected _defaultFBO: DefaultFramebuffer;
@@ -92,6 +95,14 @@ export class TopicMapRenderer extends Renderer {
         if (this.initialized) {
             this.invalidate();
         }
+    }
+
+    public setClusterData(name: string, data: ClusterInfo[]): void {
+        this._clusterPass.setData(name, data);
+    }
+
+    public selectData(name: string): void {
+        this._clusterPass.selectData(name);
     }
 
     /**
@@ -173,6 +184,12 @@ export class TopicMapRenderer extends Renderer {
         this._gridOffsetHelper.camera = this._camera;
         this._gridOffsetHelper.initialize();
 
+        // set up cluster rendering
+        this._clusterPass = new ClusterVisualization(context);
+        this._clusterPass.initialize();
+        this._clusterPass.camera = this._camera;
+        this._clusterPass.target = this._intermediateFBO;
+
         // set up output
         this._defaultFBO = new DefaultFramebuffer(context, 'DefaultFBO');
         this._defaultFBO.initialize();
@@ -211,6 +228,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.uninitialize();
         this._gridPass.uninitialize();
         this._gridLabelPass.uninitialize();
+        this._clusterPass.uninitialize();
 
         this._blitPass.uninitialize();
         this._accumulatePass.uninitialize();
@@ -238,7 +256,8 @@ export class TopicMapRenderer extends Renderer {
             this._gridOffsetHelper.altered ||
             this._pointPass.altered ||
             this._gridPass.altered ||
-            this._gridLabelPass.altered;
+            this._gridLabelPass.altered ||
+            this._clusterPass.altered;
     }
     /**
      * This is invoked in order to prepare rendering of one or more frames,
@@ -272,6 +291,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.update();
         this._gridPass.update();
         this._gridLabelPass.update();
+        this._clusterPass.update();
         this._accumulatePass.update();
 
         this._altered.reset();
@@ -299,6 +319,8 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();
+
+        this._clusterPass.frame();
 
         this._accumulatePass.frame(frameNumber);
     }

@@ -10,6 +10,7 @@ import {
     Shader,
     mat4,
 } from 'webgl-operate';
+import { ClusterInfo } from 'worker/clustering/interface';
 
 import {
     InstancedQuadGeometry,
@@ -88,6 +89,10 @@ export class SphereClusterPass extends Initializable {
         this._gl.disable(this._gl.CULL_FACE);
     }
 
+    public get altered(): boolean {
+        return this._altered.any;
+    }
+
     public set invalidate(invalidate: Invalidate) {
         this._invalidate = invalidate;
     }
@@ -105,6 +110,9 @@ export class SphereClusterPass extends Initializable {
     public set modelMat(mat: mat4) {
         this._modelMat = mat;
         this._altered.alter('modelMat');
+    }
+
+    public set data(data: ClusterInfo[]) {
     }
 
     protected initProgram(): void {
