@@ -101,7 +101,7 @@ export class TopicMapRenderer extends Renderer {
         this._clusterPass.setData(name, data);
     }
 
-    public selectData(name: string): void {
+    public selectClusterData(name: string): void {
         this._clusterPass.selectData(name);
     }
 

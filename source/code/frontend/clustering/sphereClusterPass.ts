@@ -13,8 +13,8 @@ import {
 import { ClusterInfo } from 'worker/clustering/interface';
 
 import {
-    InstancedQuadGeometry,
-} from './instancedQuadGeometry';
+    SphereGeometry,
+} from './sphereGeometry';
 
 export class SphereClusterPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -30,7 +30,7 @@ export class SphereClusterPass extends Initializable {
     protected _camera: Camera;
 
     protected _program: Program;
-    protected _geometry: InstancedQuadGeometry;
+    protected _geometry: SphereGeometry;
 
     protected _modelMat = mat4.create();
 
@@ -73,6 +73,7 @@ export class SphereClusterPass extends Initializable {
 
         this._gl.enable(this._gl.CULL_FACE);
         this._gl.enable(this._gl.DEPTH_TEST);
+        this._gl.enable(this._gl.BLEND);
 
         this._program.bind();
 
@@ -85,6 +86,7 @@ export class SphereClusterPass extends Initializable {
 
         this._program.unbind();
 
+        this._gl.disable(this._gl.BLEND);
         this._gl.disable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.CULL_FACE);
     }
@@ -113,6 +115,7 @@ export class SphereClusterPass extends Initializable {
     }
 
     public set data(data: ClusterInfo[]) {
+        this._geometry.data = data;
     }
 
     protected initProgram(): void {
@@ -134,10 +137,11 @@ export class SphereClusterPass extends Initializable {
     }
 
     protected initGeometry(): void {
-        this._geometry = new InstancedQuadGeometry(this._context);
+        this._geometry = new SphereGeometry(this._context);
         this._geometry.initialize(
             this._program.attribute('a_vertex'),
-            this._program.attribute('a_position'));
+            this._program.attribute('a_position'),
+            this._program.attribute('a_size'));
         this._geometry.build(10);
     }
 }

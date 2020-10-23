@@ -17,8 +17,7 @@ export class ClusterGeometry extends Geometry {
         super(context);
         this._gl = this.context.gl as WebGL2RenderingContext;
 
-        this._buffers.push(
-            new Buffer(context), new Buffer(context), new Buffer(context));
+        this._buffers.push(new Buffer(context), new Buffer(context));
     }
 
     @Initializable.initialize()
@@ -26,7 +25,6 @@ export class ClusterGeometry extends Geometry {
         this._aVertex = aVertex;
 
         const valid = super.initialize([
-            this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ELEMENT_ARRAY_BUFFER,
         ]);

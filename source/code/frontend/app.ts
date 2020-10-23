@@ -297,6 +297,7 @@ export class TopicMapApp extends Initializable {
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
+            this._renderer.selectClusterData(name);
         };
 
         // set up axis controls
