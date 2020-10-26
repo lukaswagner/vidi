@@ -9,5 +9,5 @@ in vec4 v_vertex;
 
 void main(void)
 {
-    fragColor = vec4(0.7, 0.1, 0.1, 0.8);
+    fragColor = vec4(0.7, 0.1, 0.1, 0.5);
 }

@@ -375,6 +375,7 @@ export class TopicMapRenderer extends Renderer {
         this._modelMat = model;
 
         this._pointPass.model = model;
+        this._clusterPass.model = model;
     }
 
     public set columns(columns: Column[]) {

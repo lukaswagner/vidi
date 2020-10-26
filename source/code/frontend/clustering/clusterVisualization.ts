@@ -60,8 +60,8 @@ export class ClusterVisualization extends Initializable {
         this._spherePass.camera = camera;
     }
 
-    public set modelMat(mat: mat4) {
-        this._spherePass.modelMat = mat;
+    public set model(mat: mat4) {
+        this._spherePass.model = mat;
     }
 
     public setData(name: string, data: ClusterInfo[]): void {

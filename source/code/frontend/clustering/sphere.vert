@@ -22,7 +22,7 @@ void main()
     float longitude = a_vertex.x * c_twoPi - c_pi;
     float latitude = a_vertex.y * c_pi - c_halfPi;
 
-    vec3 sphere = a_size * vec3(
+    vec3 sphere = 0.5 * a_size * vec3(
         cos(latitude) * cos(longitude),
         sin(latitude),
         cos(latitude) * sin(longitude));

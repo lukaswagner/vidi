@@ -37,7 +37,6 @@ export class SphereGeometry extends QuadGeometry {
     }
 
     public set data(clusterInfo: ClusterInfo[]) {
-        console.log('got data');
         this._clusterInfo = new Float32Array(clusterInfo.length * 6);
         clusterInfo.forEach((c, i) => {
             this._clusterInfo.set(c.center, i * 6);
@@ -47,7 +46,6 @@ export class SphereGeometry extends QuadGeometry {
     }
 
     public draw(): void {
-        console.log('draw');
         this._gl.drawElementsInstanced(
             this._gl.TRIANGLE_STRIP, this._indices.length,
             this._gl.UNSIGNED_INT, 0, this._clusterInfo.length / 6);

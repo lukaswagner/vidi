@@ -109,7 +109,7 @@ export class SphereClusterPass extends Initializable {
         this._camera = camera;
     }
 
-    public set modelMat(mat: mat4) {
+    public set model(mat: mat4) {
         this._modelMat = mat;
         this._altered.alter('modelMat');
     }
