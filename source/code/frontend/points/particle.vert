@@ -80,7 +80,7 @@ vec3 color()
     } else if (u_colorMode == COLOR_MODE_VERTEX_COLOR) {
         return a_vertexColor.rgb;
     } else if (u_colorMode == COLOR_MODE_CLUSTER_COLOR) {
-        return clusterColor(a_clusterId, u_numClusters - 1.0);
+        return clusterColor(a_clusterId, u_numClusters);
     }
 }
 
