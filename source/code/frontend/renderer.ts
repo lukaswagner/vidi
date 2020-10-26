@@ -13,9 +13,15 @@ import {
     Renderer,
     Texture2D,
     Wizard,
+    mat4,
     vec3,
-    viewer
+    viewer,
 } from 'webgl-operate';
+
+import {
+    Column,
+    NumberColumn
+} from 'shared/column/column';
 
 import {
     ExtendedGridInfo,
@@ -25,7 +31,6 @@ import {
 
 import { ClusterInfo } from 'worker/clustering/interface';
 import { ClusterVisualization } from './clustering/clusterVisualization';
-import { Column } from 'shared/column/column';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
@@ -39,6 +44,11 @@ export class TopicMapRenderer extends Renderer {
     protected _navigation: Navigation;
     protected _gridInfo: GridInfo[];
     protected _gridOffsetHelper: GridOffsetHelper;
+
+    protected _modelMatInfo: { extents: GridExtents, columns: Column[] } = {
+        extents: undefined, columns: undefined
+    };
+    protected _modelMat: mat4;
 
     // intermediate rendering for aa
     protected _depthRenderbuffer: Renderbuffer;
@@ -82,11 +92,13 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.gridInfo = extendedGridInfo;
         this._gridOffsetHelper.gridInfo = extendedGridInfo;
-        this._pointPass.gridExtents = extents;
+        this._modelMatInfo.extents = extents;
+        this.updateModelMat();
         this.invalidate();
     }
 
     public updateData(): void {
+        this.updateModelMat();
         this.invalidate();
     }
 
@@ -339,8 +351,41 @@ export class TopicMapRenderer extends Renderer {
         console.warn('got discarded');
     }
 
+    protected updateModelMat(): void {
+        if(!this._modelMatInfo?.extents || !this._modelMatInfo?.columns) {
+            return;
+        }
+
+        const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
+        const g = this._modelMatInfo.extents;
+        const gridOffset = g.map((e, i) => c[i] ? e.min : 0);
+        const gridScale = g.map((e, i) => c[i] ? (e.max - e.min) : 0);
+        const valueScale = c.map((c) => c ? 1 / (c.max - c.min) : 0);
+        const valueOffset = c.map((c) => c ? -c.min : 0);
+
+        const model = mat4.create();
+        mat4.translate(model, model, new Float32Array(gridOffset));
+        mat4.scale(model, model, new Float32Array(gridScale));
+        mat4.scale(model, model, new Float32Array(valueScale));
+        mat4.translate(model, model, new Float32Array(valueOffset));
+        this._modelMat = model;
+        // console.log(g, c, gridOffset, gridScale, valueScale, valueOffset);
+        // console.log(c[0].min, c[0].max, c[0].length);
+
+        console.log(
+            'cmin: ' + c.map((c) => c?.min).join(' ') +
+            '\ncmax: ' + c.map((c) => c?.max).join(' ') +
+            '\ngmin: ' + g.map((g) => g?.min).join(' ') +
+            '\ngmax: ' + g.map((g) => g?.max).join(' ') +
+            '\nmat: ' + model.join(' '));
+
+        this._pointPass.model = model;
+    }
+
     public set columns(columns: Column[]) {
         this._pointPass.columns = columns;
+        this._modelMatInfo.columns = columns;
+        this.updateModelMat();
         if (this.initialized) {
             this.invalidate();
         }
