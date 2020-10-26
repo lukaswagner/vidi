@@ -69,7 +69,7 @@ export class Clustering {
         };
 
         this._workers = [
-            this._binning,
+            //this._binning,
             this._lloyd
         ];
     }
