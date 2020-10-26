@@ -34,6 +34,7 @@ export class PointPass extends Initializable {
         variablePointSizeStrength: false,
         variablePointSizeOutputRange: false,
         model: false,
+        numClusters: false,
     });
 
     protected _context: Context;
@@ -53,6 +54,7 @@ export class PointPass extends Initializable {
     protected _variablePointSizeStrength: GLfloat = 1;
     protected _variablePointSizeOutputRange: GLfloat2 = [0.0, 10.0];
     protected _model: mat4;
+    protected _numClusters: number;
 
     protected _program: Program;
 
@@ -71,6 +73,7 @@ export class PointPass extends Initializable {
     protected _uVariablePointSizeStrength: WebGLUniformLocation;
     protected _uVariablePointSizeInputRange: WebGLUniformLocation;
     protected _uVariablePointSizeOutputRange: WebGLUniformLocation;
+    protected _uNumClusters: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -118,6 +121,7 @@ export class PointPass extends Initializable {
             this._program.uniform('u_variablePointSizeInputRange');
         this._uVariablePointSizeOutputRange =
             this._program.uniform('u_variablePointSizeOutputRange');
+        this._uNumClusters = this._program.uniform('u_numClusters');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -210,6 +214,10 @@ export class PointPass extends Initializable {
                 this._uVariablePointSizeStrength,
                 Number(this._variablePointSizeStrength)
             );
+        }
+
+        if (override || this._altered.numClusters) {
+            this._gl.uniform1f(this._uNumClusters, this._numClusters);
         }
 
         this._program.unbind();
@@ -367,6 +375,11 @@ export class PointPass extends Initializable {
         }
         this._model = model;
         this._altered.alter('model');
+    }
+
+    public set numClusters(numClusters: number) {
+        this._numClusters = numClusters;
+        this._altered.alter('numClusters');
     }
 
     public get altered(): boolean {

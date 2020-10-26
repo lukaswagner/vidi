@@ -114,7 +114,8 @@ export class TopicMapRenderer extends Renderer {
     }
 
     public selectClusterData(name: string): void {
-        this._clusterPass.selectData(name);
+        const numClusters = this._clusterPass.selectData(name);
+        this._pointPass.numClusters = numClusters;
     }
 
     /**

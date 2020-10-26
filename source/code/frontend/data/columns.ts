@@ -6,7 +6,8 @@ export enum ColumnUsage {
     Y_AXIS = 1,
     Z_AXIS = 2,
     VARIABLE_POINT_SIZE = 3,
-    PER_POINT_COLOR = 4
+    PER_POINT_COLOR = 4,
+    CLUSTER_ID = 5
 }
 
 export class Columns {

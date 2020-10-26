@@ -203,9 +203,13 @@ export class TopicMapApp extends Initializable {
                 .then((d) => this.dataReady(d));
         };
 
-        // processing
-        this._controls.processAllButton.handler = () => {
+        // clustering
+        this._controls.clusterAllButton.handler = () => {
             this._clustering.runWorkers();
+        };
+        this._controls.clusterAlgSelect.handler = (name) => {
+            this._renderer.selectClusterData(name);
+            this.updateColumn(ColumnUsage.CLUSTER_ID, name);
         };
 
         // point size
@@ -271,7 +275,8 @@ export class TopicMapApp extends Initializable {
             if(!preset) return;
             const data = this._datasets.find((d) => d.id === preset.data);
             if (preset.data !== undefined && data !== undefined) {
-                this._controls.data.setValue(preset.data, false);loadFromServer(
+                this._controls.data.setValue(preset.data, false);
+                loadFromServer(
                     data.url, data.format,
                     this._controls, this.handleDataUpdate.bind(this))
                     .then((d) => {
@@ -297,7 +302,7 @@ export class TopicMapApp extends Initializable {
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
-            this._renderer.selectClusterData(name);
+            this._controls.clusterAlgSelect.addOption(name);
         };
 
         // set up axis controls

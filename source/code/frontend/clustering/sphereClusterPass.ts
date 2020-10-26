@@ -67,7 +67,6 @@ export class SphereClusterPass extends Initializable {
         if (this._altered.data) {
             this._geometry.data = this._data;
             this._gl.uniform1f(this._uNumClusters, this._data.length);
-            console.log('nc', this._data.length);
         }
         if (this._altered.modelMat) {
             this._gl.uniformMatrix4fv(this._uModel, false, this._modelMat);

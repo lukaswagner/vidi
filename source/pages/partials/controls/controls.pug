@@ -50,11 +50,6 @@ include elements/progress-bar.pug
                 +control-button('custom-data-upload', 'Load').col-3
                 .d-none.ml-2.p-0.col#custom-data-progress-wrapper
                     +progress-bar('custom-data').w-100
-        +control-block('processing-header', 'processing-group', 'Processing')
-            +control-element('process-all-header', 'Run processing steps')
-                +control-button('process-all', 'Run').col-3
-                .d-none.ml-2.p-0.col#custom-data-progress-wrapper
-                    +progress-bar('process-all').w-100
         +control-block('position-header', 'position-group', 'Position')
             +control-element('x-axis-select', 'Data mapping', true)
                 .row.mx-0
@@ -66,6 +61,16 @@ include elements/progress-bar.pug
                 .row.mx-0.pb-0
                     +control-label('z-axis', 'Z axis').col-3.px-0
                     +control-select('z-axis').col
+        +control-block('clustering-header', 'clustering-group', 'Clusters')
+            +control-element('cluster-all-header', 'Run clustering algorithms')
+                +control-button('cluster-all', 'Run').col-3
+                .d-none.ml-2.p-0.col#cluster-all-progress-wrapper
+                    +progress-bar('cluster-all').w-100
+            hr
+            +control-element('cluster-vis-header', 'Cluster visualization settings', true)
+                .row.mx-0
+                    +control-label('cluster-alg', 'Algorithm').col-4.px-0
+                    +control-select('cluster-alg').col
         +control-block('size-header', 'size-group', 'Size')
             +control-element('scale-input', 'Scale').mb-2
                 +control-input('scale').col-3

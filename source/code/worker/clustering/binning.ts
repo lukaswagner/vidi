@@ -53,8 +53,7 @@ function processChunks(
         value: number, limits: number[], res: number
     ): number => {
         const t = (value - limits[0]) / (limits[1] - limits[0]);
-        const bin = Math.min(Math.floor(t * res), res - 1);
-        return bin / (res - 1);
+        return Math.min(Math.floor(t * res), res - 1);
     };
     for(let i = 0; i < rows; i++) {
         const c = [0, 1, 2]
@@ -89,9 +88,9 @@ function buildClusterInfo(
         return res;
     });
     const result: ClusterInfo[] = [];
-    for(let x = 0; x < resolution[0]; x++) {
+    for(let z = 0; z < resolution[2]; z++) {
         for(let y = 0; y < resolution[1]; y++) {
-            for(let z = 0; z < resolution[2]; z++) {
+            for(let x = 0; x < resolution[0]; x++) {
                 result.push({
                     center: [
                         perAxis[0][x].center,

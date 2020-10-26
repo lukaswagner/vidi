@@ -31,6 +31,25 @@ export class Select extends ControlBase<string> {
         this.setValue(ids[0], invokeHandler);
     }
 
+    public addOption(
+        id: string, label?: string, invokeHandler = true
+    ): void {
+        if (label === undefined) {
+            label = id;
+        }
+
+        const element = this.element;
+
+        const o = document.createElement('option');
+        o.value = id;
+        o.text = label;
+        element.options.add(o);
+
+        if(invokeHandler) {
+            this.setValue(id, invokeHandler);
+        }
+    }
+
     public fromDict(
         options: Dict<unknown, unknown>, invokeHandler = true
     ): void {

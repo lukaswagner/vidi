@@ -16,6 +16,7 @@ export class PointCloudGeometry extends Geometry {
         vertexCount: false,
         vertexColors: false,
         variablePointSize: false,
+        clusterId: false,
     });
 
     protected _uv = new Uint8Array([+1, -1, +1, +1, -1, -1, -1, +1]);
@@ -25,6 +26,7 @@ export class PointCloudGeometry extends Geometry {
     protected _zCoord = new Float32Array([]);
     protected _vertexColors = new Float32Array([]);
     protected _variablePointSize = new Float32Array([]);
+    protected _clusterId = new Float32Array([]);
 
     protected _uvLocation: GLuint = 0;
     protected _xCoordLocation: GLuint = 1;
@@ -32,6 +34,7 @@ export class PointCloudGeometry extends Geometry {
     protected _zCoordLocation: GLuint = 3;
     protected _vertexColorLocation: GLuint = 4;
     protected _variablePointSizeLocation: GLuint = 5;
+    protected _clusterIdLocation: GLuint = 6;
 
     protected _gl: WebGLRenderingContext;
     protected _gl2facade: GL2Facade;
@@ -54,6 +57,7 @@ export class PointCloudGeometry extends Geometry {
             new Buffer(context),
             new Buffer(context),
             new Buffer(context),
+            new Buffer(context),
             new Buffer(context)
         );
     }
@@ -69,6 +73,7 @@ export class PointCloudGeometry extends Geometry {
         g._vertexColors = new Float32Array(data[ColumnUsage.PER_POINT_COLOR]);
         g._variablePointSize =
             new Float32Array(data[ColumnUsage.VARIABLE_POINT_SIZE]);
+        g._clusterId = new Float32Array(data[ColumnUsage.CLUSTER_ID]);
         g.initialize();
         return g;
     }
@@ -87,6 +92,7 @@ export class PointCloudGeometry extends Geometry {
         zCoordLocation: GLuint = 3,
         vertexColorLocation: GLuint = 4,
         variablePointSizeLocation: GLuint = 5,
+        clusterIdLocation: GLuint = 6,
     ): boolean {
         this._uvLocation = uvLocation;
         this._xCoordLocation = xCoordLocation;
@@ -94,8 +100,10 @@ export class PointCloudGeometry extends Geometry {
         this._zCoordLocation = zCoordLocation;
         this._vertexColorLocation = vertexColorLocation;
         this._variablePointSizeLocation = variablePointSizeLocation;
+        this._clusterIdLocation = clusterIdLocation;
 
         const valid = super.initialize([
+            this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
@@ -108,7 +116,7 @@ export class PointCloudGeometry extends Geometry {
             xCoordLocation,
             zCoordLocation,
             vertexColorLocation,
-            variablePointSizeLocation
+            clusterIdLocation
         ]);
 
         this._buffers[0].data(this._uv, this._gl.STATIC_DRAW);
@@ -117,6 +125,7 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[3].data(this._zCoord, this._gl.STATIC_DRAW);
         this._buffers[4].data(this._vertexColors, this._gl.STATIC_DRAW);
         this._buffers[5].data(this._variablePointSize, this._gl.STATIC_DRAW);
+        this._buffers[6].data(this._clusterId, this._gl.STATIC_DRAW);
 
         return valid;
     }
@@ -163,6 +172,11 @@ export class PointCloudGeometry extends Geometry {
             this._variablePointSizeLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
         this._gl2facade.vertexAttribDivisor(this._variablePointSizeLocation, 1);
+
+        this._buffers[6].attribEnable(
+            this._clusterIdLocation, 1, this._gl.FLOAT,
+            false, 0, 0, true, false);
+        this._gl2facade.vertexAttribDivisor(this._clusterIdLocation, 1);
     }
 
     /**
@@ -176,5 +190,6 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[4].attribDisable(this._vertexColorLocation, true, true);
         this._buffers[5].attribDisable(
             this._variablePointSizeLocation, true, true);
+        this._buffers[6].attribDisable(this._clusterIdLocation, true, true);
     }
 }

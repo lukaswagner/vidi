@@ -39,8 +39,9 @@ export class Controls {
     public customDataUploadButton: Button;
     public customDataProgress: Progress;
 
-    public processAllButton: Button;
-    public processAllProgress: Progress;
+    public clusterAllButton: Button;
+    public clusterAllProgress: Progress;
+    public clusterAlgSelect: Select;
 
     public axes: Select[];
 
@@ -81,8 +82,9 @@ export class Controls {
         this.customDataUploadButton = new Button('custom-data-upload-button');
         this.customDataProgress = new Progress('custom-data-progress');
 
-        this.processAllButton = new Button('process-all-button');
-        this.processAllProgress = new Progress('process-all-progress');
+        this.clusterAllButton = new Button('cluster-all-button');
+        this.clusterAllProgress = new Progress('cluster-all-progress');
+        this.clusterAlgSelect = new Select('cluster-alg-select');
 
         this.axes = [
             new Select('x-axis-select'),
