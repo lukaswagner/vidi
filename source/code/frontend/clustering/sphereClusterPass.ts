@@ -20,6 +20,7 @@ export class SphereClusterPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         modelMat: false,
+        data: false,
     });
 
     protected _context: Context;
@@ -33,9 +34,11 @@ export class SphereClusterPass extends Initializable {
     protected _geometry: SphereGeometry;
 
     protected _modelMat = mat4.create();
+    protected _data: ClusterInfo[];
 
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
+    protected _uNumClusters: WebGLUniformLocation;
 
     public constructor(context: Context) {
         super();
@@ -60,11 +63,17 @@ export class SphereClusterPass extends Initializable {
 
     @Initializable.assert_initialized()
     public update(): void {
-        if (this._altered.modelMat) {
-            this._program.bind();
-            this._gl.uniformMatrix4fv(this._uModel, false, this._modelMat);
-            this._program.unbind();
+        this._program.bind();
+        if (this._altered.data) {
+            this._geometry.data = this._data;
+            this._gl.uniform1f(this._uNumClusters, this._data.length);
+            console.log('nc', this._data.length);
         }
+        if (this._altered.modelMat) {
+            this._gl.uniformMatrix4fv(this._uModel, false, this._modelMat);
+        }
+        this._program.unbind();
+        this._altered.reset();
     }
 
     @Initializable.assert_initialized()
@@ -115,7 +124,8 @@ export class SphereClusterPass extends Initializable {
     }
 
     public set data(data: ClusterInfo[]) {
-        this._geometry.data = data;
+        this._data = data;
+        this._altered.alter('data');
     }
 
     protected initProgram(): void {
@@ -132,6 +142,7 @@ export class SphereClusterPass extends Initializable {
     protected initUniforms(): void {
         this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
+        this._uNumClusters = this._program.uniform('u_numClusters');
 
         this._altered.alter('modelMat');
     }
@@ -140,6 +151,7 @@ export class SphereClusterPass extends Initializable {
         this._geometry = new SphereGeometry(this._context);
         this._geometry.initialize(
             this._program.attribute('a_vertex'),
+            this._program.attribute('a_id'),
             this._program.attribute('a_position'),
             this._program.attribute('a_size'));
         this._geometry.build(10);

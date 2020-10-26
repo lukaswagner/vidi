@@ -9,6 +9,7 @@ import { QuadGeometry } from './quadGeometry';
 
 export class SphereGeometry extends QuadGeometry {
     protected _clusterInfo: Float32Array;
+    protected _aId: GLuint;
     protected _aPosition: GLuint;
     protected _aSize: GLuint;
 
@@ -21,9 +22,13 @@ export class SphereGeometry extends QuadGeometry {
 
     @Initializable.initialize()
     public initialize(
-        aVertex: GLuint = 0, aPosition: GLuint = 1, aSize: GLuint = 2,
+        aVertex: GLuint = 0,
+        aId: GLuint = 1,
+        aPosition: GLuint = 2,
+        aSize: GLuint = 3,
     ): boolean {
         this._aVertex = aVertex;
+        this._aId = aId;
         this._aPosition = aPosition;
         this._aSize = aSize;
 
@@ -37,10 +42,14 @@ export class SphereGeometry extends QuadGeometry {
     }
 
     public set data(clusterInfo: ClusterInfo[]) {
-        this._clusterInfo = new Float32Array(clusterInfo.length * 6);
+        const length = 1 + 3 + 3;
+        this._clusterInfo = new Float32Array(clusterInfo.length * length);
         clusterInfo.forEach((c, i) => {
-            this._clusterInfo.set(c.center, i * 6);
-            this._clusterInfo.set(c.extents.map((e) => e[1] - e[0]), i * 6 + 3);
+            const offset = i * length;
+            this._clusterInfo[offset] = i;
+            this._clusterInfo.set(c.center, offset + 1);
+            this._clusterInfo.set(
+                c.extents.map((e) => e[1] - e[0]), offset + 4);
         });
         this._buffers[2].data(this._clusterInfo, this._gl.STATIC_DRAW);
     }
@@ -48,7 +57,7 @@ export class SphereGeometry extends QuadGeometry {
     public draw(): void {
         this._gl.drawElementsInstanced(
             this._gl.TRIANGLE_STRIP, this._indices.length,
-            this._gl.UNSIGNED_INT, 0, this._clusterInfo.length / 6);
+            this._gl.UNSIGNED_INT, 0, this._clusterInfo.length / 7);
     }
 
     public get aPosition(): GLuint {
@@ -62,18 +71,26 @@ export class SphereGeometry extends QuadGeometry {
     protected bindBuffers(): void {
         super.bindBuffers();
         this._gl.vertexAttribDivisor(this._aVertex, 0);
+        const length = 1 + 3 + 3;
+        const bytes = 4;
+        const stride = length * bytes;
+        this._buffers[2].attribEnable(
+            this._aId, 1, this._gl.FLOAT,
+            false, stride, 0, true, false);
+        this._gl.vertexAttribDivisor(this._aId, 1);
         this._buffers[2].attribEnable(
             this._aPosition, 3, this._gl.FLOAT,
-            false, 6 * 4, 0, true, false);
+            false, stride, bytes, true, false);
         this._gl.vertexAttribDivisor(this._aPosition, 1);
         this._buffers[2].attribEnable(
             this._aSize, 3, this._gl.FLOAT,
-            false, 6 * 4, 3 * 4, true, false);
+            false, stride, 4 * bytes, true, false);
         this._gl.vertexAttribDivisor(this._aSize, 1);
     }
 
     protected unbindBuffers(): void {
         super.unbindBuffers();
+        this._buffers[2].attribDisable(this._aId, false);
         this._buffers[2].attribDisable(this._aPosition, false);
         this._buffers[2].attribDisable(this._aSize, false);
     }
