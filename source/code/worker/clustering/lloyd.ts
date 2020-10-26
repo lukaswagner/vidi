@@ -39,9 +39,14 @@ function process(data: StartData): FinishedData {
     let clusters = init(cols, options.clusters);
     let selections = assign(cols, clusters);
 
-    for(let i = 0; i < options.iterations; i++) {
+    for(let i = 0; i < options.maxIterations; i++) {
+        const old = clusters;
         clusters = update(cols, selections);
         selections = assign(cols, clusters);
+        if(Math.max(...compare(old, clusters)) < options.minChange) {
+            console.log('early break after', i, 'iterations');
+            break;
+        }
     }
 
     return {
@@ -109,6 +114,15 @@ function update(cols: NumberColumn[], selections: Entry[][]): Pos[] {
 function toPos(entry: Entry, cols: NumberColumn[]): Pos {
     return [0, 1, 2].map(
         (i) => cols[i].getChunk(entry.chunk).get(entry.row)) as Pos;
+}
+
+function compare(oldPos: Pos[], newPos: Pos[]): number[] {
+    return oldPos.map((o, i) => {
+        const n = newPos[i];
+        return Math.sqrt([0, 1, 2]
+            .map((i) => Math.pow(o[i] - n[i], 2))
+            .reduce((p, c) => p + c));
+    });
 }
 
 function selectionsToIds(

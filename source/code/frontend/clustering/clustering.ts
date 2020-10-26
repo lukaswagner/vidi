@@ -55,7 +55,8 @@ export class Clustering {
             worker: new LloydWorker,
             options: {
                 clusters: 10,
-                iterations: 10
+                maxIterations: 100,
+                minChange: 0.1
             },
             inputs: [
                 this._columnConfig.selectedColumn(ColumnUsage.X_AXIS),

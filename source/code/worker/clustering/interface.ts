@@ -8,7 +8,8 @@ export type BinningOptions = {
 
 export type KMeansOptions = {
     clusters: number,
-    iterations: number
+    maxIterations: number,
+    minChange: number
 }
 
 export type Options = BinningOptions | KMeansOptions;
