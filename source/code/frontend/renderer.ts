@@ -352,14 +352,18 @@ export class TopicMapRenderer extends Renderer {
     }
 
     protected updateModelMat(): void {
-        if(!this._modelMatInfo?.extents || !this._modelMatInfo?.columns) {
+        const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
+        const e = this._modelMatInfo.extents;
+
+        if(!e || !c || c.some((c) => 
+            c?.max === Number.NEGATIVE_INFINITY ||
+            c?.min === Number.POSITIVE_INFINITY)
+        ) {
             return;
         }
 
-        const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
-        const g = this._modelMatInfo.extents;
-        const gridOffset = g.map((e, i) => c[i] ? e.min : 0);
-        const gridScale = g.map((e, i) => c[i] ? (e.max - e.min) : 0);
+        const gridOffset = e.map((e, i) => c[i] ? e.min : 0);
+        const gridScale = e.map((e, i) => c[i] ? (e.max - e.min) : 0);
         const valueScale = c.map((c) => c ? 1 / (c.max - c.min) : 0);
         const valueOffset = c.map((c) => c ? -c.min : 0);
 
@@ -369,15 +373,6 @@ export class TopicMapRenderer extends Renderer {
         mat4.scale(model, model, new Float32Array(valueScale));
         mat4.translate(model, model, new Float32Array(valueOffset));
         this._modelMat = model;
-        // console.log(g, c, gridOffset, gridScale, valueScale, valueOffset);
-        // console.log(c[0].min, c[0].max, c[0].length);
-
-        console.log(
-            'cmin: ' + c.map((c) => c?.min).join(' ') +
-            '\ncmax: ' + c.map((c) => c?.max).join(' ') +
-            '\ngmin: ' + g.map((g) => g?.min).join(' ') +
-            '\ngmax: ' + g.map((g) => g?.max).join(' ') +
-            '\nmat: ' + model.join(' '));
 
         this._pointPass.model = model;
     }
