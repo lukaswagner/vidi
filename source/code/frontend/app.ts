@@ -206,6 +206,7 @@ export class TopicMapApp extends Initializable {
         // clustering
         this._controls.clusterAllButton.handler = () => {
             this._clustering.runWorkers();
+            this._controls.colorMode.setValue(ColorMode[3][0].toString());
         };
         this._controls.clusterAlgSelect.handler = (name) => {
             this._renderer.selectClusterData(name);
