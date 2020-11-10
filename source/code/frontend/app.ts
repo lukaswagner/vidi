@@ -299,6 +299,8 @@ export class TopicMapApp extends Initializable {
         this._columns = new Columns(columns);
         this.initColumns();
 
+        this._controls.clusterAlgSelect.reset();
+        this._controls.colorMode.reset();
         this._clustering = new Clustering();
         this._clustering.initialize(this._columns);
         this._columns.addColumns(this._clustering.getOutputs());
