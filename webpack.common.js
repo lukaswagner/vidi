@@ -15,7 +15,7 @@ module.exports = function (env) {
     const api_user =
         (env !== undefined && env.api_user !== undefined) ?
             env.api_user :
-            'topicmap';
+            'web3d-2020-demo';
     let commit;
     try {
         commit = child_process.execSync('git rev-parse HEAD', {
