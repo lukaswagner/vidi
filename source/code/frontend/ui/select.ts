@@ -50,6 +50,18 @@ export class Select extends ControlBase<string> {
         }
     }
 
+    public hasOption(id?: string, label?: string): boolean {
+        for (let i = 0; i < this.element.options.length; i++) {
+            const option = this.element.options.item(i);
+            if ((id === undefined || id === option.value) &&
+                (label === undefined || label === option.text)
+            ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public fromDict(
         options: Dict<unknown, unknown>, invokeHandler = true
     ): void {

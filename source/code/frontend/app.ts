@@ -303,7 +303,11 @@ export class TopicMapApp extends Initializable {
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
-            this._controls.clusterAlgSelect.addOption(name);
+            if(!this._controls.clusterAlgSelect.hasOption(name)) {
+                this._controls.clusterAlgSelect.addOption(name);
+            } else {
+                this._controls.clusterAlgSelect.setValue(name);
+            }
         };
 
         // set up axis controls
