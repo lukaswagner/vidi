@@ -11,11 +11,11 @@ include elements/progress-bar.pug
 
 .control-panel#controls(style='width: 350px;')
     form
-        +control-block('data-header', 'data-group', 'Data Source', true)
+        +control-block('preset-header', 'preset-group', 'Configuration Presets', true)
             +control-element('preset-select', 'Presets')
                 +control-select('preset').col
                 +control-button('preset', 'Apply').col-3.ml-2
-            hr
+        +control-block('data-header', 'data-group', 'Data Source', false)
             +control-element('data-select', 'Dataset')
                 +control-select('data').col
                 +control-button('data', 'Load').col-3.ml-2
