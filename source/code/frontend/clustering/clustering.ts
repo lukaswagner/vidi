@@ -98,7 +98,6 @@ export class Clustering {
         const w = worker.worker;
 
         const done = (msg: MessageEvent): void => {
-            console.log('worker done');
             this.storeResult(worker, msg.data);
             w.removeEventListener('message', done);
         };

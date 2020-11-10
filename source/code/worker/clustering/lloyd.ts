@@ -43,8 +43,11 @@ function process(data: StartData): FinishedData {
         const old = clusters;
         clusters = update(cols, selections);
         selections = assign(cols, clusters);
-        if(Math.max(...compare(old, clusters)) < options.minChange) {
-            console.log('early break after', i, 'iterations');
+        const change = Math.max(...compare(old, clusters));
+        if(change < options.minChange) {
+            console.log(
+                `k-means: early break after ${i} iterations, ` +
+                `last change: ${change.toPrecision(3)} < ${options.minChange}`);
             break;
         }
     }
