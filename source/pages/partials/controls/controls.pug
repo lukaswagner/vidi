@@ -23,7 +23,7 @@ include elements/progress-bar.pug
                 +control-element('data-progress-bar', 'Loading')
                     +progress-bar('data').col
             hr
-            +control-element('custom-data-source', 'Custom dataset source')
+            +control-element('custom-data-source', 'Custom dataset source').d-none
                 +control-select('custom-data-source').col
             .mt-2#custom-data-file-wrapper
                 +control-element('custom-data-file-button', 'Choose custom dataset').mb-2
