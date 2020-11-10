@@ -208,6 +208,7 @@ export class TopicMapApp extends Initializable {
             this._clustering.runWorkers();
             this._controls.colorMode.setValue(ColorMode[3][0].toString());
         };
+        this._controls.clusterAlgSelect.addOption('__NONE__', 'None');
         this._controls.clusterAlgSelect.handler = (name) => {
             this._renderer.selectClusterData(name);
             this.updateColumn(ColumnUsage.CLUSTER_ID, name);

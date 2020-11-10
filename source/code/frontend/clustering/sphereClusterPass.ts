@@ -64,7 +64,7 @@ export class SphereClusterPass extends Initializable {
     @Initializable.assert_initialized()
     public update(): void {
         this._program.bind();
-        if (this._altered.data) {
+        if (this._altered.data && this._data !== undefined) {
             this._geometry.data = this._data;
             this._gl.uniform1f(this._uNumClusters, this._data.length);
         }
@@ -77,6 +77,8 @@ export class SphereClusterPass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
+        if(this._data === undefined) return;
+
         this._target.bind();
 
         this._gl.enable(this._gl.CULL_FACE);

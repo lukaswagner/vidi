@@ -69,6 +69,11 @@ export class ClusterVisualization extends Initializable {
     }
 
     public selectData(name: string): number {
+        if(name === '__NONE__') {
+            this._currentData = undefined;
+            this._spherePass.data = undefined;
+            return 0;
+        }
         const data = this._data[name];
         if(!data || this._currentData === data) return this._currentData.length;
         this._currentData = data;

@@ -118,6 +118,8 @@ export class Controls {
         this.apply(this.colorMode, preset.colorMode);
         this.apply(this.colorMapping, preset.colorMapping);
         this.apply(this.colorColumn, preset.colorColumn);
+
+        this.clusterAlgSelect.reset();
     }
 
     private apply(
