@@ -14,7 +14,7 @@ import {
     StartData,
 } from 'loader/csv/interface';
 import { Column } from 'shared/column/column';
-import LoadWorker from 'worker-loader!loader/csv/csv';
+import LoadWorker from 'worker-loader?inline=fallback!loader/csv/csv';
 import { PerfMon } from 'shared/performance/perfMon';
 import { Progress } from 'frontend/ui/progress';
 import { ProgressStep } from 'frontend/ui/progressStep';
