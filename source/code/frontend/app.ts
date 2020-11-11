@@ -94,6 +94,11 @@ export class TopicMapApp extends Initializable {
         console.log('version:', COMMIT);
 
         this._canvas = new Canvas(element, { antialias: false });
+
+        if (!this._canvas.context.isWebGL2) {
+            alert('WebGL 2 is required but not supported!');
+        }
+
         this._canvas.controller.multiFrameNumber = 8;
         this._canvas.framePrecision = Wizard.Precision.byte;
 
