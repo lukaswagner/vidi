@@ -148,7 +148,7 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
         // @ts-expect-error: webgl-operate mouse wheel zoom is broken
-        delete this._navigation._wheelZoom;
+        this._navigation._wheelZoom = { process: () => {} };
 
         // set up intermediate rendering
 
