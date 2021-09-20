@@ -312,7 +312,7 @@ export class TopicMapRenderer extends Renderer {
     }
 
     protected onFrame(frameNumber: number): void {
-        const gl = this._context.gl as WebGLRenderingContext;
+        const gl = this._context.gl as WebGL2RenderingContext;
 
         this._intermediateFBO.bind();
         this._intermediateFBO.clear(

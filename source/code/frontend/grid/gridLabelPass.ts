@@ -33,7 +33,7 @@ export class GridLabelPass extends LabelRenderPass {
     });
 
     protected _context: Context;
-    protected _gl: WebGLRenderingContext;
+    protected _gl: WebGL2RenderingContext;
 
     protected _fontFace: FontFace;
     protected _target: Framebuffer;

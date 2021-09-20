@@ -19,7 +19,7 @@ export class GridPass extends Initializable {
     });
 
     protected _context: Context;
-    protected _gl: WebGLRenderingContext;
+    protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
     protected _camera: Camera;
