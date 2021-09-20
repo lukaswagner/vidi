@@ -4,7 +4,7 @@ import {
 } from 'shared/csvLoader/options';
 import { Column } from 'shared/column/column';
 import { Controls } from 'frontend/controls';
-import { CsvMultiThreadedLoader } from 'frontend/loader/csvMultiThreadedLoader';
+import { CsvMultiThreadedLoader } from 'frontend/loader/csv';
 
 type Invalidate = (force: boolean) => void;
 

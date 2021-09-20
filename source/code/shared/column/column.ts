@@ -1,4 +1,4 @@
-import { BaseChunk, NumberChunk } from './chunk';
+import { BaseChunk, Chunk, NumberChunk, rebuildChunk } from './chunk';
 import { DataType } from './dataType';
 import { GLclampf4 } from 'shared/types/tuples';
 
@@ -17,6 +17,12 @@ export abstract class BaseColumn<T> {
     public push(chunk: BaseChunk<T>): void {
         this._chunks.push(chunk);
         this._length += chunk.length;
+        this._altered = true;
+    }
+
+    public reset(): void {
+        this._chunks = [];
+        this._length = 0;
         this._altered = true;
     }
 
@@ -44,7 +50,7 @@ export abstract class BaseColumn<T> {
         return this._chunks;
     }
 
-    public getChunks(start: number, end: number): BaseChunk<T>[] {
+    public getChunks(start = 0, end?: number): BaseChunk<T>[] {
         return this._chunks.slice(start, end);
     }
 
@@ -72,6 +78,12 @@ export class NumberColumn extends BaseColumn<number> {
         const nc = chunk as NumberChunk;
         if (nc.min < this._min) this._min = nc.min;
         if (nc.max > this._max) this._max = nc.max;
+    }
+
+    public reset(): void {
+        super.reset();
+        this._min = Number.POSITIVE_INFINITY;
+        this._max = Number.NEGATIVE_INFINITY;
     }
 
     public get min(): number {
@@ -105,5 +117,23 @@ export function buildColumn(name: string, type: DataType): Column {
             return new ColorColumn(name);
         case DataType.String:
             return new StringColumn(name);
+    }
+}
+
+export function rebuildColumn(column: unknown): Column {
+    const c = column as {
+        _type: DataType,
+        _chunks: Chunk[],
+        _name: string
+    };
+    if(c._type === undefined) return undefined;
+    c._chunks = c._chunks.map((c) => rebuildChunk(c));
+    switch (c._type as DataType) {
+        case DataType.Number:
+            return Object.assign(new NumberColumn(c._name), c);
+        case DataType.Color:
+            return Object.assign(new ColorColumn(c._name), c);
+        case DataType.String:
+            return Object.assign(new StringColumn(c._name), c);
     }
 }

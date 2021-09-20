@@ -18,7 +18,6 @@ self.addEventListener('message', (m: MessageEvent) => {
             data: data
         };
         const transfer: Array<Transferable> = [];
-        data.columns.forEach((c) => transfer.push(...c.transferable));
         postMessage(d, { transfer });
     }
 });

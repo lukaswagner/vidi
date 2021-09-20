@@ -6,7 +6,8 @@ export enum ColumnUsage {
     Y_AXIS = 1,
     Z_AXIS = 2,
     VARIABLE_POINT_SIZE = 3,
-    PER_POINT_COLOR = 4
+    PER_POINT_COLOR = 4,
+    CLUSTER_ID = 5
 }
 
 export class Columns {
@@ -14,11 +15,13 @@ export class Columns {
 
     protected _selectedColumns: number[] = [];
 
-    public constructor(
-        columns: Array<Column>
-    ) {
+    public constructor(columns: Array<Column>) {
         this._columns = columns;
         this.initSelectedColumns(true);
+    }
+
+    public addColumns(columns: Array<Column>): void {
+        this._columns.push(...columns);
     }
 
     public getColumnNames(type: DataType): string[] {

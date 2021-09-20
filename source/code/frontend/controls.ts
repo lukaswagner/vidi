@@ -39,6 +39,10 @@ export class Controls {
     public customDataUploadButton: Button;
     public customDataProgress: Progress;
 
+    public clusterAllButton: Button;
+    public clusterAllProgress: Progress;
+    public clusterAlgSelect: Select;
+
     public axes: Select[];
 
     public scale: InputSlider;
@@ -78,6 +82,10 @@ export class Controls {
         this.customDataUploadButton = new Button('custom-data-upload-button');
         this.customDataProgress = new Progress('custom-data-progress');
 
+        this.clusterAllButton = new Button('cluster-all-button');
+        this.clusterAllProgress = new Progress('cluster-all-progress');
+        this.clusterAlgSelect = new Select('cluster-alg-select');
+
         this.axes = [
             new Select('x-axis-select'),
             new Select('y-axis-select'),
@@ -110,6 +118,8 @@ export class Controls {
         this.apply(this.colorMode, preset.colorMode);
         this.apply(this.colorMapping, preset.colorMapping);
         this.apply(this.colorColumn, preset.colorColumn);
+
+        this.clusterAlgSelect.reset();
     }
 
     private apply(

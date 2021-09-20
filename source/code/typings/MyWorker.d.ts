@@ -1,7 +1,7 @@
 declare module 'worker-loader?inline=fallback!*' {
-    class MyWorker extends Worker {
+    class WebpackWorker extends Worker {
         public constructor();
     }
 
-    export default MyWorker;
+    export default WebpackWorker;
 }

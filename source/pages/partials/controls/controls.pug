@@ -11,11 +11,11 @@ include elements/progress-bar.pug
 
 .control-panel#controls(style='width: 350px;')
     form
-        +control-block('data-header', 'data-group', 'Data', true)
+        +control-block('preset-header', 'preset-group', 'Configuration Presets', true)
             +control-element('preset-select', 'Presets')
                 +control-select('preset').col
                 +control-button('preset', 'Apply').col-3.ml-2
-            hr
+        +control-block('data-header', 'data-group', 'Data Source', false)
             +control-element('data-select', 'Dataset')
                 +control-select('data').col
                 +control-button('data', 'Load').col-3.ml-2
@@ -23,7 +23,7 @@ include elements/progress-bar.pug
                 +control-element('data-progress-bar', 'Loading')
                     +progress-bar('data').col
             hr
-            +control-element('custom-data-source', 'Custom dataset source')
+            +control-element('custom-data-source', 'Custom dataset source').d-none
                 +control-select('custom-data-source').col
             .mt-2#custom-data-file-wrapper
                 +control-element('custom-data-file-button', 'Choose custom dataset').mb-2
@@ -50,7 +50,7 @@ include elements/progress-bar.pug
                 +control-button('custom-data-upload', 'Load').col-3
                 .d-none.ml-2.p-0.col#custom-data-progress-wrapper
                     +progress-bar('custom-data').w-100
-            hr
+        +control-block('position-header', 'position-group', 'Position')
             +control-element('x-axis-select', 'Data mapping', true)
                 .row.mx-0
                     +control-label('x-axis', 'X axis').col-3.px-0
@@ -61,6 +61,16 @@ include elements/progress-bar.pug
                 .row.mx-0.pb-0
                     +control-label('z-axis', 'Z axis').col-3.px-0
                     +control-select('z-axis').col
+        +control-block('clustering-header', 'clustering-group', 'Clusters')
+            +control-element('cluster-all-header', 'Run clustering algorithms')
+                +control-button('cluster-all', 'Run').col-3
+                .d-none.ml-2.p-0.col#cluster-all-progress-wrapper
+                    +progress-bar('cluster-all').w-100
+            hr
+            +control-element('cluster-vis-header', 'Cluster visualization settings', true)
+                .row.mx-0
+                    +control-label('cluster-alg', 'Algorithm').col-4.px-0
+                    +control-select('cluster-alg').col
         +control-block('size-header', 'size-group', 'Size')
             +control-element('scale-input', 'Scale').mb-2
                 +control-input('scale').col-3

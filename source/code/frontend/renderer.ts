@@ -13,9 +13,15 @@ import {
     Renderer,
     Texture2D,
     Wizard,
+    mat4,
     vec3,
-    viewer
+    viewer,
 } from 'webgl-operate';
+
+import {
+    Column,
+    NumberColumn
+} from 'shared/column/column';
 
 import {
     ExtendedGridInfo,
@@ -23,7 +29,8 @@ import {
     GridInfo, calculateExtendedGridInfo
 } from './grid/gridInfo';
 
-import { Column } from 'shared/column/column';
+import { ClusterInfo } from 'worker/clustering/interface';
+import { ClusterVisualization } from './clustering/clusterVisualization';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
@@ -38,6 +45,11 @@ export class TopicMapRenderer extends Renderer {
     protected _gridInfo: GridInfo[];
     protected _gridOffsetHelper: GridOffsetHelper;
 
+    protected _modelMatInfo: { extents: GridExtents, columns: Column[] } = {
+        extents: undefined, columns: undefined
+    };
+    protected _modelMat: mat4;
+
     // intermediate rendering for aa
     protected _depthRenderbuffer: Renderbuffer;
     protected _colorRenderTexture: Texture2D;
@@ -50,6 +62,7 @@ export class TopicMapRenderer extends Renderer {
     protected _pointPass: PointPass;
     protected _gridPass: GridPass;
     protected _gridLabelPass: GridLabelPass;
+    protected _clusterPass: ClusterVisualization;
 
     // final output
     protected _defaultFBO: DefaultFramebuffer;
@@ -79,11 +92,13 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridPass.gridInfo = extendedGridInfo;
         this._gridOffsetHelper.gridInfo = extendedGridInfo;
-        this._pointPass.gridExtents = extents;
+        this._modelMatInfo.extents = extents;
+        this.updateModelMat();
         this.invalidate();
     }
 
     public updateData(): void {
+        this.updateModelMat();
         this.invalidate();
     }
 
@@ -92,6 +107,15 @@ export class TopicMapRenderer extends Renderer {
         if (this.initialized) {
             this.invalidate();
         }
+    }
+
+    public setClusterData(name: string, data: ClusterInfo[]): void {
+        this._clusterPass.setData(name, data);
+    }
+
+    public selectClusterData(name: string): void {
+        const numClusters = this._clusterPass.selectData(name);
+        this._pointPass.numClusters = numClusters;
     }
 
     /**
@@ -173,6 +197,12 @@ export class TopicMapRenderer extends Renderer {
         this._gridOffsetHelper.camera = this._camera;
         this._gridOffsetHelper.initialize();
 
+        // set up cluster rendering
+        this._clusterPass = new ClusterVisualization(context);
+        this._clusterPass.initialize();
+        this._clusterPass.camera = this._camera;
+        this._clusterPass.target = this._intermediateFBO;
+
         // set up output
         this._defaultFBO = new DefaultFramebuffer(context, 'DefaultFBO');
         this._defaultFBO.initialize();
@@ -211,6 +241,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.uninitialize();
         this._gridPass.uninitialize();
         this._gridLabelPass.uninitialize();
+        this._clusterPass.uninitialize();
 
         this._blitPass.uninitialize();
         this._accumulatePass.uninitialize();
@@ -238,7 +269,8 @@ export class TopicMapRenderer extends Renderer {
             this._gridOffsetHelper.altered ||
             this._pointPass.altered ||
             this._gridPass.altered ||
-            this._gridLabelPass.altered;
+            this._gridLabelPass.altered ||
+            this._clusterPass.altered;
     }
     /**
      * This is invoked in order to prepare rendering of one or more frames,
@@ -272,6 +304,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.update();
         this._gridPass.update();
         this._gridLabelPass.update();
+        this._clusterPass.update();
         this._accumulatePass.update();
 
         this._altered.reset();
@@ -300,6 +333,8 @@ export class TopicMapRenderer extends Renderer {
         this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();
 
+        this._clusterPass.frame();
+
         this._accumulatePass.frame(frameNumber);
     }
 
@@ -317,8 +352,37 @@ export class TopicMapRenderer extends Renderer {
         console.warn('got discarded');
     }
 
+    protected updateModelMat(): void {
+        const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
+        const e = this._modelMatInfo.extents;
+
+        if(!e || !c || c.some((c) => 
+            c?.max === Number.NEGATIVE_INFINITY ||
+            c?.min === Number.POSITIVE_INFINITY)
+        ) {
+            return;
+        }
+
+        const gridOffset = e.map((e, i) => c[i] ? e.min : 0);
+        const gridScale = e.map((e, i) => c[i] ? (e.max - e.min) : 0);
+        const valueScale = c.map((c) => c ? 1 / (c.max - c.min) : 0);
+        const valueOffset = c.map((c) => c ? -c.min : 0);
+
+        const model = mat4.create();
+        mat4.translate(model, model, new Float32Array(gridOffset));
+        mat4.scale(model, model, new Float32Array(gridScale));
+        mat4.scale(model, model, new Float32Array(valueScale));
+        mat4.translate(model, model, new Float32Array(valueOffset));
+        this._modelMat = model;
+
+        this._pointPass.model = model;
+        this._clusterPass.model = model;
+    }
+
     public set columns(columns: Column[]) {
         this._pointPass.columns = columns;
+        this._modelMatInfo.columns = columns;
+        this.updateModelMat();
         if (this.initialized) {
             this.invalidate();
         }

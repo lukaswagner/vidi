@@ -44,6 +44,7 @@ import {
     loadFromServer
 } from './util/load';
 
+import { Clustering } from './clustering/clustering';
 import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
@@ -87,11 +88,17 @@ export class TopicMapApp extends Initializable {
     private _datasets: Dataset[];
     private _presets: Preset[];
     private _columns: Columns;
+    private _clustering: Clustering;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('version:', COMMIT);
 
         this._canvas = new Canvas(element, { antialias: false });
+
+        if (!this._canvas.context.isWebGL2) {
+            alert('WebGL 2 is required but not supported!');
+        }
+
         this._canvas.controller.multiFrameNumber = 8;
         this._canvas.framePrecision = Wizard.Precision.byte;
 
@@ -149,6 +156,10 @@ export class TopicMapApp extends Initializable {
         this._renderer.uninitialize();
     }
 
+    protected handleDataUpdate(): void {
+        this._renderer.updateData();
+    }
+
     protected initControls(): void {
         this._controls = new Controls();
 
@@ -157,7 +168,7 @@ export class TopicMapApp extends Initializable {
             const toLoad = this._datasets[this._controls.data.selectedIndex];
             loadFromServer(
                 toLoad.url, toLoad.format,
-                this._controls, () => this._renderer.updateData())
+                this._controls, this.handleDataUpdate.bind(this))
                 .then((d) => this.dataReady(d));
         };
 
@@ -193,8 +204,19 @@ export class TopicMapApp extends Initializable {
         this._controls.customDataIncludesHeader.setValue(true);
         this._controls.customDataIncludesHeader.setDefault(true);
         this._controls.customDataUploadButton.handler = () => {
-            loadCustom(this._controls, () => this._renderer.updateData())
+            loadCustom(this._controls, this.handleDataUpdate.bind(this))
                 .then((d) => this.dataReady(d));
+        };
+
+        // clustering
+        this._controls.clusterAllButton.handler = () => {
+            this._clustering.runWorkers();
+            this._controls.colorMode.setValue(ColorMode[3][0].toString());
+        };
+        this._controls.clusterAlgSelect.addOption('__NONE__', 'None');
+        this._controls.clusterAlgSelect.handler = (name) => {
+            this._renderer.selectClusterData(name);
+            this.updateColumn(ColumnUsage.CLUSTER_ID, name);
         };
 
         // point size
@@ -260,9 +282,10 @@ export class TopicMapApp extends Initializable {
             if(!preset) return;
             const data = this._datasets.find((d) => d.id === preset.data);
             if (preset.data !== undefined && data !== undefined) {
-                this._controls.data.setValue(preset.data, false);loadFromServer(
+                this._controls.data.setValue(preset.data, false);
+                loadFromServer(
                     data.url, data.format,
-                    this._controls, () => this._renderer.updateData())
+                    this._controls, this.handleDataUpdate.bind(this))
                     .then((d) => {
                         this.dataReady(d);
                         this._controls.applyPreset(preset);
@@ -280,6 +303,20 @@ export class TopicMapApp extends Initializable {
     protected dataReady(columns: Column[]): void {
         this._columns = new Columns(columns);
         this.initColumns();
+
+        this._controls.clusterAlgSelect.reset();
+        this._controls.colorMode.reset();
+        this._clustering = new Clustering();
+        this._clustering.initialize(this._columns);
+        this._columns.addColumns(this._clustering.getOutputs());
+        this._clustering.clusterInfoHandler = (name, clusters) => {
+            this._renderer.setClusterData(name, clusters);
+            if(!this._controls.clusterAlgSelect.hasOption(name)) {
+                this._controls.clusterAlgSelect.addOption(name);
+            } else {
+                this._controls.clusterAlgSelect.setValue(name);
+            }
+        };
 
         // set up axis controls
         const numberColumnNames = this._columns.getColumnNames(DataType.Number);

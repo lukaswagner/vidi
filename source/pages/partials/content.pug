@@ -4,6 +4,13 @@
     include controls/info.pug
 script.
     window.addEventListener('load', function(event) {
+        if (window.SharedArrayBuffer === undefined) {
+            alert(
+                'SharedArrayBuffer not supported!\n' +
+                'Please use an updated Chrome, Firefox or Edge.'
+            );
+        }
+
         const canvasId = 'webgl-canvas';
         const canvas = document.getElementById(canvasId);
         const app = new TopicMapApp();

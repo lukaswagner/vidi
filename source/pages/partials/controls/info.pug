@@ -1,17 +1,19 @@
 .control-panel#info(style='width: 0px;')
     .form
+        +control-block('about-header', 'about-group', 'About', true)
+            p.mb-0 Contact: #[a(href='mailto:lukas.wagner@hpi.de') Mail]
         +control-block('browser-support-header', 'browser-support-group', 'Browser Support', true)
             p Requires WebGL2 support!
-            p Google Chrome
+            p.mb-0 Google Chrome
             ul
                 li Rendering and styling work
                 li Tested on Windows and Linux
-            p Mozilla Firefox
-            ul
+            p.mb-0 Mozilla Firefox
+            ul.mb-0
                 li Rendering works
                 li Slider style broken, but functional
                 li Tested on Windows and Linux
         +control-block('acknowledgements-header', 'acknowledgements-group', 'Acknowledgements', true)
-            ul
+            ul.mb-0
                 li Built using #[a(href='https://webgl-operate.org/') webgl-operate]
                 li Uses icons from #[a(href='https://fontawesome.com/') Font Awesome]

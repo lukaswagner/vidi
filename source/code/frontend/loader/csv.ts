@@ -12,10 +12,9 @@ import {
     MessageData,
     MessageType,
     StartData,
-} from 'loader/csvMultiThreadedLoader/interface';
+} from 'loader/csv/interface';
 import { Column } from 'shared/column/column';
-import LoadWorker from
-    'worker-loader?inline=fallback!loader/csvMultiThreadedLoader/worker';
+import LoadWorker from 'worker-loader?inline=fallback!loader/csv/csv';
 import { PerfMon } from 'shared/performance/perfMon';
 import { Progress } from 'frontend/ui/progress';
 import { ProgressStep } from 'frontend/ui/progressStep';
@@ -259,7 +258,7 @@ export class CsvMultiThreadedLoader {
                 this._decoder.decode(result.startRemainder));
         }
 
-        this._columns.map((c, ci) => c.push(fixed[ci] as AnyChunk));
+        fixed.map((c, ci) => this._columns[ci].push(c as AnyChunk));
         this._lastRemainder = result.endRemainder;
 
         this._invalidate();

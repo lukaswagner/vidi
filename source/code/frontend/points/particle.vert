@@ -16,6 +16,7 @@ precision lowp float;
     layout(location = 3) in float a_zCoord;
     layout(location = 4) in vec4 a_vertexColor;
     layout(location = 5) in float a_variablePointSize;
+    layout(location = 6) in float a_clusterId;
 #endif
 
 uniform mat4 u_model;
@@ -27,11 +28,12 @@ uniform float u_pointSize;
 uniform float u_variablePointSizeStrength;
 uniform vec3 u_variablePointSizeInputRange;
 uniform vec3 u_variablePointSizeOutputRange;
+uniform float u_numClusters;
 
 const int COLOR_MODE_SINGLE_COLOR = 0;
 const int COLOR_MODE_POSITION_BASED = 1;
 const int COLOR_MODE_VERTEX_COLOR = 2;
-const int COLOR_MODE_AGGREGATION_BASED = 3;
+const int COLOR_MODE_CLUSTER_COLOR = 3;
 uniform int u_colorMode;
 
 const int COLOR_MAPPING_RGB_CUBE = 0;
@@ -46,6 +48,9 @@ varying vec3 v_pos;
 varying vec3 v_color;
 varying vec2 v_uv;
 varying vec3 v_fragPos;
+
+@import ../clustering/clusterColor;
+#line 54
 
 vec3 hsl2rgb(vec3 c)
 {
@@ -74,6 +79,8 @@ vec3 color()
         return positionBasedColor();
     } else if (u_colorMode == COLOR_MODE_VERTEX_COLOR) {
         return a_vertexColor.rgb;
+    } else if (u_colorMode == COLOR_MODE_CLUSTER_COLOR) {
+        return clusterColor(a_clusterId, u_numClusters);
     }
 }
 
