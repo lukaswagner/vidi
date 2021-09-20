@@ -17,6 +17,7 @@ import {
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
+import { RefLinePass } from './refLinePass';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -78,6 +79,8 @@ export class PointPass extends Initializable {
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
 
+    protected _refLinePass: RefLinePass;
+
     public constructor(context: Context) {
         super();
         this._context = context;
@@ -126,6 +129,9 @@ export class PointPass extends Initializable {
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
         this._program.unbind();
+
+        this._refLinePass = new RefLinePass(this._context);
+        this._refLinePass.initialize();
 
         return true;
     }
@@ -222,6 +228,8 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
+        this._refLinePass.update();
+
         this._altered.reset();
     }
 
@@ -262,6 +270,8 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
+        this._refLinePass.frame();
+
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
@@ -298,6 +308,8 @@ export class PointPass extends Initializable {
         this._columns.forEach((c) => {
             if(c) c.altered = false;
         });
+
+        this._refLinePass.geometries = this._geometries;
     }
 
     public set columns(columns: Column[]) {
@@ -309,6 +321,7 @@ export class PointPass extends Initializable {
     public set target(target: Framebuffer) {
         this.assertInitialized();
         this._target = target;
+        this._refLinePass.target = target;
     }
 
     public set aspectRatio(aspectRation: GLfloat) {
@@ -362,11 +375,13 @@ export class PointPass extends Initializable {
             return;
         }
         this._camera = camera;
+        this._refLinePass.camera = camera;
     }
 
     public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
+        this._refLinePass.ndcOffset = offset;
     }
 
     public set model(model: mat4) {
@@ -375,6 +390,7 @@ export class PointPass extends Initializable {
             return;
         }
         this._model = model;
+        this._refLinePass.model = model;
         this._altered.alter('model');
     }
 
