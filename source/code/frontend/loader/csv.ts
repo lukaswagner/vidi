@@ -65,7 +65,7 @@ export class CsvMultiThreadedLoader {
         if(this._size === undefined || this._size > 5e6) {
             this._progress.visible = true;
         }
-    
+
         this._progress.steps = [
             new ProgressStep('Loading file',
                 this._size || 1, this._size === undefined ? 0 : 5),
@@ -74,7 +74,7 @@ export class CsvMultiThreadedLoader {
         ];
         this._progress.applyValue();
     }
-    
+
     protected prepareWorker(index: number): LoadWorker {
         const worker = new LoadWorker();
         worker.onmessage = (m: MessageEvent) => {
@@ -106,7 +106,7 @@ export class CsvMultiThreadedLoader {
         // in firefox, the loading progress freezes on bigger files
         this._times.push(Date.now());
         const readChunk = (
-            result: ReadableStreamReadResult<Uint8Array>
+            result: ReadableStreamDefaultReadResult<Uint8Array>
         ): void => {
             if (result.done) {
                 console.log(`loaded ${bytes} bytes in ${numChunks} chunks (avg: ${bytes/numChunks} bytes/chunk)`);

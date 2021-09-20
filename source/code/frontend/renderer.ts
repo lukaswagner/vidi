@@ -131,7 +131,7 @@ export class TopicMapRenderer extends Renderer {
         callback: Invalidate,
         eventProvider: EventProvider
     ): boolean {
-        const gl = context.gl as WebGLRenderingContext;
+        const gl = context.gl as WebGL2RenderingContext;
         const gl2facade = this._context.gl2facade;
 
         context.enable(['ANGLE_instanced_arrays']);
@@ -165,7 +165,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._depthRenderbuffer = new Renderbuffer(
             this._context, 'DepthRenderbuffer');
-        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH_STENCIL);
+        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH24_STENCIL8);
 
         this._intermediateFBO = new Framebuffer(
             this._context, 'IntermediateFBO');
@@ -356,7 +356,7 @@ export class TopicMapRenderer extends Renderer {
         const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
         const e = this._modelMatInfo.extents;
 
-        if(!e || !c || c.some((c) => 
+        if(!e || !c || c.some((c) =>
             c?.max === Number.NEGATIVE_INFINITY ||
             c?.min === Number.POSITIVE_INFINITY)
         ) {
