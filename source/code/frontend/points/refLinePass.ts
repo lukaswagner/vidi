@@ -1,3 +1,5 @@
+import { Alpha, AlphaMode } from 'frontend/util/alpha';
+
 import {
     Camera,
     ChangeLookup,
@@ -11,7 +13,6 @@ import {
 
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
-import { mfAlpha } from 'frontend/util/alpha';
 
 export class RefLinePass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -32,6 +33,7 @@ export class RefLinePass extends Initializable {
     protected _model: mat4;
 
     protected _program: Program;
+    protected _alpha: Alpha;
 
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
@@ -73,7 +75,8 @@ export class RefLinePass extends Initializable {
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uCameraPosition = this._program.uniform('u_cameraPosition');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
-        this._uMfAlpha = this._program.uniform('u_mfAlpha');
+
+        this._alpha = new Alpha(this._gl, this._program, AlphaMode.Temporal);
 
         return true;
     }
@@ -119,16 +122,17 @@ export class RefLinePass extends Initializable {
             this._camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
         this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
-        this._gl.uniform1f(this._uMfAlpha, mfAlpha(frameNumber));
 
         this._target.bind();
 
         this._gl.disable(this._gl.CULL_FACE);
+        this._alpha.enable(frameNumber);
         this._geometries.forEach((g) => {
             g.bind();
             g.draw();
             g.unbind();
         });
+        this._alpha.disable();
         this._gl.enable(this._gl.CULL_FACE);
 
         this._program.unbind();

@@ -1,3 +1,5 @@
+import { Alpha, AlphaMode } from 'frontend/util/alpha';
+
 import {
     Camera,
     ChangeLookup,
@@ -58,6 +60,7 @@ export class PointPass extends Initializable {
     protected _numClusters: number;
 
     protected _program: Program;
+    protected _alpha: Alpha;
 
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
@@ -129,6 +132,9 @@ export class PointPass extends Initializable {
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
         this._program.unbind();
+
+        this._alpha = new Alpha(
+            this._gl, this._program, AlphaMode.AlphaToCoverage);
 
         this._refLinePass = new RefLinePass(this._context);
         this._refLinePass.initialize();
@@ -247,7 +253,7 @@ export class PointPass extends Initializable {
         // only enable for this pass -> disable afterwards
         this._gl.depthFunc(this._gl.LESS);
 
-        this._gl.enable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
+        this._alpha.enable(frameNumber);
 
         this._program.bind();
 
@@ -270,9 +276,10 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
+        this._alpha.disable();
+
         this._refLinePass.frame(frameNumber);
 
-        this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }
 
     public setColumn(index: number, column: Column): void {
