@@ -99,7 +99,7 @@ export class TopicMapApp extends Initializable {
             alert('WebGL 2 is required but not supported!');
         }
 
-        this._canvas.controller.multiFrameNumber = 8;
+        this._canvas.controller.multiFrameNumber = 32;
         this._canvas.framePrecision = Wizard.Precision.byte;
 
         const bgColor = window.getComputedStyle(document.body).backgroundColor;
@@ -239,7 +239,7 @@ export class TopicMapApp extends Initializable {
 
         // axes
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].handler = 
+            this._controls.axes[i].handler =
                 this.updateColumn.bind(this, ColumnUsage.X_AXIS + i);
         }
 

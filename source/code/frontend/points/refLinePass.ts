@@ -11,6 +11,7 @@ import {
 
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
+import { mfAlpha } from 'frontend/util/alpha';
 
 export class RefLinePass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -38,6 +39,7 @@ export class RefLinePass extends Initializable {
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uCameraPosition: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
+    protected _uMfAlpha: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
 
@@ -71,6 +73,7 @@ export class RefLinePass extends Initializable {
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uCameraPosition = this._program.uniform('u_cameraPosition');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
+        this._uMfAlpha = this._program.uniform('u_mfAlpha');
 
         return true;
     }
@@ -105,7 +108,7 @@ export class RefLinePass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public frame(): void {
+    public frame(frameNumber: number): void {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
@@ -116,6 +119,7 @@ export class RefLinePass extends Initializable {
             this._camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
         this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
+        this._gl.uniform1f(this._uMfAlpha, mfAlpha(frameNumber));
 
         this._target.bind();
 

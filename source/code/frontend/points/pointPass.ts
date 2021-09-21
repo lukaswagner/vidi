@@ -234,7 +234,7 @@ export class PointPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public frame(): void {
+    public frame(frameNumber: number): void {
         if (this._columns === undefined || this._columns.length === 0) {
             return;
         }
@@ -270,7 +270,7 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
-        this._refLinePass.frame();
+        this._refLinePass.frame(frameNumber);
 
         this._gl.disable(this._gl.SAMPLE_ALPHA_TO_COVERAGE);
     }

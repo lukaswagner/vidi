@@ -325,7 +325,7 @@ export class TopicMapRenderer extends Renderer {
         ndcOffset[1] = 2.0 * ndcOffset[1] / this._frameSize[1];
 
         this._pointPass.ndcOffset = ndcOffset;
-        this._pointPass.frame();
+        this._pointPass.frame(frameNumber);
 
         this._gridLabelPass.ndcOffset = ndcOffset;
         this._gridLabelPass.frame();
