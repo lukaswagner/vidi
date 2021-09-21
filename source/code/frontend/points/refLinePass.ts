@@ -76,7 +76,8 @@ export class RefLinePass extends Initializable {
         this._uCameraPosition = this._program.uniform('u_cameraPosition');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
 
-        this._alpha = new Alpha(this._gl, this._program, AlphaMode.Temporal);
+        this._alpha = new Alpha(
+            this._gl, this._program, AlphaMode.AlphaToCoverage);
 
         return true;
     }
