@@ -138,8 +138,36 @@ export class TopicMapApp extends Initializable {
             })
             .then((presets: Preset[]) => {
                 this._presets = presets;
-                this._controls.presets.setOptions(presets.map((p) => p.name));
-                this._controls.presetButton.invoke();
+
+                const select = this._controls.presetUI.input.select({
+                    label: 'Presets',
+                    optionValues: presets.map((p) => p.name)
+                });
+
+                const applyPreset = (): void => {
+                    const preset = this._presets
+                        .find((p) => p.name === select.value);
+                    if(!preset) return;
+                    const d = this._datasets.find((d) => d.id === preset.data);
+                    if (!preset.data || !d) {
+                        this._controls.applyPreset(preset);
+                    } else {
+                        this._controls.data.setValue(preset.data, false);
+                        const upd = this.handleDataUpdate.bind(this);
+                        loadFromServer(d.url, d.format, this._controls, upd)
+                            .then((d) => {
+                                this.dataReady(d);
+                                this._controls.applyPreset(preset);
+                            });
+                    }
+                };
+
+                this._controls.presetUI.input.button({
+                    text: 'Load',
+                    handler: (): void => applyPreset()
+                });
+
+                applyPreset();
             });
 
         // expose canvas, context, and renderer for console access
@@ -274,26 +302,6 @@ export class TopicMapApp extends Initializable {
 
         this._controls.variablePointSizeColumn.handler =
             this.updateColumn.bind(this, ColumnUsage.VARIABLE_POINT_SIZE);
-
-        // presets
-        this._controls.presetButton.handler = (): void => {
-            const selected = this._controls.presets.value;
-            const preset = this._presets.find((p) => p.name === selected);
-            if(!preset) return;
-            const data = this._datasets.find((d) => d.id === preset.data);
-            if (preset.data !== undefined && data !== undefined) {
-                this._controls.data.setValue(preset.data, false);
-                loadFromServer(
-                    data.url, data.format,
-                    this._controls, this.handleDataUpdate.bind(this))
-                    .then((d) => {
-                        this.dataReady(d);
-                        this._controls.applyPreset(preset);
-                    } );
-            } else {
-                this._controls.applyPreset(preset);
-            }
-        };
     }
 
     protected getId(column: Column): string {

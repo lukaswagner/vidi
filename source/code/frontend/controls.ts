@@ -5,6 +5,7 @@ import { Input } from './ui/input';
 import { InputSlider } from './ui/inputSlider';
 import { Progress } from './ui/progress';
 import { Select } from './ui/select';
+import { UI } from '@lukaswagner/web-ui';
 
 export interface Preset {
     name: string;
@@ -19,8 +20,7 @@ export interface Preset {
 }
 
 export class Controls {
-    public presets: Select;
-    public presetButton: Button;
+    public presetUI: UI;
 
     public data: Select;
     public dataButton: Button;
@@ -55,8 +55,8 @@ export class Controls {
     public colorColumn: Select;
 
     public constructor() {
-        this.presets = new Select('preset-select');
-        this.presetButton = new Button('preset-button');
+        const presetContainer = document.getElementById('preset-group');
+        this.presetUI = new UI(presetContainer);
 
         this.data = new Select('data-select');
         this.dataButton = new Button('data-button');

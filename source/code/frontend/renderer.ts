@@ -188,7 +188,6 @@ export class TopicMapRenderer extends Renderer {
         if(this._msColor?.initialized) this._msColor.uninitialize();
         if(this._msDepth?.initialized) this._msDepth.uninitialize();
 
-        console.log('ms');
         if(this._msEnabled) {
             this._msColor =
                 this.createRenderbuffer(this._rgbFormat[0], w, h, samples);
@@ -201,7 +200,6 @@ export class TopicMapRenderer extends Renderer {
             ]);
         }
 
-        console.log('mf');
         if(this._mfFBO?.initialized) this._mfFBO.uninitialize();
         if(this._mfColor?.initialized) this._mfColor.uninitialize();
         if(this._mfDepth?.initialized) this._mfDepth.uninitialize();
@@ -218,7 +216,6 @@ export class TopicMapRenderer extends Renderer {
             ]);
         }
 
-        console.log('render');
         this._renderFBO = this._msEnabled ? this._msFBO : (
             this._mfEnabled ? this._mfFBO : this._defaultFBO
         );
