@@ -49,6 +49,7 @@ import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
+import { NumberRangeInput, SelectInput } from '@lukaswagner/web-ui';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -69,7 +70,7 @@ export class TopicMapApp extends Initializable {
     };
 
     private static readonly SCALE_CONTROL = {
-        default: 1.5,
+        value: 1.5,
         min: 0.2,
         max: 10.0,
         step: 0.01
@@ -118,57 +119,7 @@ export class TopicMapApp extends Initializable {
             viewer.Fullscreen.toggle(this._canvas.element);
         });
 
-        this._canvas.element.addEventListener('wheel', (e) => {
-            const base = 1.15;
-            const exp = -Math.sign(e.deltaY);
-            this._controls.scale.setValue(
-                Math.max(
-                    this._controls.scale.value * (base ** exp),
-                    this._controls.scale.step
-                )
-            );
-        }, { capture: true, passive: true });
-
         this.initControls();
-        fetchAvailable()
-            .then((datasets: Dataset[]) => {
-                this._datasets = datasets;
-                this._controls.data.setOptions(datasets.map((d) => d.id));
-                return fetchPresets();
-            })
-            .then((presets: Preset[]) => {
-                this._presets = presets;
-
-                const select = this._controls.presetUI.input.select({
-                    label: 'Presets',
-                    optionValues: presets.map((p) => p.name)
-                });
-
-                const applyPreset = (): void => {
-                    const preset = this._presets
-                        .find((p) => p.name === select.value);
-                    if(!preset) return;
-                    const d = this._datasets.find((d) => d.id === preset.data);
-                    if (!preset.data || !d) {
-                        this._controls.applyPreset(preset);
-                    } else {
-                        this._controls.data.setValue(preset.data, false);
-                        const upd = this.handleDataUpdate.bind(this);
-                        loadFromServer(d.url, d.format, this._controls, upd)
-                            .then((d) => {
-                                this.dataReady(d);
-                                this._controls.applyPreset(preset);
-                            });
-                    }
-                };
-
-                this._controls.presetUI.input.button({
-                    text: 'Load',
-                    handler: (): void => applyPreset()
-                });
-
-                applyPreset();
-            });
 
         // expose canvas, context, and renderer for console access
         window.canvas = this._canvas;
@@ -191,50 +142,124 @@ export class TopicMapApp extends Initializable {
     protected initControls(): void {
         this._controls = new Controls();
 
-        // data
-        this._controls.dataButton.handler = () => {
-            const toLoad = this._datasets[this._controls.data.selectedIndex];
-            loadFromServer(
-                toLoad.url, toLoad.format,
-                this._controls, this.handleDataUpdate.bind(this))
-                .then((d) => this.dataReady(d));
+        // presets
+        const presetSelect = this._controls.presets.input.select({
+            label: 'Presets'
+        });
+
+        const load = (data: Dataset): Promise<Column[]> => {
+            return loadFromServer(
+                data.url,
+                data.format,
+                dataProgress,
+                this.handleDataUpdate.bind(this));
         };
 
-        // custom data
-        this._controls.customDataSourceSelect.setOptions(['File', 'URL']);
-        this._controls.customDataSourceSelect.handler = (v: string) => {
-            switch (v) {
-                case 'File':
-                    document.getElementById('custom-data-file-wrapper')
-                        .classList.remove('d-none');
-                    document.getElementById('custom-data-url-wrapper')
-                        .classList.add('d-none');
-                    break;
-                case 'URL':
-                    document.getElementById('custom-data-file-wrapper')
-                        .classList.add('d-none');
-                    document.getElementById('custom-data-url-wrapper')
-                        .classList.remove('d-none');
-                    break;
-                default:
-                    break;
+        const applyPreset = (): void => {
+            const preset = this._presets
+                .find((p) => p.name === presetSelect.value);
+            if(!preset) return;
+            const data = this._datasets.find((d) => d.id === preset.data);
+            if (!preset.data || !data) {
+                this._controls.applyPreset(preset);
+            } else {
+                dataSelect.value = preset.data;
+                load(data).then((d) => {
+                    this.dataReady(d);
+                    this._controls.applyPreset(preset);
+                });
             }
         };
 
-        this._controls.customDataDelimiterSelect.setOptions(
-            [',', '\t', 'custom'], ['Comma', 'Tab', 'Custom']);
-        this._controls.customDataFile.handler = (v) => {
-            const splitName = v[0].name.split('.');
-            const format = splitName[splitName.length - 1];
-            const delimiter = deductSeparator(format) || 'custom';
-            this._controls.customDataDelimiterSelect.setValue(delimiter, true);
-        };
-        this._controls.customDataIncludesHeader.setValue(true);
-        this._controls.customDataIncludesHeader.setDefault(true);
-        this._controls.customDataUploadButton.handler = () => {
-            loadCustom(this._controls, this.handleDataUpdate.bind(this))
-                .then((d) => this.dataReady(d));
-        };
+        this._controls.presets.input.button({
+            text: 'Load',
+            handler: (): void => applyPreset()
+        });
+
+        // data
+        const dataSelect = this._controls.data.input.select({
+            label: 'Dataset'
+        });
+
+        fetchAvailable()
+            .then((datasets: Dataset[]) => {
+                this._datasets = datasets;
+                dataSelect.values = datasets.map((d) => d.id);
+                return fetchPresets();
+            })
+            .then((presets: Preset[]) => {
+                this._presets = presets;
+                presetSelect.values = presets.map((p) => p.name);
+                applyPreset();
+            });
+
+        this._controls.data.input.button({
+            text: 'Load',
+            handler: () => {
+                const data = this._datasets[dataSelect.index];
+                load(data).then((d) => this.dataReady(d));
+            }
+        });
+
+        const dataProgress = this._controls.data.output.progress();
+
+        // custom data
+        // const customSource = this._controls.data.input.select({
+        //     label: 'Custom dataset source',
+        //     optionValues: ['File', 'URL']
+        // });
+        this._controls.data.input.file({
+            label: 'Custom dataset',
+            handler: (v) => {
+                const splitName = v[0].name.split('.');
+                const format = splitName[splitName.length - 1];
+                const delimiter = deductSeparator(format) || 'custom';
+                delimSelect.value = delimiter;
+            }
+        });
+
+        const delimSelect = this._controls.data.input.select({
+            label: 'Delimiter',
+            optionValues: [',', '\t', 'custom'],
+            optionTexts: ['Comma', 'Tab', 'Custom']
+        });
+
+        const delimInput = this._controls.data.input.text({
+            label: 'Custom delimiter'
+        });
+
+        const headerCheckbox = this._controls.data.input.checkbox({
+            label: 'File includes header row',
+            value: true
+        });
+
+        this._controls.data.input.button({
+            text: 'Load',
+            handler: () => {
+                loadCustom(
+                    'file', // disable external url support for now
+                    this._controls,
+                    this.handleDataUpdate.bind(this)
+                ).then((d) => this.dataReady(d));
+            }
+        });
+
+        // position
+        this._controls.position.input.select({
+            id: 'x-axis',
+            label: 'X axis',
+            handler: (v) => this.updateColumn(ColumnUsage.X_AXIS, v.value)
+        });
+        this._controls.position.input.select({
+            id: 'y-axis',
+            label: 'Y axis',
+            handler: (v) => this.updateColumn(ColumnUsage.Y_AXIS, v.value)
+        });
+        this._controls.position.input.select({
+            id: 'z-axis',
+            label: 'Z axis',
+            handler: (v) => this.updateColumn(ColumnUsage.Z_AXIS, v.value)
+        });
 
         // clustering
         this._controls.clusterAllButton.handler = () => {
@@ -247,6 +272,17 @@ export class TopicMapApp extends Initializable {
             this.updateColumn(ColumnUsage.CLUSTER_ID, name);
         };
 
+        // scale
+        const scale = this._controls.size.input.numberRange(Object.assign({
+            handler: (s: number) => this._renderer.scale = s
+        }, TopicMapApp.SCALE_CONTROL));
+
+        this._canvas.element.addEventListener('wheel', (e) => {
+            const base = 1.15;
+            const exp = -Math.sign(e.deltaY);
+            scale.value = Math.max(scale.value * (base ** exp), scale.step);
+        }, { capture: true, passive: true });
+
         // point size
         this._controls.pointSize.handler = (v: number) => {
             this._renderer.pointSize = v;
@@ -255,21 +291,6 @@ export class TopicMapApp extends Initializable {
         const psc = TopicMapApp.POINT_SIZE_CONTROL;
         this._controls.pointSize.setOptions(
             psc.default, psc.min, psc.max, psc.step);
-
-        // scale
-        this._controls.scale.handler = (s) => {
-            this._renderer.scale = s;
-        };
-
-        const sc = TopicMapApp.SCALE_CONTROL;
-        this._controls.scale.setOptions(
-            sc.default, sc.min, sc.max, sc.step);
-
-        // axes
-        for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].handler =
-                this.updateColumn.bind(this, ColumnUsage.X_AXIS + i);
-        }
 
         // colors
         this._controls.colorMode.handler = (m) => {

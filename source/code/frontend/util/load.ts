@@ -5,11 +5,15 @@ import {
 import { Column } from 'shared/column/column';
 import { Controls } from 'frontend/controls';
 import { CsvMultiThreadedLoader } from 'frontend/loader/csv';
+import { ProgressOutput } from '@lukaswagner/web-ui';
 
 type Invalidate = (force: boolean) => void;
 
 export function loadFromServer(
-    url: string, format: string, controls: Controls, invalidate: Invalidate
+    url: string,
+    format: string,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
     console.log('loading', url);
 
@@ -20,7 +24,7 @@ export function loadFromServer(
                 delimiter: deductSeparator(format) || ',',
                 includesHeader: true
             },
-            progress: controls.dataProgress
+            progress
         }, invalidate));
 }
 
@@ -36,9 +40,9 @@ export function deductSeparator(format: string): string {
 }
 
 export function loadCustom(
-    controls: Controls, invalidate: Invalidate
+    source: string, controls: Controls, invalidate: Invalidate
 ): Promise<Column[]> {
-    switch (controls.customDataSourceSelect.value) {
+    switch (source) {
         case 'File':
             return loadCustomFromFile(controls, invalidate);
         case 'URL':

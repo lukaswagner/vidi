@@ -20,106 +20,44 @@ export interface Preset {
 }
 
 export class Controls {
-    public presetUI: UI;
-
-    public data: Select;
-    public dataButton: Button;
-    public dataProgress: Progress;
-
-    public customDataSourceSelect: Select;
-
-    public customDataFile: FileInput;
-    public customDataUrlInput: Input;
-    public customDataUrlUserInput: Input;
-    public customDataUrlPassInput: Input;
-
-    public customDataDelimiterSelect: Select;
-    public customDataDelimiterInput: Input;
-    public customDataIncludesHeader: Checkbox;
-    public customDataUploadButton: Button;
-    public customDataProgress: Progress;
-
-    public clusterAllButton: Button;
-    public clusterAllProgress: Progress;
-    public clusterAlgSelect: Select;
-
-    public axes: Select[];
-
-    public scale: InputSlider;
-    public pointSize: InputSlider;
-    public variablePointSizeStrength: InputSlider;
-    public variablePointSizeColumn: Select;
-
-    public colorMode: Select;
-    public colorMapping: Select;
-    public colorColumn: Select;
+    public presets: UI;
+    public data: UI;
+    public position: UI;
+    public cluster: UI;
+    public size: UI;
+    public color: UI;
 
     public constructor() {
         const presetContainer = document.getElementById('preset-group');
-        this.presetUI = new UI(presetContainer);
-
-        this.data = new Select('data-select');
-        this.dataButton = new Button('data-button');
-        this.dataProgress = new Progress('data-progress');
-
-        this.customDataSourceSelect =
-            new Select('custom-data-source-select');
-
-        this.customDataFile = new FileInput('custom-data-file');
-        this.customDataUrlInput =
-            new Input('custom-data-url-input');
-        this.customDataUrlUserInput =
-            new Input('custom-data-url-user-input');
-        this.customDataUrlPassInput =
-            new Input('custom-data-url-pass-input');
-
-        this.customDataDelimiterSelect =
-            new Select('custom-data-delimiter-select');
-        this.customDataDelimiterInput =
-            new Input('custom-data-delimiter-input');
-        this.customDataIncludesHeader =
-            new Checkbox('custom-data-header-checkbox');
-        this.customDataUploadButton = new Button('custom-data-upload-button');
-        this.customDataProgress = new Progress('custom-data-progress');
-
-        this.clusterAllButton = new Button('cluster-all-button');
-        this.clusterAllProgress = new Progress('cluster-all-progress');
-        this.clusterAlgSelect = new Select('cluster-alg-select');
-
-        this.axes = [
-            new Select('x-axis-select'),
-            new Select('y-axis-select'),
-            new Select('z-axis-select')
-        ];
-
-        this.scale = new InputSlider('scale');
-        this.pointSize = new InputSlider('point-size');
-        this.variablePointSizeStrength =
-            new InputSlider('variable-point-size-strength');
-        this.variablePointSizeColumn =
-            new Select('variable-point-size-column-select');
-
-        this.colorMode = new Select('color-mode-select');
-        this.colorMapping = new Select('color-mapping-select');
-        this.colorColumn = new Select('color-column-select');
+        this.presets = new UI(presetContainer);
+        const dataContainer = document.getElementById('data-group');
+        this.data = new UI(dataContainer);
+        const positionContainer = document.getElementById('position-group');
+        this.position = new UI(positionContainer);
+        const clusterContainer = document.getElementById('cluster-group');
+        this.cluster = new UI(clusterContainer);
+        const sizeContainer = document.getElementById('size-group');
+        this.size = new UI(sizeContainer);
+        const colorContainer = document.getElementById('color-group');
+        this.color = new UI(colorContainer);
     }
 
     public applyPreset(preset: Preset): void {
-        this.apply(this.axes[0], preset.axes[0]);
-        this.apply(this.axes[1], preset.axes[1]);
-        this.apply(this.axes[2], preset.axes[2]);
+        // this.apply(this.axes[0], preset.axes[0]);
+        // this.apply(this.axes[1], preset.axes[1]);
+        // this.apply(this.axes[2], preset.axes[2]);
 
-        this.apply(this.pointSize, preset.pointSize);
-        this.apply(
-            this.variablePointSizeStrength, preset.variablePointSizeStrength);
-        this.apply(
-            this.variablePointSizeColumn, preset.variablePointSizeColumn);
+        // this.apply(this.pointSize, preset.pointSize);
+        // this.apply(
+        //     this.variablePointSizeStrength, preset.variablePointSizeStrength);
+        // this.apply(
+        //     this.variablePointSizeColumn, preset.variablePointSizeColumn);
 
-        this.apply(this.colorMode, preset.colorMode);
-        this.apply(this.colorMapping, preset.colorMapping);
-        this.apply(this.colorColumn, preset.colorColumn);
+        // this.apply(this.colorMode, preset.colorMode);
+        // this.apply(this.colorMapping, preset.colorMapping);
+        // this.apply(this.colorColumn, preset.colorColumn);
 
-        this.clusterAlgSelect.reset();
+        // this.clusterAlgSelect.reset();
     }
 
     private apply(
