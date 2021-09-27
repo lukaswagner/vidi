@@ -1,7 +1,3 @@
-import 'bootstrap';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './icons.ts';
-
 import {
     Canvas,
     Color,
@@ -211,7 +207,7 @@ export class TopicMapApp extends Initializable {
         //     label: 'Custom dataset source',
         //     optionValues: ['File', 'URL']
         // });
-        const customFile = this._controls.data.input.file({
+        const customFile = this._controls.customData.input.file({
             label: 'Custom dataset',
             handler: (v) => {
                 const splitName = v[0].name.split('.');
@@ -221,26 +217,29 @@ export class TopicMapApp extends Initializable {
             }
         });
 
-        const delimSelect = this._controls.data.input.select({
+        const delimSelect = this._controls.customData.input.select({
             label: 'Delimiter',
             optionValues: [',', '\t', 'custom'],
             optionTexts: ['Comma', 'Tab', 'Custom']
         });
 
-        const customDelim = this._controls.data.input.text({
-            label: 'Custom delimiter'
+        const customDelim = this._controls.customData.input.text({
+            label: 'Custom delimiter',
+            handler: (v) => {
+                if (v) delimSelect.value = 'custom';
+            }
         });
 
-        const header = this._controls.data.input.checkbox({
-            label: 'File includes header row',
+        const header = this._controls.customData.input.checkbox({
+            label: 'File has header row',
             value: true
         });
 
-        this._controls.data.input.button({
+        this._controls.customData.input.button({
             text: 'Load',
             handler: () => {
                 loadCustom(
-                    'file', // disable external url support for now
+                    'File', // disable external url support for now
                     customFile.value[0],
                     '',
                     delimSelect.value,
@@ -259,16 +258,22 @@ export class TopicMapApp extends Initializable {
         const xAxis = this._controls.position.input.select({
             label: 'X axis',
             id: 'axes.x',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
             handler: (v) => this.updateColumn(ColumnUsage.X_AXIS, v.value)
         });
         const yAxis = this._controls.position.input.select({
             label: 'Y axis',
             id: 'axes.y',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
             handler: (v) => this.updateColumn(ColumnUsage.Y_AXIS, v.value)
         });
         const zAxis = this._controls.position.input.select({
             label: 'Z axis',
             id: 'axes.z',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
             handler: (v) => this.updateColumn(ColumnUsage.Z_AXIS, v.value)
         });
         this._controls.axes = [xAxis, yAxis, zAxis];
@@ -280,6 +285,7 @@ export class TopicMapApp extends Initializable {
             handler: () => {
                 this._clustering.runWorkers();
                 this._controls.colorMode.value = ColorMode[3][0].toString();
+                this._controls.colorMode.invokeHandler();
             }
         });
 
@@ -319,7 +325,7 @@ export class TopicMapApp extends Initializable {
 
         // variable point size
         this._controls.size.input.numberRange(Object.assign({
-            label: 'Variable point size strength',
+            label: 'Variable size factor',
             id: 'variablePointSizeStrength',
             triggerHandlerOnMove: true,
             handler: (v: number) => this._renderer.variablePointSizeStrength = v
@@ -327,8 +333,10 @@ export class TopicMapApp extends Initializable {
 
         this._controls.variablePointSizeColumn =
             this._controls.size.input.select({
-                label: 'Column for variable point size',
+                label: 'Variable size column',
                 id: 'variablePointSizeColumn',
+                optionTexts: ['None'],
+                optionValues: ['__NONE__'],
                 handler: (v) =>
                     this.updateColumn(ColumnUsage.VARIABLE_POINT_SIZE, v.value)
             });
@@ -344,7 +352,7 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.color.input.select({
-            label: 'Mapping for position-based color',
+            label: 'Position-based mapping',
             id: 'colorMapping',
             optionTexts: [...ColorMapping.values()].map((e) => e[1]),
             optionValues: [...ColorMapping.keys()].map((k) => k.toString()),
@@ -353,8 +361,10 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.colorColumn = this._controls.color.input.select({
-            label: 'Column for per-point color',
+            label: 'Per-point column',
             id: 'colorColumn',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
             handler: (v) =>
                 this.updateColumn(ColumnUsage.PER_POINT_COLOR, v.value)
         });
@@ -375,11 +385,11 @@ export class TopicMapApp extends Initializable {
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
-            if(this._controls.clusterAlg.values.includes(name)) {
-                this._controls.clusterAlg.value = name;
-            } else {
+            if(!this._controls.clusterAlg.values.includes(name)) {
                 this._controls.clusterAlg.addOption(name);
             }
+            this._controls.clusterAlg.value = name;
+            this._controls.clusterAlg.invokeHandler();
         };
 
         // set up axis controls
@@ -391,6 +401,7 @@ export class TopicMapApp extends Initializable {
             this._controls.axes[i].texts = numberLabels;
             this._controls.axes[i].value =
                 this.getId(this._columns.selectedColumn(i));
+            this._controls.axes[i].invokeHandler();
         }
 
         // set up vertex color controls
@@ -399,10 +410,14 @@ export class TopicMapApp extends Initializable {
         const colorLabels = ['None'].concat(colorColumnNames);
         this._controls.colorColumn.values = colorIds;
         this._controls.colorColumn.texts = colorLabels;
+        this._controls.colorColumn.value = '__NONE__';
+        this._controls.colorColumn.invokeHandler();
 
         // set up variable point size controls
         this._controls.variablePointSizeColumn.values = numberIds;
         this._controls.variablePointSizeColumn.texts = numberLabels;
+        this._controls.variablePointSizeColumn.value = '__NONE__';
+        this._controls.variablePointSizeColumn.invokeHandler();
     }
 
     protected updateColumn(updatedColumn: ColumnUsage, name: string): void {

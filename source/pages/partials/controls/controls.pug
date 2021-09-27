@@ -1,19 +1,11 @@
 include control-block.pug
-include control-element.pug
-include elements/control-select.pug
-include elements/control-button.pug
-include elements/control-file.pug
-include elements/control-label.pug
-include elements/control-slider.pug
-include elements/control-input.pug
-include elements/control-checkbox.pug
-include elements/progress-bar.pug
 
-.control-panel#controls(style='width: 350px;')
+#controls-container
     form
-        +control-block('preset-header', 'preset-group', 'Configuration Presets', true)
-        +control-block('data-header', 'data-group', 'Data Source', false)
+        +control-block('preset-header', 'preset-group', 'Configuration Presets')
+        +control-block('data-header', 'data-group', 'Data Source')
+        +control-block('custom-data-header', 'custom-data-group', 'Custom Data Source')
         +control-block('position-header', 'position-group', 'Position')
         +control-block('cluster-header', 'cluster-group', 'Clusters')
         +control-block('size-header', 'size-group', 'Size')
-        +control-block('color-header', 'color-group', 'Color').mb-2
+        +control-block('color-header', 'color-group', 'Color')

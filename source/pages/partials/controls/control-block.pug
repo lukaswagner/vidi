@@ -1,7 +1,5 @@
-include control-header.pug
-mixin control-block(hid, cid, title, show=false)
-    .card
-        +control-header(hid, cid, title)
-        .collapse(id=cid, class= show ? 'show' : '')
-            .card-body
-                block
+mixin control-block(hid, cid, title)
+    div.control-block
+        div.control-title(id=hid)= title
+        div.controls(id=cid)
+        block

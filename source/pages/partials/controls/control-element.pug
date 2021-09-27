@@ -1,8 +1,0 @@
-mixin control-element(cid, title, customRow=false)
-    div(class=attributes.class)
-        label(id=cid+'-label', for=cid)= title
-        if(customRow)
-            block
-        else
-            .row.m-0
-                block

@@ -33,8 +33,7 @@ module.exports = function (env) {
         }),
         new HtmlWebpackPlugin({
             filename: 'index.html',
-            template: './source/pages/index.pug',
-            inject: false
+            template: './source/pages/index.pug'
         }),
         new CopyWebpackPlugin({
             patterns: [
@@ -49,7 +48,11 @@ module.exports = function (env) {
     }
 
     return {
-        entry: './source/code/frontend/app.ts',
+        entry: {
+            app: './source/code/frontend/app.ts',
+            toggle: './source/code/frontend/toggle.ts',
+            icons: './source/code/frontend/icons.ts',
+        },
         module: {
             rules: [
                 {

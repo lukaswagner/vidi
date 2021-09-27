@@ -1,19 +1,16 @@
-.control-panel#info(style='width: 0px;')
-    .form
-        +control-block('about-header', 'about-group', 'About', true)
-            p.mb-0 Contact: #[a(href='mailto:lukas.wagner@hpi.de') Mail]
-        +control-block('browser-support-header', 'browser-support-group', 'Browser Support', true)
-            p Requires WebGL2 support!
-            p.mb-0 Google Chrome
-            ul
-                li Rendering and styling work
-                li Tested on Windows and Linux
-            p.mb-0 Mozilla Firefox
-            ul.mb-0
-                li Rendering works
-                li Slider style broken, but functional
-                li Tested on Windows and Linux
-        +control-block('acknowledgements-header', 'acknowledgements-group', 'Acknowledgements', true)
-            ul.mb-0
-                li Built using #[a(href='https://webgl-operate.org/') webgl-operate]
-                li Uses icons from #[a(href='https://fontawesome.com/') Font Awesome]
+include control-block.pug
+
+#info-container.d-none
+    form
+        +control-block('about-header', 'about-group', 'About')
+            div Contact: #[a(href='mailto:lukas.wagner@hpi.de') Mail]
+        +control-block('support-header', 'support-group', 'Browser Support')
+            div
+                | Requires WebGL 2 support!
+                br
+                | Tested using Google Chrome and Mozilla Firefox.
+        +control-block('acknowledgements-header', 'acknowledgements-group', 'Acknowledgements')
+            div
+                | Built using #[a(href='https://webgl-operate.org/') webgl-operate]
+                br
+                | Uses icons from #[a(href='https://fontawesome.com/') Font Awesome]

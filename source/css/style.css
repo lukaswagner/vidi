@@ -1,129 +1,30 @@
-* {
-    border-radius: 0 !important;
-}
+@import './controls.css';
+@import './navbar.css';
 
-footer {
-    padding-top: 6rem;
-}
+:root {
+    --navbar-height: 3em;
+    --control-width: 20em;
+    --control-input-width: 8em;
 
-footer {
-    padding-bottom: 2rem;
-}
-
-.embed-responsive-26by9::before {
-    padding-top: 34.61538%;
-}
-
-input.slider {
-    --slider-size: 38px;
-    --slider-handle-size: calc(var(--slider-size) - 2px);
-    --slider-handle-pos: calc(var(--slider-handle-size) / 2);
-    --slider-handle-offset: calc(var(--slider-handle-pos) * -1);
-    width: 100%;
-    -webkit-appearance: none;
-    height: var(--slider-size);
-    margin: 0;
-    padding: 0;
-}
-
-input.slider:focus {
-  outline: none;
-}
-
-input.slider::-webkit-slider-runnable-track {
-    width: 100%;
-    height: var(--slider-size);
-    cursor: pointer;
-    background: #fff;
-    border-radius: 0px;
-    border: 1px solid #ced4da;
-}
-
-input.slider::-webkit-slider-thumb {
-    width: var(--slider-handle-size);
-    height: var(--slider-handle-size);
-    position: relative;
-    left: var(--slider-handle-pos);
-    top: var(--slider-handle-pos);
-    transform: translate(var(--slider-handle-offset), var(--slider-handle-offset));
-    border-radius: 0px;
-    background: var(--primary);
-    cursor: pointer;
-    -webkit-appearance: none;
-}
-
-input[type='checkbox'] {
-    width: 38px;
-    height: 38px;
+    --background-color: #eee;
+    --navbar-background-color: #666;
+    --navbar-text-color: #eee;
+    --navbar-nav-background-color: #444;
+    --navbar-nav-text-color: #eee;
 }
 
 body {
     overflow: hidden;
-}
-
-.body {
-    position: relative;
-    height: calc(100% - 56px);
-}
-
-.control-panel {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    transition: 0.5s;
+    font-family: sans-serif;
+    margin: 0;
+    background-color: var(--background-color);
 }
 
 canvas {
-    width: 100%!important;
-    height: 100%!important;
+    width: 100vw;
+    height: 100vh;
 }
 
-.control-button {
-    padding: 0!important;
-    border: none!important;
-}
-
-.button-label {
-    vertical-align: middle;
-    padding: .375rem .75rem;
-}
-
-.progress {
-    height: 38px!important;
-    width: 100%;
-    font-size: 1rem!important;
-}
-
-.pr-back .pr-front .pr-box {
-    height: 38px!important;
-    display: block;
-    margin: 0;
-}
-
-.pr-back {
-    position: absolute;
-    text-align: center;
-    line-height: 38px;
-    width: 100%;
-    color: black;
-}
-
-.pr-front {
-    position: absolute;
-    line-height: 38px;
-    left: 0;
-    top: 0;
-    color: white;
-}
-
-.pr-box {
-    position: absolute;
-    height: 38px;
-    left: 0;
-    top: 0;
-    overflow: hidden;
-    transition: width .6s ease;
+.d-none {
+    display: none!important;
 }

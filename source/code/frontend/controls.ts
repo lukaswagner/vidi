@@ -15,6 +15,7 @@ export interface Preset {
 export class Controls {
     public presets: UI;
     public data: UI;
+    public customData: UI;
     public position: UI;
     public cluster: UI;
     public size: UI;
@@ -30,6 +31,9 @@ export class Controls {
         this.presets = new UI(presetContainer, true);
         const dataContainer = document.getElementById('data-group');
         this.data = new UI(dataContainer, true);
+        const customDataContainer =
+            document.getElementById('custom-data-group');
+        this.customData = new UI(customDataContainer, true);
         const positionContainer = document.getElementById('position-group');
         this.position = new UI(positionContainer, true);
         const clusterContainer = document.getElementById('cluster-group');
@@ -47,11 +51,13 @@ export class Controls {
         this.data.setFromObject(p, true);
 
         this.position.reset();
-        this.data.setFromObject({
-            'x-axis': preset.axes[0],
-            'y-axis': preset.axes[1],
-            'z-axis': preset.axes[2],
+        this.position.setFromObject({
+            'axes.x': preset.axes[0] ?? '__NONE__',
+            'axes.y': preset.axes[1] ?? '__NONE__',
+            'axes.z': preset.axes[2] ?? '__NONE__',
         }, true);
+
+        this.customData.reset();
 
         this.cluster.reset();
 

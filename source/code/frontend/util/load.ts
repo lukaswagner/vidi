@@ -3,7 +3,6 @@ import {
     LoadInfo
 } from 'shared/csvLoader/options';
 import { Column } from 'shared/column/column';
-import { Controls } from 'frontend/controls';
 import { CsvMultiThreadedLoader } from 'frontend/loader/csv';
 import { ProgressOutput } from '@lukaswagner/web-ui';
 
