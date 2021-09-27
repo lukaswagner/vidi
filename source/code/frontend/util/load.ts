@@ -40,59 +40,67 @@ export function deductSeparator(format: string): string {
 }
 
 export function loadCustom(
-    source: string, controls: Controls, invalidate: Invalidate
+    source: string,
+    sourceFile: File,
+    sourceUrl: string,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
     switch (source) {
         case 'File':
-            return loadCustomFromFile(controls, invalidate);
+            return loadCustomFromFile(
+                sourceFile, delimiter, customDelimiter,
+                includesHeader, progress, invalidate);
         case 'URL':
-            return loadCustomFromUrl(controls, invalidate);
+            return loadCustomFromUrl(
+                sourceUrl, delimiter, customDelimiter,
+                includesHeader, progress, invalidate);
         default:
             break;
     }
 }
 
 function loadCustomFromFile(
-    controls: Controls, invalidate: Invalidate
+    file: File,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
-    const file = controls.customDataFile.files[0];
-    let delimiter = controls.customDataDelimiterSelect.value;
-    if (delimiter === 'custom') {
-        delimiter = controls.customDataDelimiterInput.value;
-    }
-    const includesHeader = controls.customDataIncludesHeader.value;
     console.log('loading custom file', file.name);
 
     return loadCsv({
         stream: file.stream(),
         size: file.size,
         options: {
-            delimiter,
+            delimiter: delimiter === 'custom' ? customDelimiter : delimiter,
             includesHeader
         },
-        progress: controls.customDataProgress
+        progress
     }, invalidate);
 }
 
 function loadCustomFromUrl(
-    controls: Controls, invalidate: Invalidate
+    url: string,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
-    const url = controls.customDataUrlInput.value;
-    const user = controls.customDataUrlUserInput.value;
-    const pass = controls.customDataUrlPassInput.value;
+    // const user = controls.customDataUrlUserInput.value;
+    // const pass = controls.customDataUrlPassInput.value;
 
     const headers = new Headers();
-    if (user !== '' && pass !== '') {
-        headers.set(
-            'Authorization',
-            'Basic ' + btoa(user + ':' + pass));
-    }
-
-    let delimiter = controls.customDataDelimiterSelect.value;
-    if (delimiter === 'custom') {
-        delimiter = controls.customDataDelimiterInput.value;
-    }
-    const includesHeader = controls.customDataIncludesHeader.value;
+    // if (user !== '' && pass !== '') {
+    //     headers.set(
+    //         'Authorization',
+    //         'Basic ' + btoa(user + ':' + pass));
+    // }
 
     console.log('loading from url', url);
 
@@ -103,7 +111,7 @@ function loadCustomFromUrl(
                 delimiter,
                 includesHeader
             },
-            progress: controls.customDataProgress
+            progress
         }, invalidate));
 }
 

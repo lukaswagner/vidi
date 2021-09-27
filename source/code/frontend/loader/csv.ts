@@ -16,8 +16,7 @@ import {
 import { Column } from 'shared/column/column';
 import LoadWorker from 'worker-loader?inline=fallback!loader/csv/csv';
 import { PerfMon } from 'shared/performance/perfMon';
-import { Progress } from 'frontend/ui/progress';
-import { ProgressStep } from 'frontend/ui/progressStep';
+import { ProgressOutput } from '@lukaswagner/web-ui';
 import { prepareColumns } from 'shared/csvLoader/prepareColumns';
 import { storeLine } from 'shared/csvLoader/storeLine';
 
@@ -25,7 +24,7 @@ export class CsvMultiThreadedLoader {
     protected _stream: ReadableStream;
     protected _size: number;
     protected _options: CsvLoaderOptions;
-    protected _progress: Progress;
+    protected _progress: ProgressOutput;
     protected _invalidate: (force?: boolean) => void;
     protected _times = new Array<number>();
 
@@ -63,16 +62,16 @@ export class CsvMultiThreadedLoader {
     protected prepareProgress(): void {
         // don't show progress bar for small files - would just flash shortly
         if(this._size === undefined || this._size > 5e6) {
-            this._progress.visible = true;
+            this._progress.container.classList.remove('d-none');
         }
 
-        this._progress.steps = [
-            new ProgressStep('Loading file',
-                this._size || 1, this._size === undefined ? 0 : 5),
-            new ProgressStep('Parsing data', 100, 90),
-            new ProgressStep('Combining chunks', 100, 5),
-        ];
-        this._progress.applyValue();
+        // this._progress.steps = [
+        //     new ProgressStep('Loading file',
+        //         this._size || 1, this._size === undefined ? 0 : 5),
+        //     new ProgressStep('Parsing data', 100, 90),
+        //     new ProgressStep('Combining chunks', 100, 5),
+        // ];
+        this._progress.value = 0;
     }
 
     protected prepareWorker(index: number): LoadWorker {
@@ -113,7 +112,7 @@ export class CsvMultiThreadedLoader {
                 if(this._size !== undefined && bytes !== this._size) {
                     console.log(`size mismatch, expected ${this._size} bytes`);
                 }
-                this._progress.steps[1].total = chunks.length;
+                // this._progress.steps[1].total = chunks.length;
                 if(this._columns === undefined) {
                     this.setupColumns(chunks, resolve);
                 }
@@ -121,9 +120,9 @@ export class CsvMultiThreadedLoader {
                     this.startLoadWorker(chunks, workerId++);
                 }
                 this._numWorkers = workerId;
-                this._progress.steps[1].total = this._numWorkers;
-                this._progress.steps[2].total = 1;
-                this._progress.applyValue();
+                // this._progress.steps[1].total = this._numWorkers;
+                // this._progress.steps[2].total = 1;
+                // this._progress.applyValue();
                 this._numChunks = numChunks;
                 this._perf.sample(-1, 'load done');
                 return;
@@ -141,8 +140,8 @@ export class CsvMultiThreadedLoader {
             }
 
             bytes += result.value.length;
-            this._progress.steps[0].progress = bytes;
-            this._progress.applyValue();
+            // this._progress.steps[0].progress = bytes;
+            // this._progress.applyValue();
 
             chunks.push(result.value.buffer);
             numChunks++;
@@ -248,8 +247,8 @@ export class CsvMultiThreadedLoader {
     }
 
     protected handleResults(result: FinishedData): void {
-        this._progress.steps[1].progress++;
-        this._progress.applyValue();
+        // this._progress.steps[1].progress++;
+        // this._progress.applyValue();
 
         const fixed = result.columns.map(rebuildChunk);
         if(this._nextWorkerResult !== 0) {
@@ -282,6 +281,10 @@ export class CsvMultiThreadedLoader {
         if(next !== undefined) {
             setTimeout(this.handleResults.bind(this, next));
         }
+
+        // console.log(this._nextWorkerResult, this._numWorkers);
+        if(this._numWorkers)
+            this._progress.value = this._nextWorkerResult / this._numWorkers;
     }
 
     protected combine(): void {
@@ -298,10 +301,10 @@ export class CsvMultiThreadedLoader {
             this._columns.map((c, ci) => c.push(chunks[ci] as AnyChunk));
         }
 
-        this._progress.steps[2].progress = 1;
-        this._progress.applyValue();
+        // this._progress.steps[2].progress = 1;
+        // this._progress.applyValue();
 
-        this._progress.visible = false;
+        this._progress.container.classList.add('d-none');
         const sample = this._perf.sample(-1, 'done');
         console.log(
             `loaded ${this._columns.length} columns with ${this._columns[0].length} rows in ${sample.time} ms`);

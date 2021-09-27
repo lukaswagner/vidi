@@ -1,11 +1,4 @@
-import { Button } from './ui/button';
-import { Checkbox } from './ui/checkbox';
-import { FileInput } from './ui/file';
-import { Input } from './ui/input';
-import { InputSlider } from './ui/inputSlider';
-import { Progress } from './ui/progress';
-import { Select } from './ui/select';
-import { UI } from '@lukaswagner/web-ui';
+import { SelectInput, UI } from '@lukaswagner/web-ui';
 
 export interface Preset {
     name: string;
@@ -27,50 +20,45 @@ export class Controls {
     public size: UI;
     public color: UI;
 
+    public axes: [SelectInput, SelectInput, SelectInput];
+    public clusterAlg: SelectInput;
+    public colorMode: SelectInput;
+    public colorColumn: SelectInput;
+    public variablePointSizeColumn: SelectInput;
     public constructor() {
         const presetContainer = document.getElementById('preset-group');
-        this.presets = new UI(presetContainer);
+        this.presets = new UI(presetContainer, true);
         const dataContainer = document.getElementById('data-group');
-        this.data = new UI(dataContainer);
+        this.data = new UI(dataContainer, true);
         const positionContainer = document.getElementById('position-group');
-        this.position = new UI(positionContainer);
+        this.position = new UI(positionContainer, true);
         const clusterContainer = document.getElementById('cluster-group');
-        this.cluster = new UI(clusterContainer);
+        this.cluster = new UI(clusterContainer, true);
         const sizeContainer = document.getElementById('size-group');
-        this.size = new UI(sizeContainer);
+        this.size = new UI(sizeContainer, true);
         const colorContainer = document.getElementById('color-group');
-        this.color = new UI(colorContainer);
+        this.color = new UI(colorContainer, true);
     }
 
     public applyPreset(preset: Preset): void {
-        // this.apply(this.axes[0], preset.axes[0]);
-        // this.apply(this.axes[1], preset.axes[1]);
-        // this.apply(this.axes[2], preset.axes[2]);
+        const p = preset as unknown as Record<string, unknown>;
 
-        // this.apply(this.pointSize, preset.pointSize);
-        // this.apply(
-        //     this.variablePointSizeStrength, preset.variablePointSizeStrength);
-        // this.apply(
-        //     this.variablePointSizeColumn, preset.variablePointSizeColumn);
+        this.data.reset();
+        this.data.setFromObject(p, true);
 
-        // this.apply(this.colorMode, preset.colorMode);
-        // this.apply(this.colorMapping, preset.colorMapping);
-        // this.apply(this.colorColumn, preset.colorColumn);
+        this.position.reset();
+        this.data.setFromObject({
+            'x-axis': preset.axes[0],
+            'y-axis': preset.axes[1],
+            'z-axis': preset.axes[2],
+        }, true);
 
-        // this.clusterAlgSelect.reset();
-    }
+        this.cluster.reset();
 
-    private apply(
-        control: InputSlider | Select, value: number | string
-    ): void {
-        if (value !== undefined) {
-            if (control instanceof InputSlider) {
-                control.setValue(value as number);
-            } else if (control instanceof Select) {
-                control.setValue(value as string);
-            }
-        } else {
-            control.reset();
-        }
+        this.size.reset();
+        this.size.setFromObject(p, true);
+
+        this.color.reset();
+        this.color.setFromObject(p, true);
     }
 }

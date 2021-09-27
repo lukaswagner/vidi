@@ -49,7 +49,6 @@ import { Column } from 'shared/column/column';
 import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
-import { NumberRangeInput, SelectInput } from '@lukaswagner/web-ui';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -63,7 +62,7 @@ declare global {
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
-        default: 0.01,
+        value: 0.01,
         min: 0.001,
         max: 0.05,
         step: 0.001
@@ -77,7 +76,7 @@ export class TopicMapApp extends Initializable {
     };
 
     private static readonly VARIABLE_POINT_SIZE_CONTROL = {
-        default: 0,
+        value: 0,
         min: 0,
         max: 1,
         step: 0.01
@@ -144,7 +143,8 @@ export class TopicMapApp extends Initializable {
 
         // presets
         const presetSelect = this._controls.presets.input.select({
-            label: 'Presets'
+            label: 'Presets',
+            id: 'presets'
         });
 
         const load = (data: Dataset): Promise<Column[]> => {
@@ -178,7 +178,8 @@ export class TopicMapApp extends Initializable {
 
         // data
         const dataSelect = this._controls.data.input.select({
-            label: 'Dataset'
+            label: 'Dataset',
+            id: 'data'
         });
 
         fetchAvailable()
@@ -190,6 +191,7 @@ export class TopicMapApp extends Initializable {
             .then((presets: Preset[]) => {
                 this._presets = presets;
                 presetSelect.values = presets.map((p) => p.name);
+                presetSelect.value = presetSelect.values[0];
                 applyPreset();
             });
 
@@ -202,13 +204,14 @@ export class TopicMapApp extends Initializable {
         });
 
         const dataProgress = this._controls.data.output.progress();
+        dataProgress.container.classList.add('d-none');
 
         // custom data
         // const customSource = this._controls.data.input.select({
         //     label: 'Custom dataset source',
         //     optionValues: ['File', 'URL']
         // });
-        this._controls.data.input.file({
+        const customFile = this._controls.data.input.file({
             label: 'Custom dataset',
             handler: (v) => {
                 const splitName = v[0].name.split('.');
@@ -224,11 +227,11 @@ export class TopicMapApp extends Initializable {
             optionTexts: ['Comma', 'Tab', 'Custom']
         });
 
-        const delimInput = this._controls.data.input.text({
+        const customDelim = this._controls.data.input.text({
             label: 'Custom delimiter'
         });
 
-        const headerCheckbox = this._controls.data.input.checkbox({
+        const header = this._controls.data.input.checkbox({
             label: 'File includes header row',
             value: true
         });
@@ -238,91 +241,123 @@ export class TopicMapApp extends Initializable {
             handler: () => {
                 loadCustom(
                     'file', // disable external url support for now
-                    this._controls,
+                    customFile.value[0],
+                    '',
+                    delimSelect.value,
+                    customDelim.value,
+                    header.value,
+                    customProgress,
                     this.handleDataUpdate.bind(this)
                 ).then((d) => this.dataReady(d));
             }
         });
 
+        const customProgress = this._controls.data.output.progress();
+        customProgress.container.classList.add('d-none');
+
         // position
-        this._controls.position.input.select({
-            id: 'x-axis',
+        const xAxis = this._controls.position.input.select({
             label: 'X axis',
+            id: 'axes.x',
             handler: (v) => this.updateColumn(ColumnUsage.X_AXIS, v.value)
         });
-        this._controls.position.input.select({
-            id: 'y-axis',
+        const yAxis = this._controls.position.input.select({
             label: 'Y axis',
+            id: 'axes.y',
             handler: (v) => this.updateColumn(ColumnUsage.Y_AXIS, v.value)
         });
-        this._controls.position.input.select({
-            id: 'z-axis',
+        const zAxis = this._controls.position.input.select({
             label: 'Z axis',
+            id: 'axes.z',
             handler: (v) => this.updateColumn(ColumnUsage.Z_AXIS, v.value)
         });
+        this._controls.axes = [xAxis, yAxis, zAxis];
 
         // clustering
-        this._controls.clusterAllButton.handler = () => {
-            this._clustering.runWorkers();
-            this._controls.colorMode.setValue(ColorMode[3][0].toString());
-        };
-        this._controls.clusterAlgSelect.addOption('__NONE__', 'None');
-        this._controls.clusterAlgSelect.handler = (name) => {
-            this._renderer.selectClusterData(name);
-            this.updateColumn(ColumnUsage.CLUSTER_ID, name);
-        };
+        this._controls.cluster.input.button({
+            label: 'Calculate clusters',
+            text: 'Start',
+            handler: () => {
+                this._clustering.runWorkers();
+                this._controls.colorMode.value = ColorMode[3][0].toString();
+            }
+        });
+
+        this._controls.clusterAlg = this._controls.cluster.input.select({
+            label: 'Algorithm',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+            handler: (v) => {
+                this._renderer.selectClusterData(v.value);
+                this.updateColumn(ColumnUsage.CLUSTER_ID, v.value);
+            }
+        });
 
         // scale
         const scale = this._controls.size.input.numberRange(Object.assign({
-            handler: (s: number) => this._renderer.scale = s
+            label: 'Scale',
+            id: 'scale',
+            triggerHandlerOnMove: true,
+            handler: (v: number) => this._renderer.scale = v,
         }, TopicMapApp.SCALE_CONTROL));
 
         this._canvas.element.addEventListener('wheel', (e) => {
             const base = 1.15;
             const exp = -Math.sign(e.deltaY);
             scale.value = Math.max(scale.value * (base ** exp), scale.step);
+            scale.invokeHandler();
         }, { capture: true, passive: true });
 
         // point size
-        this._controls.pointSize.handler = (v: number) => {
-            this._renderer.pointSize = v;
-        };
-
-        const psc = TopicMapApp.POINT_SIZE_CONTROL;
-        this._controls.pointSize.setOptions(
-            psc.default, psc.min, psc.max, psc.step);
-
-        // colors
-        this._controls.colorMode.handler = (m) => {
-            this._renderer.colorMode = Number(m);
-        };
-
-        this._controls.colorMode.fromDict(ColorMode);
-        this._controls.colorMode.setValue(ColorModeDefault.toString());
-        this._controls.colorMode.setDefault(ColorModeDefault.toString());
-
-        this._controls.colorMapping.handler = (m) => {
-            this._renderer.colorMapping = Number(m);
-        };
-
-        this._controls.colorMapping.fromDict(ColorMapping);
-        this._controls.colorMapping.setDefault(ColorMappingDefault.toString());
-        this._controls.colorMapping.setValue(ColorMappingDefault.toString());
-
-        this._controls.colorColumn.handler =
-            this.updateColumn.bind(this, ColumnUsage.PER_POINT_COLOR);
+        const ps = this._controls.size.input.numberRange(Object.assign({
+            label: 'Point Size',
+            id: 'pointSize',
+            triggerHandlerOnMove: true,
+            handler: (v: number) => this._renderer.pointSize = v,
+        }, TopicMapApp.POINT_SIZE_CONTROL));
+        console.log(ps.value);
 
         // variable point size
-        this._controls.variablePointSizeStrength.handler = (v: number) => {
-            this._renderer.variablePointSizeStrength = v;
-        };
+        this._controls.size.input.numberRange(Object.assign({
+            label: 'Variable point size strength',
+            id: 'variablePointSizeStrength',
+            triggerHandlerOnMove: true,
+            handler: (v: number) => this._renderer.variablePointSizeStrength = v
+        }, TopicMapApp.VARIABLE_POINT_SIZE_CONTROL));
 
-        const vsc = TopicMapApp.VARIABLE_POINT_SIZE_CONTROL;
-        this._controls.variablePointSizeStrength.setOptions(
-            vsc.default, vsc.min, vsc.max, vsc.step);
+        this._controls.variablePointSizeColumn =
+            this._controls.size.input.select({
+                label: 'Column for variable point size',
+                id: 'variablePointSizeColumn',
+                handler: (v) =>
+                    this.updateColumn(ColumnUsage.VARIABLE_POINT_SIZE, v.value)
+            });
 
-        this._controls.variablePointSizeColumn.handler =
-            this.updateColumn.bind(this, ColumnUsage.VARIABLE_POINT_SIZE);
+        // colors
+        this._controls.colorMode = this._controls.color.input.select({
+            label: 'Color mode',
+            id: 'colorMode',
+            optionTexts: [...ColorMode.values()].map((e) => e[1]),
+            optionValues: [...ColorMode.keys()].map((k) => k.toString()),
+            handler: (v) => this._renderer.colorMode = Number(v.value),
+            value: ColorModeDefault.toString()
+        });
+
+        this._controls.color.input.select({
+            label: 'Mapping for position-based color',
+            id: 'colorMapping',
+            optionTexts: [...ColorMapping.values()].map((e) => e[1]),
+            optionValues: [...ColorMapping.keys()].map((k) => k.toString()),
+            handler: (v) => this._renderer.colorMapping = Number(v.value),
+            value: ColorMappingDefault.toString()
+        });
+
+        this._controls.colorColumn = this._controls.color.input.select({
+            label: 'Column for per-point color',
+            id: 'colorColumn',
+            handler: (v) =>
+                this.updateColumn(ColumnUsage.PER_POINT_COLOR, v.value)
+        });
     }
 
     protected getId(column: Column): string {
@@ -333,17 +368,17 @@ export class TopicMapApp extends Initializable {
         this._columns = new Columns(columns);
         this.initColumns();
 
-        this._controls.clusterAlgSelect.reset();
+        this._controls.clusterAlg.reset();
         this._controls.colorMode.reset();
         this._clustering = new Clustering();
         this._clustering.initialize(this._columns);
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
-            if(!this._controls.clusterAlgSelect.hasOption(name)) {
-                this._controls.clusterAlgSelect.addOption(name);
+            if(this._controls.clusterAlg.values.includes(name)) {
+                this._controls.clusterAlg.value = name;
             } else {
-                this._controls.clusterAlgSelect.setValue(name);
+                this._controls.clusterAlg.addOption(name);
             }
         };
 
@@ -352,24 +387,26 @@ export class TopicMapApp extends Initializable {
         const numberIds = ['__NONE__'].concat(numberColumnNames);
         const numberLabels = ['None'].concat(numberColumnNames);
         for (let i = 0; i < this._controls.axes.length; i++) {
-            this._controls.axes[i].setOptions(
-                numberIds, numberLabels, false);
-            this._controls.axes[i].setValue(
-                this.getId(this._columns.selectedColumn(i)), false);
+            this._controls.axes[i].values = numberIds;
+            this._controls.axes[i].texts = numberLabels;
+            this._controls.axes[i].value =
+                this.getId(this._columns.selectedColumn(i));
         }
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);
         const colorIds = ['__NONE__'].concat(colorColumnNames);
         const colorLabels = ['None'].concat(colorColumnNames);
-        this._controls.colorColumn.setOptions(colorIds, colorLabels, false);
+        this._controls.colorColumn.values = colorIds;
+        this._controls.colorColumn.texts = colorLabels;
 
         // set up variable point size controls
-        this._controls.variablePointSizeColumn.setOptions(
-            numberIds, numberLabels, false);
+        this._controls.variablePointSizeColumn.values = numberIds;
+        this._controls.variablePointSizeColumn.texts = numberLabels;
     }
 
     protected updateColumn(updatedColumn: ColumnUsage, name: string): void {
+        if(!this._columns) return;
         this._columns.selectColumn(updatedColumn, name);
         this._renderer.setColumn(
             updatedColumn,
