@@ -19,6 +19,8 @@ export class RefLinePass extends Initializable {
         any: false,
         useDiscard: false,
         model: false,
+        baseAxis: false,
+        baseValue: false
     });
 
     protected _context: Context;
@@ -34,6 +36,8 @@ export class RefLinePass extends Initializable {
 
     protected _program: Program;
     protected _alpha: Alpha;
+    protected _baseAxis: number;
+    protected _baseValue: number[];
 
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
@@ -42,6 +46,8 @@ export class RefLinePass extends Initializable {
     protected _uCameraPosition: WebGLUniformLocation;
     protected _uUseDiscard: WebGLUniformLocation;
     protected _uMfAlpha: WebGLUniformLocation;
+    protected _uBaseAxis: WebGLUniformLocation;
+    protected _uBaseValue: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
 
@@ -75,6 +81,8 @@ export class RefLinePass extends Initializable {
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uCameraPosition = this._program.uniform('u_cameraPosition');
         this._uUseDiscard = this._program.uniform('u_useDiscard');
+        this._uBaseAxis = this._program.uniform('u_baseAxis');
+        this._uBaseValue = this._program.uniform('u_baseValue');
 
         this._alpha = new Alpha(
             this._gl, this._program, AlphaMode.AlphaToCoverage);
@@ -104,6 +112,15 @@ export class RefLinePass extends Initializable {
 
         if (this._altered.useDiscard) {
             this._gl.uniform1i(this._uUseDiscard, Number(this._useDiscard));
+        }
+
+        if (this._altered.baseAxis) {
+            this._gl.uniform1i(this._uBaseAxis, this._baseAxis);
+        }
+
+        if (this._altered.baseAxis || this._altered.baseValue) {
+            this._gl.uniform1f(
+                this._uBaseValue, this._baseValue?.[this._baseAxis]);
         }
 
         this._program.unbind();
@@ -180,5 +197,21 @@ export class RefLinePass extends Initializable {
 
     public set geometries(geom: PointCloudGeometry[]) {
         this._geometries = geom;
+    }
+
+    public get altered(): boolean {
+        return this._altered.any;
+    }
+
+    public set baseAxis(axis: number) {
+        this.assertInitialized();
+        this._baseAxis = axis;
+        this._altered.alter('baseAxis');
+    }
+
+    public set baseValue(value: number[]) {
+        this.assertInitialized();
+        this._baseValue = value;
+        this._altered.alter('baseValue');
     }
 }

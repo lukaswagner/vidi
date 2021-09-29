@@ -192,7 +192,7 @@ export class PointPass extends Initializable {
                 this._variablePointSizeOutputRange[0],
                 this._variablePointSizeOutputRange[1],
                 this._variablePointSizeOutputRange[1] -
-                    this._variablePointSizeOutputRange[0]);
+                this._variablePointSizeOutputRange[0]);
         }
 
         if (override || this._altered.aspectRatio) {
@@ -298,7 +298,7 @@ export class PointPass extends Initializable {
         const newChunks = this._columns.map(
             (c) => c?.getChunks(start, end));
 
-        for(let i = 0; i < end - start; i++) {
+        for (let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc?.[i]);
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
@@ -313,7 +313,7 @@ export class PointPass extends Initializable {
         }
 
         this._columns.forEach((c) => {
-            if(c) c.altered = false;
+            if (c) c.altered = false;
         });
 
         this._refLinePass.geometries = this._geometries;
@@ -407,10 +407,16 @@ export class PointPass extends Initializable {
     }
 
     public get altered(): boolean {
-        return this._altered.any || this.columnsAltered;
+        return this._altered.any
+            || this.columnsAltered
+            || this._refLinePass.altered;
     }
 
     protected get columnsAltered(): boolean {
         return this._columns?.some((c) => c?.altered);
+    }
+
+    public get refLines(): RefLinePass {
+        return this._refLinePass;
     }
 }

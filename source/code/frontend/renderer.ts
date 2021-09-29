@@ -32,7 +32,7 @@ import {
 
 import { ClusterInfo } from 'worker/clustering/interface';
 import { ClusterVisualization } from './clustering/clusterVisualization';
-import { GLfloat2 } from 'shared/types/tuples' ;
+import { GLfloat2 } from 'shared/types/tuples';
 import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
@@ -148,6 +148,10 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.numClusters = numClusters;
     }
 
+    public invalidate(): void {
+        super.invalidate();
+    }
+
     protected createRenderbuffer(
         format: GLuint, width = 1, height = 1, multisample = 1
     ): Renderbuffer {
@@ -184,11 +188,11 @@ export class TopicMapRenderer extends Renderer {
         const w = this._defaultFBO?.width ?? 1;
         const h = this._defaultFBO?.height ?? 1;
 
-        if(this._msFBO?.initialized) this._msFBO.uninitialize();
-        if(this._msColor?.initialized) this._msColor.uninitialize();
-        if(this._msDepth?.initialized) this._msDepth.uninitialize();
+        if (this._msFBO?.initialized) this._msFBO.uninitialize();
+        if (this._msColor?.initialized) this._msColor.uninitialize();
+        if (this._msDepth?.initialized) this._msDepth.uninitialize();
 
-        if(this._msEnabled) {
+        if (this._msEnabled) {
             this._msColor =
                 this.createRenderbuffer(this._rgbFormat[0], w, h, samples);
             this._msDepth =
@@ -200,11 +204,11 @@ export class TopicMapRenderer extends Renderer {
             ]);
         }
 
-        if(this._mfFBO?.initialized) this._mfFBO.uninitialize();
-        if(this._mfColor?.initialized) this._mfColor.uninitialize();
-        if(this._mfDepth?.initialized) this._mfDepth.uninitialize();
+        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
+        if (this._mfColor?.initialized) this._mfColor.uninitialize();
+        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
 
-        if(this._mfEnabled) {
+        if (this._mfEnabled) {
             this._mfColor =
                 this.createTexture(this._rgbFormat, w, h);
             this._mfDepth =
@@ -266,7 +270,7 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
         // @ts-expect-error: webgl-operate mouse wheel zoom is broken
-        this._navigation._wheelZoom = { process: () => {} };
+        this._navigation._wheelZoom = { process: () => { } };
 
         // set up actual rendering
         this._pointPass = new PointPass(context);
@@ -336,12 +340,12 @@ export class TopicMapRenderer extends Renderer {
         this._blitPass.uninitialize();
         this._accumulatePass.uninitialize();
 
-        if(this._msFBO?.initialized) this._msFBO.uninitialize();
-        if(this._msColor?.initialized) this._msColor.uninitialize();
-        if(this._msDepth?.initialized) this._msDepth.uninitialize();
-        if(this._mfFBO?.initialized) this._mfFBO.uninitialize();
-        if(this._mfColor?.initialized) this._mfColor.uninitialize();
-        if(this._mfDepth?.initialized) this._mfDepth.uninitialize();
+        if (this._msFBO?.initialized) this._msFBO.uninitialize();
+        if (this._msColor?.initialized) this._msColor.uninitialize();
+        if (this._msDepth?.initialized) this._msDepth.uninitialize();
+        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
+        if (this._mfColor?.initialized) this._mfColor.uninitialize();
+        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
 
         this._defaultFBO.uninitialize();
     }
@@ -371,9 +375,9 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onPrepare(): void {
         if (this._altered.frameSize) {
-            if(this._msEnabled)
+            if (this._msEnabled)
                 this._msFBO.resize(this._frameSize[0], this._frameSize[1]);
-            if(this._mfEnabled)
+            if (this._mfEnabled)
                 this._mfFBO.resize(this._frameSize[0], this._frameSize[1]);
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
@@ -387,9 +391,9 @@ export class TopicMapRenderer extends Renderer {
 
         if (this._altered.clearColor) {
             this._defaultFBO.clearColor(this._clearColor);
-            if(this._msEnabled)
+            if (this._msEnabled)
                 this._msFBO.clearColor(this._clearColor);
-            if(this._mfEnabled)
+            if (this._mfEnabled)
                 this._mfFBO.clearColor(this._clearColor);
         }
 
@@ -400,7 +404,7 @@ export class TopicMapRenderer extends Renderer {
         if (this._altered.multiFrameNumber) {
             this._ndcOffsetKernel =
                 new AntiAliasingKernel(this._multiFrameNumber);
-            if((this._multiFrameNumber > 1) !== this._mfEnabled)
+            if ((this._multiFrameNumber > 1) !== this._mfEnabled)
                 this.setupFBOs();
         }
 
@@ -409,7 +413,7 @@ export class TopicMapRenderer extends Renderer {
         this._gridPass.update();
         this._gridLabelPass.update();
         this._clusterPass.update();
-        if(this._mfEnabled)
+        if (this._mfEnabled)
             this._accumulatePass.update();
 
         this._altered.reset();
@@ -439,7 +443,7 @@ export class TopicMapRenderer extends Renderer {
 
         this._clusterPass.frame();
 
-        if(this._msEnabled && this._mfEnabled) {
+        if (this._msEnabled && this._mfEnabled) {
             this._blitPass.framebuffer = this._msFBO;
             this._blitPass.readBuffer = this._gl.COLOR_ATTACHMENT0;
             this._blitPass.target = this._mfFBO;
@@ -447,19 +451,19 @@ export class TopicMapRenderer extends Renderer {
             this._blitPass.frame();
         }
 
-        if(this._mfEnabled) {
+        if (this._mfEnabled) {
             this._accumulatePass.frame(frameNumber);
         }
 
     }
 
     protected onSwap(): void {
-        if(!this._msEnabled && !this._mfEnabled) return;
+        if (!this._msEnabled && !this._mfEnabled) return;
 
         const fb = this._mfEnabled ?
             (this._accumulatePass.framebuffer ?? this._mfFBO) :
             this._msFBO;
-        if(!fb.initialized) return;
+        if (!fb.initialized) return;
 
         if (
             vec2.distance(fb.size, this._defaultFBO.size) ||
@@ -484,7 +488,7 @@ export class TopicMapRenderer extends Renderer {
         const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
         const e = this._modelMatInfo.extents;
 
-        if(!e || !c || c.some((c) =>
+        if (!e || !c || c.some((c) =>
             c?.max === Number.NEGATIVE_INFINITY ||
             c?.min === Number.POSITIVE_INFINITY)
         ) {
@@ -542,5 +546,9 @@ export class TopicMapRenderer extends Renderer {
     public set variablePointSizeStrength(strength: number) {
         this._pointPass.variablePointSizeStrength = strength;
         this.invalidate();
+    }
+
+    public get points(): PointPass {
+        return this._pointPass;
     }
 }

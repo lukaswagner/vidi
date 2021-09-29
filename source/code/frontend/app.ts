@@ -154,7 +154,7 @@ export class TopicMapApp extends Initializable {
         const applyPreset = (): void => {
             const preset = this._presets
                 .find((p) => p.name === presetSelect.value);
-            if(!preset) return;
+            if (!preset) return;
             const data = this._datasets.find((d) => d.id === preset.data);
             if (!preset.data || !data) {
                 this._controls.applyPreset(preset);
@@ -278,6 +278,16 @@ export class TopicMapApp extends Initializable {
         });
         this._controls.axes = [xAxis, yAxis, zAxis];
 
+        this._controls.position.input.select({
+            label: 'Axis for 2.5D',
+            optionTexts: ['x', 'y', 'z'],
+            value: 'y',
+            handler: (v) => {
+                this._renderer.points.refLines.baseAxis = v.index;
+                this._renderer.invalidate();
+            }
+        });
+
         // clustering
         this._controls.cluster.input.button({
             label: 'Calculate clusters',
@@ -371,7 +381,7 @@ export class TopicMapApp extends Initializable {
     }
 
     protected getId(column: Column): string {
-        return column ?.name ?? '__NONE__';
+        return column?.name ?? '__NONE__';
     }
 
     protected dataReady(columns: Column[]): void {
@@ -385,7 +395,7 @@ export class TopicMapApp extends Initializable {
         this._columns.addColumns(this._clustering.getOutputs());
         this._clustering.clusterInfoHandler = (name, clusters) => {
             this._renderer.setClusterData(name, clusters);
-            if(!this._controls.clusterAlg.values.includes(name)) {
+            if (!this._controls.clusterAlg.values.includes(name)) {
                 this._controls.clusterAlg.addOption(name);
             }
             this._controls.clusterAlg.value = name;
@@ -421,7 +431,7 @@ export class TopicMapApp extends Initializable {
     }
 
     protected updateColumn(updatedColumn: ColumnUsage, name: string): void {
-        if(!this._columns) return;
+        if (!this._columns) return;
         this._columns.selectColumn(updatedColumn, name);
         this._renderer.setColumn(
             updatedColumn,

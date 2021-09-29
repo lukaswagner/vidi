@@ -9,6 +9,8 @@ uniform mat4 u_model;
 uniform mat4 u_viewProjection;
 uniform mat4 u_viewProjectionInverse;
 uniform vec2 u_ndcOffset;
+uniform int u_baseAxis;
+uniform float u_baseValue;
 
 out vec2 v_uv;
 
@@ -20,7 +22,7 @@ void main()
     pointPos = pointPos / pointPos.w;
 
     vec4 basePos = pointPos;
-    basePos.y = 0.0;
+    basePos[u_baseAxis] = u_baseValue;
 
     vec4 viewPointPos = u_viewProjection * pointPos;
     viewPointPos = viewPointPos / viewPointPos.w;
