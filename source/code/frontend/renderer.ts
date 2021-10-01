@@ -230,6 +230,9 @@ export class TopicMapRenderer extends Renderer {
         this._clusterPass.target = this._renderFBO;
         this._accumulatePass.texture = this._mfColor;
         this._blitPass.framebuffer = this._renderFBO;
+
+        if (this._msEnabled) this._msFBO.clearColor(this._clearColor);
+        if (this._mfEnabled) this._mfFBO.clearColor(this._clearColor);
     }
 
     /**
