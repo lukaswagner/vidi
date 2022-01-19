@@ -1,7 +1,9 @@
-import { NumberChunk } from 'shared/column/chunk';
-import { NumberColumn } from 'shared/column/column';
+import {
+    Float32Chunk,
+    Float32Column,
+} from '@lukaswagner/csv-parser';
 
-export class FakeChunk extends NumberChunk {
+export class FakeChunk extends Float32Chunk {
     public get min(): number {
         return 0;
     }
@@ -11,7 +13,7 @@ export class FakeChunk extends NumberChunk {
     }
 
     public constructor(length: number) {
-        super(0);
+        super(0, 0);
         this._length = length;
     }
 
@@ -23,8 +25,8 @@ export class FakeChunk extends NumberChunk {
     }
 }
 
-export class FakeColumn extends NumberColumn {
-    public static fromActualColumn(column: NumberColumn): FakeColumn {
+export class FakeColumn extends Float32Column {
+    public static fromActualColumn(column: Float32Column): FakeColumn {
         const result = new FakeColumn('');
         column.getChunks().forEach((c) => {
             result.push(new FakeChunk(c.length));

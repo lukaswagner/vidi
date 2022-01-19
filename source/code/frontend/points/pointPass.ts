@@ -8,11 +8,11 @@ import {
     Shader,
     mat4,
 } from 'webgl-operate';
-
 import {
     Column,
-    NumberColumn
-} from 'shared/column/column';
+    Float32Chunk,
+    Float32Column,
+} from '@lukaswagner/csv-parser';
 
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
@@ -171,7 +171,7 @@ export class PointPass extends Initializable {
 
         if (geomAltered || this._altered.variablePointSizeOutputRange) {
             const col =
-                this._columns[ColumnUsage.VARIABLE_POINT_SIZE] as NumberColumn;
+                this._columns[ColumnUsage.VARIABLE_POINT_SIZE] as Float32Column;
             this._gl.uniform3fv(
                 this._uVariablePointSizeInputRange,
                 col ? [col.min, col.max, 1 / (col.max - col.min)] : [0, 0, 0]);
@@ -286,7 +286,7 @@ export class PointPass extends Initializable {
             const len = Math.min(...chunks.map(
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(
-                (c, i) => c ? c.data : new SharedArrayBuffer(
+                (c: Float32Chunk, i) => c ? c.data : new SharedArrayBuffer(
                     len * 4 * (i === ColumnUsage.PER_POINT_COLOR ? 4 : 1)));
 
             this._geometries.push(PointCloudGeometry.fromColumns(

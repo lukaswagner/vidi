@@ -1,12 +1,20 @@
 import {
+    CSV,
+    Column,
     CsvLoaderOptions,
-    LoadInfo
-} from 'shared/csvLoader/options';
-import { Column } from 'shared/column/column';
+} from '@lukaswagner/csv-parser';
+
 import { Controls } from 'frontend/controls';
-import { CsvMultiThreadedLoader } from 'frontend/loader/csv';
+import { Progress } from 'frontend/ui/progress';
 
 type Invalidate = (force: boolean) => void;
+
+type LoadInfo<T> = {
+    stream: ReadableStream,
+    size?: number,
+    options: T,
+    progress: Progress,
+}
 
 export function loadFromServer(
     url: string, format: string, controls: Controls, invalidate: Invalidate
@@ -60,7 +68,7 @@ function loadCustomFromFile(
     console.log('loading custom file', file.name);
 
     return loadCsv({
-        stream: file.stream(),
+        stream: file.stream() as unknown as ReadableStream<unknown>,
         size: file.size,
         options: {
             delimiter,
@@ -103,9 +111,25 @@ function loadCustomFromUrl(
         }, invalidate));
 }
 
-function loadCsv(
-    info: LoadInfo<CsvLoaderOptions>, invalidate: Invalidate
+async function loadCsv(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    info: LoadInfo<Partial<CsvLoaderOptions>>, invalidate: Invalidate
 ): Promise<Column[]> {
-    const loader = new CsvMultiThreadedLoader(info);
-    return loader.load(invalidate);
+    const loader = new CSV({
+        ...info.options,
+        dataSources: {
+            input: info.stream
+        },
+        size: info.size
+    });
+    const columnHeaders = await loader.open('input');
+    const [columns, dispatch] = loader.load({
+        columns: columnHeaders.map(({ type }) => type),
+        generatedColumns: []
+    });
+
+    // eslint-disable-next-line
+    for await (const _ of dispatch()) {}
+
+    return columns;
 }
