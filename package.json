@@ -40,7 +40,7 @@
     "build": "webpack build --config webpack.prod.js",
     "watch": "webpack build --config webpack.prod.js --watch",
     "analyze": "webpack serve --config webpack.prod.js --env analyze",
-    "lint": "eslint ./apps ./packages",
+    "lint": "eslint ./source",
     "lint-fix": "eslint ./source --fix"
   }
 }
