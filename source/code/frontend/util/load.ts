@@ -4,8 +4,7 @@ import {
     CsvLoaderOptions,
 } from '@lukaswagner/csv-parser';
 
-import { Controls } from 'frontend/controls';
-import { Progress } from 'frontend/ui/progress';
+import { ProgressOutput } from '@lukaswagner/web-ui';
 
 type Invalidate = (force: boolean) => void;
 
@@ -13,11 +12,14 @@ type LoadInfo<T> = {
     stream: ReadableStream,
     size?: number,
     options: T,
-    progress: Progress,
+    progress: ProgressOutput,
 }
 
 export function loadFromServer(
-    url: string, format: string, controls: Controls, invalidate: Invalidate
+    url: string,
+    format: string,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
     console.log('loading', url);
 
@@ -28,7 +30,7 @@ export function loadFromServer(
                 delimiter: deductSeparator(format) || ',',
                 includesHeader: true
             },
-            progress: controls.dataProgress
+            progress
         }, invalidate));
 }
 
@@ -44,59 +46,67 @@ export function deductSeparator(format: string): string {
 }
 
 export function loadCustom(
-    controls: Controls, invalidate: Invalidate
+    source: string,
+    sourceFile: File,
+    sourceUrl: string,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
-    switch (controls.customDataSourceSelect.value) {
+    switch (source) {
         case 'File':
-            return loadCustomFromFile(controls, invalidate);
+            return loadCustomFromFile(
+                sourceFile, delimiter, customDelimiter,
+                includesHeader, progress, invalidate);
         case 'URL':
-            return loadCustomFromUrl(controls, invalidate);
+            return loadCustomFromUrl(
+                sourceUrl, delimiter, customDelimiter,
+                includesHeader, progress, invalidate);
         default:
             break;
     }
 }
 
 function loadCustomFromFile(
-    controls: Controls, invalidate: Invalidate
+    file: File,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
-    const file = controls.customDataFile.files[0];
-    let delimiter = controls.customDataDelimiterSelect.value;
-    if (delimiter === 'custom') {
-        delimiter = controls.customDataDelimiterInput.value;
-    }
-    const includesHeader = controls.customDataIncludesHeader.value;
     console.log('loading custom file', file.name);
 
     return loadCsv({
         stream: file.stream() as unknown as ReadableStream<unknown>,
         size: file.size,
         options: {
-            delimiter,
+            delimiter: delimiter === 'custom' ? customDelimiter : delimiter,
             includesHeader
         },
-        progress: controls.customDataProgress
+        progress
     }, invalidate);
 }
 
 function loadCustomFromUrl(
-    controls: Controls, invalidate: Invalidate
+    url: string,
+    delimiter: string,
+    customDelimiter: string,
+    includesHeader: boolean,
+    progress: ProgressOutput,
+    invalidate: Invalidate
 ): Promise<Column[]> {
-    const url = controls.customDataUrlInput.value;
-    const user = controls.customDataUrlUserInput.value;
-    const pass = controls.customDataUrlPassInput.value;
+    // const user = controls.customDataUrlUserInput.value;
+    // const pass = controls.customDataUrlPassInput.value;
 
     const headers = new Headers();
-    if (user !== '' && pass !== '') {
-        headers.set(
-            'Authorization',
-            'Basic ' + btoa(user + ':' + pass));
-    }
-
-    let delimiter = controls.customDataDelimiterSelect.value;
-    if (delimiter === 'custom') {
-        delimiter = controls.customDataDelimiterInput.value;
-    }
-    const includesHeader = controls.customDataIncludesHeader.value;
+    // if (user !== '' && pass !== '') {
+    //     headers.set(
+    //         'Authorization',
+    //         'Basic ' + btoa(user + ':' + pass));
+    // }
 
     console.log('loading from url', url);
 
@@ -107,7 +117,7 @@ function loadCustomFromUrl(
                 delimiter,
                 includesHeader
             },
-            progress: controls.customDataProgress
+            progress
         }, invalidate));
 }
 
@@ -128,8 +138,13 @@ async function loadCsv(
         generatedColumns: []
     });
 
-    // eslint-disable-next-line
-    for await (const _ of dispatch()) {}
+    // this interface does not allow rendering of intermediate results,
+    // as we have to wait for it to load before returning the columns...
+    for await (const data of dispatch()) {
+        if(data.type === 'data' && info.size) {
+            info.progress.value = data.progress / info.size;
+        }
+    }
 
     return columns;
 }

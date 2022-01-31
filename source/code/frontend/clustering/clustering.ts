@@ -15,9 +15,8 @@ import {
     Columns,
 } from 'frontend/data/columns';
 
-import BinningWorker
-    from 'worker-loader?inline=fallback!worker/clustering/binning';
-import LloydWorker from 'worker-loader?inline=fallback!worker/clustering/lloyd';
+import BinningWorker from 'worker-loader!worker/clustering/binning';
+import LloydWorker from 'worker-loader!worker/clustering/lloyd';
 import { MessageType } from 'shared/types/messageType';
 
 type Worker = BinningWorker | LloydWorker;

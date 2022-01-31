@@ -87,17 +87,26 @@ export class GridOffsetHelper extends Initializable {
             this._camera.eye[i] > center ? 0 : 1
         );
 
-        const changed = indices.reduce((result, newIndex, i) => 
+        const changed = indices.reduce((result, newIndex, i) =>
             result || newIndex !== this._lastIndices[i], false
         );
-        if(!changed && !override) return;
+        if (!changed && !override) return;
 
         this._lastIndices = indices;
 
-        const offsets = gi.map((grid, i) =>
+        const calcOffsets = (
+            info: ExtendedGridInfo[], indices: number[]
+        ): number[] => info.map((grid, i) =>
             grid.enabled ? grid.offsets[indices[(i + 2) % 3]] : 0
         );
+        const offsets = calcOffsets(gi, indices);
         this._gridPass.gridOffsets = offsets;
+        const orderedByNormal = gi.map((g, i) => {
+            return { g, n: g.normal?.findIndex((v) => v !== 0), i: indices[i] };
+        }).sort((a, b) => a.n - b.n);
+        this._pointPass.refLines.baseValue = calcOffsets(
+            orderedByNormal.map((g) => g.g),
+            orderedByNormal.map((g) => g.i));
 
         this._pointPass.cutoffPosition = [1, 2, 0].map((i) => {
             return { value: offsets[i], mask: +gi[i].enabled };
@@ -204,7 +213,7 @@ export class GridOffsetHelper extends Initializable {
         const xUp = axisCenterStep[1] === 0 ? zDir : n(zDir);
         // choose zx-plane x label based on xy-plane position on z axis
         const xLabel = axisCenterStep[2] === 1 ?
-            { name: xName, dir: n(xDir), pos: xPos1, up: xUp }:
+            { name: xName, dir: n(xDir), pos: xPos1, up: xUp } :
             { name: xName, dir: xDir, pos: xPos2, up: n(xUp) };
 
         // pos on lower-x side of zx-plane
@@ -217,7 +226,7 @@ export class GridOffsetHelper extends Initializable {
         const zUp = axisCenterStep[1] === 0 ? xDir : n(xDir);
         // choose zx-plane z label based on yz-plane position on x axis
         const zLabel = axisCenterStep[0] === 1 ?
-            { name: zName, dir: zDir, pos: zPos1, up: zUp }:
+            { name: zName, dir: zDir, pos: zPos1, up: zUp } :
             { name: zName, dir: n(zDir), pos: zPos2, up: n(zUp) };
 
         // place y label on vertical planes
@@ -240,16 +249,16 @@ export class GridOffsetHelper extends Initializable {
 
         // choose xy-plane y label based on yz-plane position on x axis
         const yLabelXY = axisCenterStep[0] === 1 ?
-            { name: yName, dir: n(yDir), pos: yPosXY1, up: xDir }:
+            { name: yName, dir: n(yDir), pos: yPosXY1, up: xDir } :
             { name: yName, dir: yDir, pos: yPosXY2, up: n(xDir) };
         // if higher xy-plane is used, the label isn't facing the camera
-        if(axisCenterStep[2] === 1) yLabelXY.dir = n(yLabelXY.dir);
+        if (axisCenterStep[2] === 1) yLabelXY.dir = n(yLabelXY.dir);
         // choose yz-plane y label based on xy-plane position on z axis
         const yLabelYZ = axisCenterStep[2] === 1 ?
-            { name: yName, dir: yDir, pos: yPosYZ1, up: zDir }:
+            { name: yName, dir: yDir, pos: yPosYZ1, up: zDir } :
             { name: yName, dir: n(yDir), pos: yPosYZ2, up: n(zDir) };
         // if higher yz-plane is used, the label isn't facing the camera
-        if(axisCenterStep[0] === 1) yLabelYZ.dir = n(yLabelYZ.dir);
+        if (axisCenterStep[0] === 1) yLabelYZ.dir = n(yLabelYZ.dir);
 
         return [
             { labels: [xLabel], useNearest: true },

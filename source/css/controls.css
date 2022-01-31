@@ -1,0 +1,81 @@
+#controls-container, #info-container {
+    --controls-margin: 0.5em;
+    position: absolute;
+    top: var(--navbar-height);
+    right: 0;
+    margin: var(--controls-margin);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    height: calc(100vh - var(--navbar-height) - 2 * var(--controls-margin));
+    overflow: auto;
+}
+
+.controls-toggle, .control-block {
+    background-color: #fffe;
+    padding: 0.5em;
+    margin: 0.2em;
+    color: #000;
+    border-radius: 2px;
+    user-select: none;
+}
+
+.control-title {
+    cursor: pointer;
+}
+
+.controls {
+    margin-top: 1em;
+}
+
+.control-block {
+    width: var(--control-width);
+}
+
+.controls div {
+    display: flex;
+    align-items: center;
+    height: 1.5em;
+}
+
+.controls div:not(:first-child) {
+    padding-top: 5px;
+}
+
+.controls label {
+    margin-right: auto;
+}
+
+.controls progress {
+    margin: 2px;
+}
+
+.controls {
+    --margin: 5px;
+    --width-100: var(--control-input-width);
+    --width-50: calc(var(--control-input-width) * 0.5);
+}
+
+.controls input, .controls button, .controls select, .controls progress {
+    box-sizing: border-box;
+    width: var(--width-100);
+    height: 1.8em;
+    margin-left: var(--margin);
+}
+
+.controls input:not(:last-child) {
+    width: var(--width-50);
+}
+
+.controls input[type=checkbox] {
+    width: unset;
+}
+
+.controls table {
+    border-collapse: collapse;
+}
+
+.controls td, .controls th {
+    padding: 3px;
+    border: 1px solid black;
+}

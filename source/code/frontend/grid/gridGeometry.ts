@@ -10,7 +10,6 @@ import {
 } from 'webgl-operate';
 
 import { ExtendedGridInfo } from './gridInfo';
-import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class GridGeometry extends Geometry {
     protected static readonly FADED_GRID_WIDTH = 1.0;
@@ -54,8 +53,7 @@ export class GridGeometry extends Geometry {
     protected _offsetLocation: GLuint = 6;
     protected _gridInfoLocation: GLuint = 7;
 
-    protected _gl: WebGLRenderingContext;
-    protected _gl2facade: GL2Facade;
+    protected _gl: WebGL2RenderingContext;
 
     /**
      * Object constructor, requires a context and an identifier.
@@ -66,8 +64,7 @@ export class GridGeometry extends Geometry {
     public constructor(context: Context, identifier?: string) {
         super(context, identifier);
 
-        this._gl = context.gl as WebGLRenderingContext;
-        this._gl2facade = context.gl2facade;
+        this._gl = context.gl as WebGL2RenderingContext;
 
         this._buffers.push(
             new Buffer(context),
@@ -133,7 +130,7 @@ export class GridGeometry extends Geometry {
      * Draws the geometry.
      */
     public draw(): void {
-        this._gl2facade.drawArraysInstanced(
+        this._gl.drawArraysInstanced(
             this._gl.TRIANGLE_STRIP, 0, 4, this._numGrids);
     }
 
@@ -213,33 +210,33 @@ export class GridGeometry extends Geometry {
         const gil = this._gridInfoLocation;
 
         b[0].attribEnable(vl, 3, f, false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(vl, 0);
+        this._gl.vertexAttribDivisor(vl, 0);
 
         b[1].attribEnable(uvl, 2, f, false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(uvl, 0);
+        this._gl.vertexAttribDivisor(uvl, 0);
 
         b[2].attribEnable(tl + 0, 4, f, false, 64, 0, true, false);
         b[2].attribEnable(tl + 1, 4, f, false, 64, 16, false, false);
         b[2].attribEnable(tl + 2, 4, f, false, 64, 32, false, false);
         b[2].attribEnable(tl + 3, 4, f, false, 64, 48, false, false);
-        this._gl2facade.vertexAttribDivisor(tl + 0, 1);
-        this._gl2facade.vertexAttribDivisor(tl + 1, 1);
-        this._gl2facade.vertexAttribDivisor(tl + 2, 1);
-        this._gl2facade.vertexAttribDivisor(tl + 3, 1);
+        this._gl.vertexAttribDivisor(tl + 0, 1);
+        this._gl.vertexAttribDivisor(tl + 1, 1);
+        this._gl.vertexAttribDivisor(tl + 2, 1);
+        this._gl.vertexAttribDivisor(tl + 3, 1);
 
         b[3].attribEnable(ol, 1, f, false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(ol, 1);
+        this._gl.vertexAttribDivisor(ol, 1);
 
         b[4].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
         b[4].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
         b[4].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
         b[4].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
         b[4].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
-        this._gl2facade.vertexAttribDivisor(gil + 0, 1);
-        this._gl2facade.vertexAttribDivisor(gil + 1, 1);
-        this._gl2facade.vertexAttribDivisor(gil + 2, 1);
-        this._gl2facade.vertexAttribDivisor(gil + 3, 1);
-        this._gl2facade.vertexAttribDivisor(gil + 4, 1);
+        this._gl.vertexAttribDivisor(gil + 0, 1);
+        this._gl.vertexAttribDivisor(gil + 1, 1);
+        this._gl.vertexAttribDivisor(gil + 2, 1);
+        this._gl.vertexAttribDivisor(gil + 3, 1);
+        this._gl.vertexAttribDivisor(gil + 4, 1);
     }
 
     /**

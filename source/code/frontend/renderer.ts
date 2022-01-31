@@ -3,6 +3,7 @@ import {
     AntiAliasingKernel,
     BlitPass,
     Camera,
+    ChangeLookup,
     Context,
     DefaultFramebuffer,
     EventProvider,
@@ -12,8 +13,8 @@ import {
     Renderbuffer,
     Renderer,
     Texture2D,
-    Wizard,
     mat4,
+    vec2,
     vec3,
     viewer,
 } from 'webgl-operate';
@@ -38,6 +39,21 @@ import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
 
 export class TopicMapRenderer extends Renderer {
+    protected _altered = Object.assign(new ChangeLookup(), {
+        any: false,
+        msaa: false,
+        multiFrameNumber: false,
+        frameSize: false,
+        canvasSize: false,
+        framePrecision: false,
+        clearColor: false,
+        debugTexture: false,
+    });
+
+    protected _gl: WebGL2RenderingContext;
+    protected _rgbFormat: [GLuint, GLuint, GLuint];
+    protected _depthFormat: [GLuint, GLuint, GLuint];
+
     // scene data
     protected _camera: Camera;
     protected _navigation: Navigation;
@@ -49,10 +65,24 @@ export class TopicMapRenderer extends Renderer {
     };
     protected _modelMat: mat4;
 
-    // intermediate rendering for aa
-    protected _depthRenderbuffer: Renderbuffer;
-    protected _colorRenderTexture: Texture2D;
-    protected _intermediateFBO: Framebuffer;
+    // render settings
+    protected _msaa = 8;
+
+    // multisample buffer
+    protected _msEnabled: boolean;
+    protected _msColor: Renderbuffer;
+    protected _msDepth: Renderbuffer;
+    protected _msFBO: Framebuffer;
+
+    // multi frame buffer
+    protected _mfEnabled: boolean;
+    protected _mfColor: Texture2D;
+    protected _mfDepth: Renderbuffer;
+    protected _mfFBO: Framebuffer;
+
+    // fbo to render to
+    protected _renderFBO: Framebuffer;
+
     // aa control
     protected _ndcOffsetKernel: AntiAliasingKernel;
     protected _uNdcOffset: WebGLUniformLocation;
@@ -117,6 +147,89 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.numClusters = numClusters;
     }
 
+    public invalidate(): void {
+        super.invalidate();
+    }
+
+    protected createRenderbuffer(
+        format: GLuint, width = 1, height = 1, multisample = 1
+    ): Renderbuffer {
+        const buf = new Renderbuffer(this._context);
+        buf.initialize(width, height, format, multisample);
+        return buf;
+    }
+
+    protected createTexture(
+        format: [GLuint, GLuint, GLuint], width = 1, height = 1
+    ): Texture2D {
+        const buf = new Texture2D(this._context);
+        buf.initialize(width, height, ...format);
+        return buf;
+    }
+
+    protected setupFBOs(): void {
+        this._msEnabled = this._msaa > 1;
+        this._mfEnabled =
+            !!this._multiFrameNumber &&
+            this._multiFrameNumber > 1;
+
+        const enabled = (v: boolean): string => v ? 'ON' : 'OFF';
+
+        const samples = Math.min(this._msaa, this.maxSamples);
+        console.log(
+            `MSAA ${enabled(this._msEnabled)}, ${samples} samples (req ${this._msaa}, max ${this.maxSamples})`);
+        console.log(
+            `MFAA ${enabled(this._mfEnabled)}, ${this._multiFrameNumber} samples`);
+        const w = this._defaultFBO?.width ?? 1;
+        const h = this._defaultFBO?.height ?? 1;
+
+        if (this._msFBO?.initialized) this._msFBO.uninitialize();
+        if (this._msColor?.initialized) this._msColor.uninitialize();
+        if (this._msDepth?.initialized) this._msDepth.uninitialize();
+
+        if (this._msEnabled) {
+            this._msColor =
+                this.createRenderbuffer(this._rgbFormat[0], w, h, samples);
+            this._msDepth =
+                this.createRenderbuffer(this._depthFormat[0], w, h, samples);
+            this._msFBO = new Framebuffer(this._context);
+            this._msFBO.initialize([
+                [this._gl.COLOR_ATTACHMENT0, this._msColor],
+                [this._gl.DEPTH_ATTACHMENT, this._msDepth]
+            ]);
+        }
+
+        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
+        if (this._mfColor?.initialized) this._mfColor.uninitialize();
+        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
+
+        if (this._mfEnabled) {
+            this._mfColor =
+                this.createTexture(this._rgbFormat, w, h);
+            this._mfDepth =
+                this.createRenderbuffer(this._depthFormat[0], w, h);
+            this._mfFBO = new Framebuffer(this._context);
+            this._mfFBO.initialize([
+                [this._gl.COLOR_ATTACHMENT0, this._mfColor],
+                [this._gl.DEPTH_ATTACHMENT, this._mfDepth]
+            ]);
+        }
+
+        this._renderFBO = this._msEnabled ? this._msFBO : (
+            this._mfEnabled ? this._mfFBO : this._defaultFBO
+        );
+
+        this._pointPass.target = this._renderFBO;
+        this._gridPass.target = this._renderFBO;
+        this._gridLabelPass.target = this._renderFBO;
+        this._clusterPass.target = this._renderFBO;
+        this._accumulatePass.texture = this._mfColor;
+        this._blitPass.framebuffer = this._renderFBO;
+
+        if (this._msEnabled) this._msFBO.clearColor(this._clearColor);
+        if (this._mfEnabled) this._mfFBO.clearColor(this._clearColor);
+    }
+
     /**
      * Initializes and sets up buffer, cube geometry, camera and links shaders
      * with program.
@@ -130,10 +243,18 @@ export class TopicMapRenderer extends Renderer {
         callback: Invalidate,
         eventProvider: EventProvider
     ): boolean {
-        const gl = context.gl as WebGL2RenderingContext;
-        const gl2facade = this._context.gl2facade;
+        this._gl = context.gl as WebGL2RenderingContext;
 
-        context.enable(['ANGLE_instanced_arrays']);
+        this._rgbFormat = [
+            this._gl.RGBA8,
+            this._gl.RGBA,
+            this._gl.UNSIGNED_BYTE
+        ];
+        this._depthFormat = [
+            this._gl.DEPTH_COMPONENT32F,
+            this._gl.DEPTH_COMPONENT,
+            this._gl.FLOAT
+        ];
 
         // set up view control
         this._camera = new Camera();
@@ -147,46 +268,20 @@ export class TopicMapRenderer extends Renderer {
         this._navigation = new Navigation(callback, eventProvider);
         this._navigation.camera = this._camera;
         // @ts-expect-error: webgl-operate mouse wheel zoom is broken
-        delete this._navigation._wheelZoom;
-
-        // set up intermediate rendering
-
-        // usually precision is provided by canvas, but this._framePrecision is
-        // defined only after initialization.
-        const internalFormatAndType = Wizard.queryInternalTextureFormat(
-            this._context, gl.RGB, Wizard.Precision.byte);
-
-        this._colorRenderTexture = new Texture2D(
-            this._context, 'ColorRenderTexture');
-        this._colorRenderTexture.initialize(
-            1, 1, internalFormatAndType[0], gl.RGB, internalFormatAndType[1]);
-        this._colorRenderTexture.filter(gl.NEAREST, gl.NEAREST);
-
-        this._depthRenderbuffer = new Renderbuffer(
-            this._context, 'DepthRenderbuffer');
-        this._depthRenderbuffer.initialize(1, 1, gl.DEPTH24_STENCIL8);
-
-        this._intermediateFBO = new Framebuffer(
-            this._context, 'IntermediateFBO');
-        this._intermediateFBO.initialize([
-            [gl2facade.COLOR_ATTACHMENT0, this._colorRenderTexture],
-            [gl.DEPTH_ATTACHMENT, this._depthRenderbuffer]]);
+        this._navigation._wheelZoom = { process: () => { } };
 
         // set up actual rendering
         this._pointPass = new PointPass(context);
         this._pointPass.initialize();
         this._pointPass.camera = this._camera;
-        this._pointPass.target = this._intermediateFBO;
 
         this._gridPass = new GridPass(context);
         this._gridPass.initialize();
         this._gridPass.camera = this._camera;
-        this._gridPass.target = this._intermediateFBO;
 
         this._gridLabelPass = new GridLabelPass(context);
         this._gridLabelPass.initialize();
         this._gridLabelPass.camera = this._camera;
-        this._gridLabelPass.target = this._intermediateFBO;
         this._gridLabelPass.depthMask = true;
         this._gridLabelPass.loadFont(
             './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
@@ -200,7 +295,6 @@ export class TopicMapRenderer extends Renderer {
         this._clusterPass = new ClusterVisualization(context);
         this._clusterPass.initialize();
         this._clusterPass.camera = this._camera;
-        this._clusterPass.target = this._intermediateFBO;
 
         // set up output
         this._defaultFBO = new DefaultFramebuffer(context, 'DefaultFBO');
@@ -209,13 +303,12 @@ export class TopicMapRenderer extends Renderer {
         this._accumulatePass = new AccumulatePass(context);
         this._accumulatePass.initialize();
         this._accumulatePass.precision = this._framePrecision;
-        this._accumulatePass.texture = this._colorRenderTexture;
 
         this._blitPass = new BlitPass(this._context);
         this._blitPass.initialize();
-        this._blitPass.readBuffer = gl2facade.COLOR_ATTACHMENT0;
-        this._blitPass.target = this._defaultFBO;
-        this._blitPass.drawBuffer = gl.BACK;
+
+        // set up all render storage
+        this.setupFBOs();
 
         // connect fullscreen changes to updateUseDiscard listener
         const uud = this.updateUseDiscard.bind(this);
@@ -226,7 +319,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.useDiscard = true;
 
         // enable culling
-        gl.enable(gl.CULL_FACE);
+        this._gl.enable(this._gl.CULL_FACE);
 
         return true;
     }
@@ -245,9 +338,12 @@ export class TopicMapRenderer extends Renderer {
         this._blitPass.uninitialize();
         this._accumulatePass.uninitialize();
 
-        this._intermediateFBO.uninitialize();
-        this._colorRenderTexture.uninitialize();
-        this._depthRenderbuffer.uninitialize();
+        if (this._msFBO?.initialized) this._msFBO.uninitialize();
+        if (this._msColor?.initialized) this._msColor.uninitialize();
+        if (this._msDepth?.initialized) this._msDepth.uninitialize();
+        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
+        if (this._mfColor?.initialized) this._mfColor.uninitialize();
+        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
 
         this._defaultFBO.uninitialize();
     }
@@ -277,8 +373,10 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onPrepare(): void {
         if (this._altered.frameSize) {
-            this._intermediateFBO.resize(
-                this._frameSize[0], this._frameSize[1]);
+            if (this._msEnabled)
+                this._msFBO.resize(this._frameSize[0], this._frameSize[1]);
+            if (this._mfEnabled)
+                this._mfFBO.resize(this._frameSize[0], this._frameSize[1]);
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
             this._pointPass.aspectRatio =
@@ -291,12 +389,21 @@ export class TopicMapRenderer extends Renderer {
 
         if (this._altered.clearColor) {
             this._defaultFBO.clearColor(this._clearColor);
-            this._intermediateFBO.clearColor(this._clearColor);
+            if (this._msEnabled)
+                this._msFBO.clearColor(this._clearColor);
+            if (this._mfEnabled)
+                this._mfFBO.clearColor(this._clearColor);
+        }
+
+        if (this._altered.msaa) {
+            this.setupFBOs();
         }
 
         if (this._altered.multiFrameNumber) {
             this._ndcOffsetKernel =
                 new AntiAliasingKernel(this._multiFrameNumber);
+            if ((this._multiFrameNumber > 1) !== this._mfEnabled)
+                this.setupFBOs();
         }
 
         this._gridOffsetHelper.update();
@@ -304,18 +411,18 @@ export class TopicMapRenderer extends Renderer {
         this._gridPass.update();
         this._gridLabelPass.update();
         this._clusterPass.update();
-        this._accumulatePass.update();
+        if (this._mfEnabled)
+            this._accumulatePass.update();
 
         this._altered.reset();
         this._camera.altered = false;
     }
 
     protected onFrame(frameNumber: number): void {
-        const gl = this._context.gl as WebGLRenderingContext;
+        const gl = this._context.gl as WebGL2RenderingContext;
 
-        this._intermediateFBO.bind();
-        this._intermediateFBO.clear(
-            gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, false, false);
+        this._renderFBO.clear(
+            gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, true, false);
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
@@ -324,7 +431,7 @@ export class TopicMapRenderer extends Renderer {
         ndcOffset[1] = 2.0 * ndcOffset[1] / this._frameSize[1];
 
         this._pointPass.ndcOffset = ndcOffset;
-        this._pointPass.frame();
+        this._pointPass.frame(frameNumber);
 
         this._gridLabelPass.ndcOffset = ndcOffset;
         this._gridLabelPass.frame();
@@ -334,16 +441,40 @@ export class TopicMapRenderer extends Renderer {
 
         this._clusterPass.frame();
 
-        this._accumulatePass.frame(frameNumber);
+        if (this._msEnabled && this._mfEnabled) {
+            this._blitPass.framebuffer = this._msFBO;
+            this._blitPass.readBuffer = this._gl.COLOR_ATTACHMENT0;
+            this._blitPass.target = this._mfFBO;
+            this._blitPass.drawBuffer = this._gl.COLOR_ATTACHMENT0;
+            this._blitPass.frame();
+        }
+
+        if (this._mfEnabled) {
+            this._accumulatePass.frame(frameNumber);
+        }
+
     }
 
     protected onSwap(): void {
-        const fb =
-            this._accumulatePass.framebuffer ?
-                this._accumulatePass.framebuffer :
-                this._intermediateFBO;
-        if(!fb.initialized) return;
+        if (!this._msEnabled && !this._mfEnabled) return;
+
+        const fb = this._mfEnabled ?
+            (this._accumulatePass.framebuffer ?? this._mfFBO) :
+            this._msFBO;
+        if (!fb.initialized) return;
+
+        if (
+            vec2.distance(fb.size, this._defaultFBO.size) ||
+            !this._defaultFBO
+        ) {
+            console.log('noblit');
+            return;
+        }
+
         this._blitPass.framebuffer = fb;
+        this._blitPass.readBuffer = this._gl.COLOR_ATTACHMENT0;
+        this._blitPass.target = this._defaultFBO;
+        this._blitPass.drawBuffer = this._gl.BACK;
         this._blitPass.frame();
     }
 
@@ -355,7 +486,7 @@ export class TopicMapRenderer extends Renderer {
         const c = this._modelMatInfo.columns.slice(0, 3) as Float32Column[];
         const e = this._modelMatInfo.extents;
 
-        if(!e || !c || c.some((c) =>
+        if (!e || !c || c.some((c) =>
             c?.max === Number.NEGATIVE_INFINITY ||
             c?.min === Number.POSITIVE_INFINITY)
         ) {
@@ -412,6 +543,20 @@ export class TopicMapRenderer extends Renderer {
 
     public set variablePointSizeStrength(strength: number) {
         this._pointPass.variablePointSizeStrength = strength;
+        this.invalidate();
+    }
+
+    public get points(): PointPass {
+        return this._pointPass;
+    }
+
+    public get maxSamples(): number {
+        return this._gl.getParameter(this._gl.MAX_SAMPLES);
+    }
+
+    public set msaa(value: number) {
+        this._msaa = value;
+        this._altered.alter('msaa');
         this.invalidate();
     }
 }

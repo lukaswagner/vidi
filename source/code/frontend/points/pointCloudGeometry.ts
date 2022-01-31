@@ -7,7 +7,6 @@ import {
 } from 'webgl-operate';
 
 import { ColumnUsage } from 'frontend/data/columns';
-import { GL2Facade } from 'webgl-operate/lib/gl2facade';
 
 export class PointCloudGeometry extends Geometry {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -36,8 +35,7 @@ export class PointCloudGeometry extends Geometry {
     protected _variablePointSizeLocation: GLuint = 5;
     protected _clusterIdLocation: GLuint = 6;
 
-    protected _gl: WebGLRenderingContext;
-    protected _gl2facade: GL2Facade;
+    protected _gl: WebGL2RenderingContext;
 
     /**
      * Object constructor, requires a context and an identifier.
@@ -48,8 +46,7 @@ export class PointCloudGeometry extends Geometry {
     public constructor(context: Context, identifier?: string) {
         super(context, identifier);
 
-        this._gl = context.gl as WebGLRenderingContext;
-        this._gl2facade = context.gl2facade;
+        this._gl = context.gl as WebGL2RenderingContext;
 
         this._buffers.push(
             new Buffer(context),
@@ -134,7 +131,7 @@ export class PointCloudGeometry extends Geometry {
      * Draws the geometry.
      */
     public draw(): void {
-        this._gl2facade.drawArraysInstanced(
+        this._gl.drawArraysInstanced(
             this._gl.TRIANGLE_STRIP, 0, 4, this._xCoord.length);
     }
 
@@ -146,37 +143,37 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[0].attribEnable(
             this._uvLocation, 2, this._gl.BYTE,
             false, 2, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._uvLocation, 0);
+        this._gl.vertexAttribDivisor(this._uvLocation, 0);
 
         this._buffers[1].attribEnable(
             this._xCoordLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._xCoordLocation, 1);
+        this._gl.vertexAttribDivisor(this._xCoordLocation, 1);
 
         this._buffers[2].attribEnable(
             this._yCoordLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._yCoordLocation, 1);
+        this._gl.vertexAttribDivisor(this._yCoordLocation, 1);
 
         this._buffers[3].attribEnable(
             this._zCoordLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._zCoordLocation, 1);
+        this._gl.vertexAttribDivisor(this._zCoordLocation, 1);
 
         this._buffers[4].attribEnable(
             this._vertexColorLocation, 4, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._vertexColorLocation, 1);
+        this._gl.vertexAttribDivisor(this._vertexColorLocation, 1);
 
         this._buffers[5].attribEnable(
             this._variablePointSizeLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._variablePointSizeLocation, 1);
+        this._gl.vertexAttribDivisor(this._variablePointSizeLocation, 1);
 
         this._buffers[6].attribEnable(
             this._clusterIdLocation, 1, this._gl.FLOAT,
             false, 0, 0, true, false);
-        this._gl2facade.vertexAttribDivisor(this._clusterIdLocation, 1);
+        this._gl.vertexAttribDivisor(this._clusterIdLocation, 1);
     }
 
     /**
