@@ -1,6 +1,9 @@
-import { Column } from 'shared/column/column';
+import {
+    Column,
+    Float32Chunk,
+} from '@lukaswagner/csv-parser';
+
 import { MessageType } from 'shared/types/messageType';
-import { NumberChunk } from 'shared/column/chunk';
 
 export type BinningOptions = {
     resolution: number[]
@@ -25,7 +28,7 @@ export type ClusterInfo = {
 }
 
 export type FinishedData = {
-    clusterIds: NumberChunk[],
+    clusterIds: Float32Chunk[],
     clusterInfo: ClusterInfo[]
 }
 

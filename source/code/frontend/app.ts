@@ -7,42 +7,38 @@ import {
     Wizard,
     viewer,
 } from 'webgl-operate';
-
 import {
     ColorMapping,
-    ColorMappingDefault
+    ColorMappingDefault,
 } from './points/colorMapping';
-
 import {
     ColorMode,
-    ColorModeDefault
+    ColorModeDefault,
 } from './points/colorMode';
-
+import {
+    Column,
+    DataType,
+} from '@lukaswagner/csv-parser';
 import {
     ColumnUsage,
-    Columns
+    Columns,
 } from './data/columns';
-
 import {
     Controls,
-    Preset
+    Preset,
 } from './controls';
-
 import {
     Dataset,
     fetchAvailable,
-    fetchPresets
+    fetchPresets,
 } from './util/api';
-
 import {
     deductSeparator,
     loadCustom,
-    loadFromServer
+    loadFromServer,
 } from './util/load';
 
 import { Clustering } from './clustering/clustering';
-import { Column } from 'shared/column/column';
-import { DataType } from 'shared/column/dataType';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
 

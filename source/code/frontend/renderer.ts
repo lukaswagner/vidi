@@ -18,16 +18,15 @@ import {
     vec3,
     viewer,
 } from 'webgl-operate';
-
 import {
     Column,
-    NumberColumn
-} from 'shared/column/column';
-
+    Float32Column,
+} from '@lukaswagner/csv-parser';
 import {
     ExtendedGridInfo,
     GridExtents,
-    GridInfo, calculateExtendedGridInfo
+    GridInfo,
+    calculateExtendedGridInfo,
 } from './grid/gridInfo';
 
 import { ClusterInfo } from 'worker/clustering/interface';
@@ -488,7 +487,7 @@ export class TopicMapRenderer extends Renderer {
     }
 
     protected updateModelMat(): void {
-        const c = this._modelMatInfo.columns.slice(0, 3) as NumberColumn[];
+        const c = this._modelMatInfo.columns.slice(0, 3) as Float32Column[];
         const e = this._modelMatInfo.extents;
 
         if (!e || !c || c.some((c) =>

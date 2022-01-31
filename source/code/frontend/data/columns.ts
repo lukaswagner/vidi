@@ -1,5 +1,7 @@
-import { Column, NumberColumn, ColorColumn } from "shared/column/column";
-import { DataType } from "shared/column/dataType";
+import {
+    Column,
+    DataType,
+} from '@lukaswagner/csv-parser';
 
 export enum ColumnUsage {
     X_AXIS = 0,

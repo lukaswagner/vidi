@@ -1,19 +1,22 @@
-import { 
+import {
     ClusterInfo,
     FinishedData,
     MessageData,
-    Options
+    Options,
 } from 'worker/clustering/interface';
+import {
+    Column,
+    Float32Chunk,
+    Float32Column,
+    rebuildChunk,
+} from '@lukaswagner/csv-parser';
+import {
+    ColumnUsage,
+    Columns,
+} from 'frontend/data/columns';
 
-import { Column, NumberColumn } from 'shared/column/column';
-import { ColumnUsage, Columns } from '../data/columns';
-import { NumberChunk, rebuildChunk } from 'shared/column/chunk';
-
-import BinningWorker from
-    'worker-loader?inline=fallback!worker/clustering/binning';
-import LloydWorker from
-    'worker-loader?inline=fallback!worker/clustering/lloyd';
-
+import BinningWorker from 'worker-loader!worker/clustering/binning';
+import LloydWorker from 'worker-loader!worker/clustering/lloyd';
 import { MessageType } from 'shared/types/messageType';
 
 type Worker = BinningWorker | LloydWorker;
@@ -48,7 +51,7 @@ export class Clustering {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new NumberColumn('binning')
+                new Float32Column('binning')
             ]
         };
 
@@ -66,7 +69,7 @@ export class Clustering {
                 this._columnConfig.selectedColumn(ColumnUsage.Z_AXIS),
             ],
             outputs: [
-                new NumberColumn('k-means')
+                new Float32Column('k-means')
             ]
         };
 
@@ -117,11 +120,11 @@ export class Clustering {
 
     protected storeResult(worker: WorkerConfig, data: MessageData): void {
         const d = data.data as FinishedData;
-        const column = worker.outputs[0] as NumberColumn;
+        const column = worker.outputs[0] as Float32Column;
         column.reset();
 
         d.clusterIds.forEach((c) => {
-            const chunk = rebuildChunk(c) as NumberChunk;
+            const chunk = rebuildChunk(c) as Float32Chunk;
             column.push(chunk);
         });
 

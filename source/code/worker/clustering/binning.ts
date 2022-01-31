@@ -3,12 +3,16 @@ import {
     ClusterInfo,
     FinishedData,
     MessageData,
-    StartData
+    StartData,
 } from './interface';
-import { NumberColumn, rebuildColumn } from 'shared/column/column';
+import {
+    Float32Chunk,
+    Float32Column,
+    rebuildColumn,
+} from '@lukaswagner/csv-parser';
+
 import { FakeColumn } from './fakeColumn';
 import { MessageType } from 'shared/types/messageType';
-import { NumberChunk } from 'shared/column/chunk';
 
 self.addEventListener('message', (m: MessageEvent) => {
     const message = m.data as MessageData;
@@ -24,17 +28,17 @@ self.addEventListener('message', (m: MessageEvent) => {
 });
 
 function process(data: StartData): FinishedData {
-    const cols = data.columns.map((c) => rebuildColumn(c) as NumberColumn);
+    const cols = data.columns.map((c) => rebuildColumn(c) as Float32Column);
     while(cols.length < 3) {
         cols.push(FakeColumn.fromActualColumn(cols[0]));
     }
     const options = data.options as BinningOptions;
 
-    const result =  new Array<NumberChunk>();
+    const result =  new Array<Float32Chunk>();
     const limits = cols.map((c) => [c.min, c.max]);
     for(let i = 0; i < cols[0].chunkCount; i++) {
         result.push(processChunks(
-            cols.map((c) => c.getChunk(i) as NumberChunk),
+            cols.map((c) => c.getChunk(i) as Float32Chunk),
             limits,
             options.resolution));
     }
@@ -45,10 +49,10 @@ function process(data: StartData): FinishedData {
 }
 
 function processChunks(
-    input: NumberChunk[], limits: number[][], resolution: number[]
-): NumberChunk {
+    input: Float32Chunk[], limits: number[][], resolution: number[]
+): Float32Chunk {
     const rows = input[0].length;
-    const result = new NumberChunk(rows);
+    const result = new Float32Chunk(rows, 0);
     const map = (
         value: number, limits: number[], res: number
     ): number => {

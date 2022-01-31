@@ -106,7 +106,8 @@ module.exports = function (env) {
             headers: {
                 'Cross-Origin-Opener-Policy': 'same-origin',
                 'Cross-Origin-Embedder-Policy': 'require-corp'
-            }
+            },
+            hot: false
         }
     };
 };

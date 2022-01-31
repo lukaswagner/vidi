@@ -1,12 +1,19 @@
 import {
+    CSV,
+    Column,
     CsvLoaderOptions,
-    LoadInfo
-} from 'shared/csvLoader/options';
-import { Column } from 'shared/column/column';
-import { CsvMultiThreadedLoader } from 'frontend/loader/csv';
+} from '@lukaswagner/csv-parser';
+
 import { ProgressOutput } from '@lukaswagner/web-ui';
 
 type Invalidate = (force: boolean) => void;
+
+type LoadInfo<T> = {
+    stream: ReadableStream,
+    size?: number,
+    options: T,
+    progress: ProgressOutput,
+}
 
 export function loadFromServer(
     url: string,
@@ -73,7 +80,7 @@ function loadCustomFromFile(
     console.log('loading custom file', file.name);
 
     return loadCsv({
-        stream: file.stream(),
+        stream: file.stream() as unknown as ReadableStream<unknown>,
         size: file.size,
         options: {
             delimiter: delimiter === 'custom' ? customDelimiter : delimiter,
@@ -114,9 +121,30 @@ function loadCustomFromUrl(
         }, invalidate));
 }
 
-function loadCsv(
-    info: LoadInfo<CsvLoaderOptions>, invalidate: Invalidate
+async function loadCsv(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    info: LoadInfo<Partial<CsvLoaderOptions>>, invalidate: Invalidate
 ): Promise<Column[]> {
-    const loader = new CsvMultiThreadedLoader(info);
-    return loader.load(invalidate);
+    const loader = new CSV({
+        ...info.options,
+        dataSources: {
+            input: info.stream
+        },
+        size: info.size
+    });
+    const columnHeaders = await loader.open('input');
+    const [columns, dispatch] = loader.load({
+        columns: columnHeaders.map(({ type }) => type),
+        generatedColumns: []
+    });
+
+    // this interface does not allow rendering of intermediate results,
+    // as we have to wait for it to load before returning the columns...
+    for await (const data of dispatch()) {
+        if(data.type === 'data' && info.size) {
+            info.progress.value = data.progress / info.size;
+        }
+    }
+
+    return columns;
 }
