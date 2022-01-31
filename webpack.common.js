@@ -82,6 +82,13 @@ module.exports = function (env) {
                         filename: 'fonts/[name][ext][query]'
                     }
                 },
+                {
+                    test: /fonts/,
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'data/[name][ext][query]'
+                    }
+                },
             ],
         },
         resolve: {

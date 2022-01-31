@@ -38,6 +38,11 @@ import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { PointPass } from './points/pointPass';
 
+const Roboto = {
+    fnt: require('../../fonts/roboto/roboto.fnt'),
+    png: require('../../fonts/roboto/roboto.png')
+};
+
 export class TopicMapRenderer extends Renderer {
     protected _altered = Object.assign(new ChangeLookup(), {
         any: false,
@@ -284,7 +289,7 @@ export class TopicMapRenderer extends Renderer {
         this._gridLabelPass.camera = this._camera;
         this._gridLabelPass.depthMask = true;
         this._gridLabelPass.loadFont(
-            './fonts/roboto/roboto.fnt', this.invalidate.bind(this));
+            Roboto.fnt, this.invalidate.bind(this));
 
         this._gridOffsetHelper = new GridOffsetHelper(
             this._gridPass, this._gridLabelPass, this._pointPass);
