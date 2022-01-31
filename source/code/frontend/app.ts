@@ -276,10 +276,9 @@ export class TopicMapApp extends Initializable {
 
         this._controls.position.input.select({
             label: 'Axis for 2.5D',
-            optionTexts: ['x', 'y', 'z'],
-            value: 'y',
+            optionTexts: ['None', 'x', 'y', 'z'],
             handler: (v) => {
-                this._renderer.points.refLines.baseAxis = v.index;
+                this._renderer.points.refLines.baseAxis = v.index - 1;
                 this._renderer.invalidate();
             }
         });

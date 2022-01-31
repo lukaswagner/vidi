@@ -130,6 +130,8 @@ export class RefLinePass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(frameNumber: number): void {
+        if(this._baseAxis < 0) return;
+
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
