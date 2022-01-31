@@ -20,6 +20,7 @@ export class Controls {
     public cluster: UI;
     public size: UI;
     public color: UI;
+    public rendering: UI;
 
     public axes: [SelectInput, SelectInput, SelectInput];
     public clusterAlg: SelectInput;
@@ -42,6 +43,8 @@ export class Controls {
         this.size = new UI(sizeContainer, true);
         const colorContainer = document.getElementById('color-group');
         this.color = new UI(colorContainer, true);
+        const renderingContainer = document.getElementById('rendering-group');
+        this.rendering = new UI(renderingContainer, true);
     }
 
     public applyPreset(preset: Preset): void {

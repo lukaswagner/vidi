@@ -373,6 +373,20 @@ export class TopicMapApp extends Initializable {
             handler: (v) =>
                 this.updateColumn(ColumnUsage.PER_POINT_COLOR, v.value)
         });
+
+        // rendering
+        const maxSamples = this._renderer.maxSamples;
+        this._controls.rendering.input.numberRange({
+            label: 'MSAA',
+            value: maxSamples, min: 1, max: maxSamples, step: 1,
+            handler: (v) => this._renderer.msaa = v
+        });
+
+        this._controls.rendering.input.numberRange({
+            label: 'MFAA',
+            value: 32, min: 1, max: 64, step: 1,
+            handler: (v) => this._canvas.controller.multiFrameNumber = v
+        });
     }
 
     protected getId(column: Column): string {

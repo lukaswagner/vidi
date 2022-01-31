@@ -173,17 +173,13 @@ export class TopicMapRenderer extends Renderer {
             !!this._multiFrameNumber &&
             this._multiFrameNumber > 1;
 
-        console.log(
-            'multi sample rendering',
-            this._msEnabled ? 'enabled' : 'not enabled');
-        console.log('requested samples', this._msaa);
-        const maxSamples = this._gl.getParameter(this._gl.MAX_SAMPLES);
-        console.log('max samples', maxSamples);
-        console.log(
-            'multi frame rendering',
-            this._mfEnabled ? 'enabled' : 'not enabled');
+        const enabled = (v: boolean): string => v ? 'ON' : 'OFF';
 
-        const samples = Math.min(this._msaa, maxSamples);
+        const samples = Math.min(this._msaa, this.maxSamples);
+        console.log(
+            `MSAA ${enabled(this._msEnabled)}, ${samples} samples (req ${this._msaa}, max ${this.maxSamples})`);
+        console.log(
+            `MFAA ${enabled(this._mfEnabled)}, ${this._multiFrameNumber} samples`);
         const w = this._defaultFBO?.width ?? 1;
         const h = this._defaultFBO?.height ?? 1;
 
@@ -552,5 +548,15 @@ export class TopicMapRenderer extends Renderer {
 
     public get points(): PointPass {
         return this._pointPass;
+    }
+
+    public get maxSamples(): number {
+        return this._gl.getParameter(this._gl.MAX_SAMPLES);
+    }
+
+    public set msaa(value: number) {
+        this._msaa = value;
+        this._altered.alter('msaa');
+        this.invalidate();
     }
 }
