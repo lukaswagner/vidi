@@ -102,7 +102,8 @@ export class GridOffsetHelper extends Initializable {
         const offsets = calcOffsets(gi, indices);
         this._gridPass.gridOffsets = offsets;
         const orderedByNormal = gi.map((g, i) => {
-            return { g, n: g.normal?.findIndex((v) => v !== 0), i: indices[i] };
+            return { g, n: g.normal?.findIndex(
+                (v: number) => v !== 0), i: indices[i] };
         }).sort((a, b) => a.n - b.n);
         this._pointPass.refLines.baseValue = calcOffsets(
             orderedByNormal.map((g) => g.g),

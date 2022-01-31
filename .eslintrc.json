@@ -69,7 +69,6 @@
                     "warn",
                     4
                 ],
-                "@typescript-eslint/member-ordering": "warn",
                 "@typescript-eslint/no-var-requires": "off",
                 "no-unused-vars": "off",
                 "@typescript-eslint/no-unused-vars": "warn",

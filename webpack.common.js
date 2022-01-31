@@ -1,11 +1,12 @@
 'use strict';
 
 const path = require('path');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const { DefinePlugin } = require('webpack');
 const child_process = require('child_process');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const RemoveEmptyScriptsPlugin = require('webpack-remove-empty-scripts');
 
 module.exports = function (env) {
     const api_url =
@@ -35,12 +36,8 @@ module.exports = function (env) {
             filename: 'index.html',
             template: './source/pages/index.pug'
         }),
-        new CopyWebpackPlugin({
-            patterns: [
-                { from: 'source/css', to: 'css' },
-                { from: 'source/fonts', to: 'fonts' },
-            ]
-        }),
+        new MiniCssExtractPlugin(),
+        new RemoveEmptyScriptsPlugin(),
     ];
 
     if (env !== undefined && env.analyze !== undefined) {
@@ -52,36 +49,38 @@ module.exports = function (env) {
             app: './source/code/frontend/app.ts',
             toggle: './source/code/frontend/toggle.ts',
             icons: './source/code/frontend/icons.ts',
+            style: './source/css/style.css',
         },
         module: {
             rules: [
                 {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
-                    use: {
-                        loader: 'ts-loader'
-                    },
+                    use: { loader: 'ts-loader' },
                 },
                 {
                     test: /\.pug$/,
-                    use: {
-                        loader: 'pug-loader'
-                    },
+                    use: { loader: 'pug-loader' },
                 },
                 {
                     test: /\.css$/,
                     use: [
-                        {
-                            loader: 'style-loader'
-                        }, {
-                            loader: 'css-loader'
-                        }],
+                        MiniCssExtractPlugin.loader,
+                        { loader: 'css-loader' },
+                    ]
                 },
                 {
                     test: /\.(glsl|vert|frag)$/,
                     use: {
                         loader: 'webpack-glsl-loader'
                     },
+                },
+                {
+                    test: /\.(eot|otf|ttf|woff|woff2)$/,
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'fonts/[name][ext][query]'
+                    }
                 },
             ],
         },
@@ -100,6 +99,7 @@ module.exports = function (env) {
             library: undefined,
             libraryTarget: 'umd',
             publicPath: '/',
+            clean: true
         },
         plugins,
         devServer: {
