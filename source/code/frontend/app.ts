@@ -320,13 +320,12 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         // point size
-        const ps = this._controls.size.input.numberRange(Object.assign({
+        this._controls.size.input.numberRange(Object.assign({
             label: 'Point Size',
             id: 'pointSize',
             triggerHandlerOnMove: true,
             handler: (v: number) => this._renderer.pointSize = v,
         }, TopicMapApp.POINT_SIZE_CONTROL));
-        console.log(ps.value);
 
         // variable point size
         this._controls.size.input.numberRange(Object.assign({
@@ -375,12 +374,12 @@ export class TopicMapApp extends Initializable {
         });
 
         // rendering
-        const maxSamples = this._renderer.maxSamples;
-        this._controls.rendering.input.numberRange({
-            label: 'MSAA',
-            value: maxSamples, min: 1, max: maxSamples, step: 1,
-            handler: (v) => this._renderer.msaa = v
-        });
+        // const maxSamples = this._renderer.maxSamples;
+        // this._controls.rendering.input.numberRange({
+        //     label: 'MSAA',
+        //     value: maxSamples, min: 1, max: maxSamples, step: 1,
+        //     handler: (v) => this._renderer.msaa = v
+        // });
 
         this._controls.rendering.input.numberRange({
             label: 'MFAA',

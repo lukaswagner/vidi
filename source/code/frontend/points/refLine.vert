@@ -1,4 +1,4 @@
-precision lowp float;
+precision highp float;
 
 layout(location = 0) in vec2 a_uv;
 layout(location = 1) in float a_xCoord;

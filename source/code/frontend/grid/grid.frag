@@ -1,13 +1,8 @@
-#extension GL_OES_standard_derivatives : enable
+precision highp float;
+precision highp int;
 
-precision lowp float;
-precision lowp int;
-
-#if __VERSION__ != 100
-    #define varying in
-    #define gl_FragColor fragColor
-    layout(location = 0) out vec4 fragColor;
-#endif
+layout(location = 0) out vec4 f_color;
+layout(location = 1) out uvec4 f_index;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
@@ -22,23 +17,23 @@ const float u_gridWidth = 0.02;
 
 const float u_aaStepScale = 0.7;
 
-varying vec2 v_uv;
+in vec2 v_uv;
 
-varying vec2 v_quadLowerBounds;
-varying vec2 v_quadUpperBounds;
-varying vec2 v_quadRange;
-varying vec2 v_dataLowerBounds;
-varying vec2 v_dataUpperBounds;
-varying vec2 v_dataRange;
-varying vec2 v_gridSubdivisions;
+in vec2 v_quadLowerBounds;
+in vec2 v_quadUpperBounds;
+in vec2 v_quadRange;
+in vec2 v_dataLowerBounds;
+in vec2 v_dataUpperBounds;
+in vec2 v_dataRange;
+in vec2 v_gridSubdivisions;
 
-varying vec2 v_dataLowerBoundsUV;
-varying vec2 v_dataUpperBoundsUV;
-varying vec2 v_dataRangeUV;
-varying vec2 v_gridSubdivisionsUV;
-varying vec2 v_gridSubdivisionsUVInv;
+in vec2 v_dataLowerBoundsUV;
+in vec2 v_dataUpperBoundsUV;
+in vec2 v_dataRangeUV;
+in vec2 v_gridSubdivisionsUV;
+in vec2 v_gridSubdivisionsUVInv;
 
-varying vec2 v_gridSubdivisionsScaled;
+in vec2 v_gridSubdivisionsScaled;
 
 float grid() {
     vec2 scaled = (v_uv - v_dataLowerBoundsUV) * v_gridSubdivisionsScaled;
@@ -69,5 +64,6 @@ void main()
     distIntensity = mix(distIntensity, u_innerIntensity, outerInnerMix);
 
     float intensity = distIntensity * grid();
-    gl_FragColor = vec4(u_color, intensity);
+    f_color = vec4(u_color, intensity);
+    f_index = uvec4(0);
 }

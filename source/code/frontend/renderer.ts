@@ -57,6 +57,7 @@ export class TopicMapRenderer extends Renderer {
 
     protected _gl: WebGL2RenderingContext;
     protected _rgbFormat: [GLuint, GLuint, GLuint];
+    protected _indexFormat: [GLuint, GLuint, GLuint];
     protected _depthFormat: [GLuint, GLuint, GLuint];
 
     // scene data
@@ -71,17 +72,19 @@ export class TopicMapRenderer extends Renderer {
     protected _modelMat: mat4;
 
     // render settings
-    protected _msaa = 8;
+    protected _msaa = 1;
 
     // multisample buffer
     protected _msEnabled: boolean;
     protected _msColor: Renderbuffer;
+    protected _msIndex: Renderbuffer;
     protected _msDepth: Renderbuffer;
     protected _msFBO: Framebuffer;
 
     // multi frame buffer
     protected _mfEnabled: boolean;
     protected _mfColor: Texture2D;
+    protected _mfIndex: Renderbuffer;
     protected _mfDepth: Renderbuffer;
     protected _mfFBO: Framebuffer;
 
@@ -190,32 +193,40 @@ export class TopicMapRenderer extends Renderer {
 
         if (this._msFBO?.initialized) this._msFBO.uninitialize();
         if (this._msColor?.initialized) this._msColor.uninitialize();
+        if (this._msIndex?.initialized) this._msIndex.uninitialize();
         if (this._msDepth?.initialized) this._msDepth.uninitialize();
 
         if (this._msEnabled) {
             this._msColor =
                 this.createRenderbuffer(this._rgbFormat[0], w, h, samples);
+            this._msIndex =
+                this.createRenderbuffer(this._indexFormat[0], w, h, 1);
             this._msDepth =
                 this.createRenderbuffer(this._depthFormat[0], w, h, samples);
             this._msFBO = new Framebuffer(this._context);
             this._msFBO.initialize([
                 [this._gl.COLOR_ATTACHMENT0, this._msColor],
+                [this._gl.COLOR_ATTACHMENT1, this._msIndex],
                 [this._gl.DEPTH_ATTACHMENT, this._msDepth]
             ]);
         }
 
         if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
         if (this._mfColor?.initialized) this._mfColor.uninitialize();
+        if (this._mfIndex?.initialized) this._mfIndex.uninitialize();
         if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
 
         if (this._mfEnabled) {
             this._mfColor =
                 this.createTexture(this._rgbFormat, w, h);
+            this._mfIndex =
+                this.createRenderbuffer(this._indexFormat[0], w, h);
             this._mfDepth =
                 this.createRenderbuffer(this._depthFormat[0], w, h);
             this._mfFBO = new Framebuffer(this._context);
             this._mfFBO.initialize([
                 [this._gl.COLOR_ATTACHMENT0, this._mfColor],
+                [this._gl.COLOR_ATTACHMENT1, this._mfIndex],
                 [this._gl.DEPTH_ATTACHMENT, this._mfDepth]
             ]);
         }
@@ -230,9 +241,6 @@ export class TopicMapRenderer extends Renderer {
         this._clusterPass.target = this._renderFBO;
         this._accumulatePass.texture = this._mfColor;
         this._blitPass.framebuffer = this._renderFBO;
-
-        if (this._msEnabled) this._msFBO.clearColor(this._clearColor);
-        if (this._mfEnabled) this._mfFBO.clearColor(this._clearColor);
     }
 
     /**
@@ -259,6 +267,11 @@ export class TopicMapRenderer extends Renderer {
             this._gl.DEPTH_COMPONENT32F,
             this._gl.DEPTH_COMPONENT,
             this._gl.FLOAT
+        ];
+        this._indexFormat = [
+            this._gl.RGBA16UI,
+            this._gl.RGBA,
+            this._gl.UNSIGNED_SHORT
         ];
 
         // set up view control
@@ -392,14 +405,6 @@ export class TopicMapRenderer extends Renderer {
             this._camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
-        if (this._altered.clearColor) {
-            this._defaultFBO.clearColor(this._clearColor);
-            if (this._msEnabled)
-                this._msFBO.clearColor(this._clearColor);
-            if (this._mfEnabled)
-                this._mfFBO.clearColor(this._clearColor);
-        }
-
         if (this._altered.msaa) {
             this.setupFBOs();
         }
@@ -426,8 +431,17 @@ export class TopicMapRenderer extends Renderer {
     protected onFrame(frameNumber: number): void {
         const gl = this._context.gl as WebGL2RenderingContext;
 
-        this._renderFBO.clear(
-            gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT, true, false);
+        const both = [
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.COLOR_ATTACHMENT1
+        ];
+
+        this._renderFBO.bind();
+        this._gl.drawBuffers(both);
+
+        this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
+        this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
+        this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
         gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
 
@@ -438,8 +452,11 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.ndcOffset = ndcOffset;
         this._pointPass.frame(frameNumber);
 
+        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0 ]);
         this._gridLabelPass.ndcOffset = ndcOffset;
         this._gridLabelPass.frame();
+        this._gl.drawBuffers(both);
+
 
         this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();
@@ -472,7 +489,7 @@ export class TopicMapRenderer extends Renderer {
             vec2.distance(fb.size, this._defaultFBO.size) ||
             !this._defaultFBO
         ) {
-            console.log('noblit');
+            console.log('no blit');
             return;
         }
 

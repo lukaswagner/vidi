@@ -1,15 +1,8 @@
-#extension GL_OES_standard_derivatives : enable
+precision highp float;
+precision highp int;
 
-precision lowp float;
-precision lowp int;
-
-#if __VERSION__ == 100
-    #define texture(sampler, coord) texture2D(sampler, coord)
-#else
-    #define varying in
-    #define gl_FragColor fragColor
-    layout(location = 0) out vec4 fragColor;
-#endif
+layout(location = 0) out vec4 f_color;
+layout(location = 1) out uvec4 f_index;
 
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
@@ -18,10 +11,10 @@ uniform vec3 u_cameraPosition;
 uniform vec3 u_cutoffPosition;
 uniform vec3 u_cutoffPositionMask;
 
-varying vec3 v_pos;
-varying vec3 v_color;
-varying vec2 v_uv;
-varying vec3 v_fragPos;
+in vec3 v_pos;
+in vec3 v_color;
+in vec2 v_uv;
+in vec3 v_fragPos;
 
 void main()
 {
@@ -46,5 +39,6 @@ void main()
     float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
-    gl_FragColor = vec4(color, alpha);
+    f_color = vec4(color, alpha);
+    f_index = uvec4(0);
 }
