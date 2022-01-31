@@ -6,23 +6,12 @@
 - Install dependencies: `npm i`
 - Start the dev server: `npm run start-dev`
 
-## Available Scripts
-
-### Modes:
-- `start-*`: Starts a dev server (builds the page in memory)
-- `build-*`: Builds the page to disk
-- `watch-*`: Builds the page to disk ant rebuilds if changes are detected
-### Configs:
-- `*-dev`: Unminified, contains source map
-- `*-prod`: Minified
-
 ## Used Technologies
 
 - [TypeScript](https://www.typescriptlang.org/) for writing type-safe JS
 - [webgl-operate](https://webgl-operate.org/) as wrapper for WebGL
 - [Webpack](https://webpack.js.org/) as build system
 - [Pug](pugjs.org) for building the page
-- [Bootstrap](https://getbootstrap.com/) for styling
 
 ## Rendering Setup
 
