@@ -40,5 +40,5 @@ void main()
     vec3 color = mix(faded, v_color, fadeFactor);
 
     f_color = vec4(color, alpha);
-    f_index = uvec4(0);
+    f_index = uvec4(255);
 }

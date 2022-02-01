@@ -1,7 +1,6 @@
 import {
     AccumulatePass,
     AntiAliasingKernel,
-    BlitPass,
     Camera,
     ChangeLookup,
     Context,
@@ -18,10 +17,17 @@ import {
     vec3,
     viewer,
 } from 'webgl-operate';
+
 import {
     Column,
     Float32Column,
 } from '@lukaswagner/csv-parser';
+
+import {
+    DebugMode,
+    DebugPass
+} from './debug/debugPass';
+
 import {
     ExtendedGridInfo,
     GridExtents,
@@ -31,7 +37,6 @@ import {
 
 import { ClusterInfo } from 'worker/clustering/interface';
 import { ClusterVisualization } from './clustering/clusterVisualization';
-import { GLfloat2 } from 'shared/types/tuples';
 import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
@@ -53,6 +58,7 @@ export class TopicMapRenderer extends Renderer {
         framePrecision: false,
         clearColor: false,
         debugTexture: false,
+        debugMode: false,
     });
 
     protected _gl: WebGL2RenderingContext;
@@ -74,19 +80,20 @@ export class TopicMapRenderer extends Renderer {
     // render settings
     protected _msaa = 1;
 
-    // multisample buffer
+    // aa modes
     protected _msEnabled: boolean;
+    protected _mfEnabled: boolean;
+
+    // multi sample buffers
     protected _msColor: Renderbuffer;
-    protected _msIndex: Renderbuffer;
     protected _msDepth: Renderbuffer;
     protected _msFBO: Framebuffer;
 
-    // multi frame buffer
-    protected _mfEnabled: boolean;
-    protected _mfColor: Texture2D;
-    protected _mfIndex: Renderbuffer;
-    protected _mfDepth: Renderbuffer;
-    protected _mfFBO: Framebuffer;
+    // single sample buffers
+    protected _ssColor: Texture2D;
+    protected _ssIndex: Texture2D;
+    protected _ssDepth: Texture2D;
+    protected _ssFBO: Framebuffer;
 
     // fbo to render to
     protected _renderFBO: Framebuffer;
@@ -105,7 +112,10 @@ export class TopicMapRenderer extends Renderer {
     protected _defaultFBO: DefaultFramebuffer;
     // output passes
     protected _accumulatePass: AccumulatePass;
-    protected _blitPass: BlitPass;
+
+    // debugging
+    protected _debugMode: DebugMode = DebugMode.Off;
+    protected _debugPass: DebugPass;
 
     public updateUseDiscard(): void {
         this._pointPass.useDiscard = !viewer.Fullscreen.active();
@@ -193,54 +203,46 @@ export class TopicMapRenderer extends Renderer {
 
         if (this._msFBO?.initialized) this._msFBO.uninitialize();
         if (this._msColor?.initialized) this._msColor.uninitialize();
-        if (this._msIndex?.initialized) this._msIndex.uninitialize();
         if (this._msDepth?.initialized) this._msDepth.uninitialize();
 
         if (this._msEnabled) {
             this._msColor =
                 this.createRenderbuffer(this._rgbFormat[0], w, h, samples);
-            this._msIndex =
-                this.createRenderbuffer(this._indexFormat[0], w, h, 1);
             this._msDepth =
                 this.createRenderbuffer(this._depthFormat[0], w, h, samples);
-            this._msFBO = new Framebuffer(this._context);
+            this._msFBO = new Framebuffer(this._context, 'ms fbo');
             this._msFBO.initialize([
                 [this._gl.COLOR_ATTACHMENT0, this._msColor],
-                [this._gl.COLOR_ATTACHMENT1, this._msIndex],
                 [this._gl.DEPTH_ATTACHMENT, this._msDepth]
             ]);
         }
 
-        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
-        if (this._mfColor?.initialized) this._mfColor.uninitialize();
-        if (this._mfIndex?.initialized) this._mfIndex.uninitialize();
-        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
+        if (this._ssFBO?.initialized) this._ssFBO.uninitialize();
+        if (this._ssColor?.initialized) this._ssColor.uninitialize();
+        if (this._ssIndex?.initialized) this._ssIndex.uninitialize();
+        if (this._ssDepth?.initialized) this._ssDepth.uninitialize();
 
-        if (this._mfEnabled) {
-            this._mfColor =
-                this.createTexture(this._rgbFormat, w, h);
-            this._mfIndex =
-                this.createRenderbuffer(this._indexFormat[0], w, h);
-            this._mfDepth =
-                this.createRenderbuffer(this._depthFormat[0], w, h);
-            this._mfFBO = new Framebuffer(this._context);
-            this._mfFBO.initialize([
-                [this._gl.COLOR_ATTACHMENT0, this._mfColor],
-                [this._gl.COLOR_ATTACHMENT1, this._mfIndex],
-                [this._gl.DEPTH_ATTACHMENT, this._mfDepth]
-            ]);
-        }
+        this._ssColor = this.createTexture(this._rgbFormat, w, h);
+        this._ssIndex = this.createTexture(this._indexFormat, w, h);
+        this._ssDepth = this.createTexture(this._depthFormat, w, h);
+        this._ssFBO = new Framebuffer(this._context, 'ss fbo');
+        this._ssFBO.initialize([
+            [this._gl.COLOR_ATTACHMENT0, this._ssColor],
+            [this._gl.COLOR_ATTACHMENT1, this._ssIndex],
+            [this._gl.DEPTH_ATTACHMENT, this._ssDepth]
+        ]);
 
-        this._renderFBO = this._msEnabled ? this._msFBO : (
-            this._mfEnabled ? this._mfFBO : this._defaultFBO
-        );
+        this._renderFBO = this._msEnabled ? this._msFBO : this._ssFBO;
 
         this._pointPass.target = this._renderFBO;
         this._gridPass.target = this._renderFBO;
         this._gridLabelPass.target = this._renderFBO;
         this._clusterPass.target = this._renderFBO;
-        this._accumulatePass.texture = this._mfColor;
-        this._blitPass.framebuffer = this._renderFBO;
+        this._accumulatePass.texture = this._ssColor;
+
+        this._debugPass.setInputs(
+            this._msFBO, this._msColor, this._msDepth,
+            this._ssFBO, this._ssColor, this._ssIndex, this._ssDepth);
     }
 
     /**
@@ -269,9 +271,9 @@ export class TopicMapRenderer extends Renderer {
             this._gl.FLOAT
         ];
         this._indexFormat = [
-            this._gl.RGBA16UI,
-            this._gl.RGBA,
-            this._gl.UNSIGNED_SHORT
+            this._gl.RGBA8UI,
+            this._gl.RGBA_INTEGER,
+            this._gl.UNSIGNED_BYTE
         ];
 
         // set up view control
@@ -322,8 +324,8 @@ export class TopicMapRenderer extends Renderer {
         this._accumulatePass.initialize();
         this._accumulatePass.precision = this._framePrecision;
 
-        this._blitPass = new BlitPass(this._context);
-        this._blitPass.initialize();
+        this._debugPass = new DebugPass(context);
+        this._debugPass.initialize(this._rgbFormat, this._depthFormat);
 
         // set up all render storage
         this.setupFBOs();
@@ -353,15 +355,15 @@ export class TopicMapRenderer extends Renderer {
         this._gridLabelPass.uninitialize();
         this._clusterPass.uninitialize();
 
-        this._blitPass.uninitialize();
         this._accumulatePass.uninitialize();
 
         if (this._msFBO?.initialized) this._msFBO.uninitialize();
         if (this._msColor?.initialized) this._msColor.uninitialize();
         if (this._msDepth?.initialized) this._msDepth.uninitialize();
-        if (this._mfFBO?.initialized) this._mfFBO.uninitialize();
-        if (this._mfColor?.initialized) this._mfColor.uninitialize();
-        if (this._mfDepth?.initialized) this._mfDepth.uninitialize();
+        if (this._ssFBO?.initialized) this._ssFBO.uninitialize();
+        if (this._ssColor?.initialized) this._ssColor.uninitialize();
+        if (this._ssIndex?.initialized) this._ssIndex.uninitialize();
+        if (this._ssDepth?.initialized) this._ssDepth.uninitialize();
 
         this._defaultFBO.uninitialize();
     }
@@ -393,12 +395,13 @@ export class TopicMapRenderer extends Renderer {
         if (this._altered.frameSize) {
             if (this._msEnabled)
                 this._msFBO.resize(this._frameSize[0], this._frameSize[1]);
-            if (this._mfEnabled)
-                this._mfFBO.resize(this._frameSize[0], this._frameSize[1]);
+            this._ssFBO.resize(this._frameSize[0], this._frameSize[1]);
             this._camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
             this._pointPass.aspectRatio =
                 this._frameSize[1] / this._frameSize[0];
+
+            this._debugPass.resize(this._frameSize);
         }
 
         if (this._altered.canvasSize) {
@@ -428,76 +431,122 @@ export class TopicMapRenderer extends Renderer {
         this._camera.altered = false;
     }
 
-    protected onFrame(frameNumber: number): void {
-        const gl = this._context.gl as WebGL2RenderingContext;
+    protected msFrame(frameNumber: number): void {
+        // on the first frame: render indices to ss buffer
+        if(frameNumber === 0) {
+            this._ssFBO.bind();
+            this._gl.drawBuffers([ this._gl.NONE, this._gl.COLOR_ATTACHMENT1 ]);
 
-        const both = [
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.COLOR_ATTACHMENT1
-        ];
+            this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
+            this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
-        this._renderFBO.bind();
-        this._gl.drawBuffers(both);
+            this._pointPass.target = this._ssFBO;
+            this._pointPass.frame(frameNumber);
+        }
+
+        // now render the colors to ms buffer
+        this._msFBO.bind();
+        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+
+        this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
+        this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
+
+        this._pointPass.target = this._msFBO;
+        this._pointPass.frame(frameNumber);
+
+        this._gridLabelPass.frame();
+        this._gridPass.frame();
+        this._clusterPass.frame();
+
+        // trigger accumulation if necessary
+        if (this._mfEnabled) {
+            // blit color to ss buffer
+            // acc pass wants a texture, but that cant be multi sampled
+            this._gl.bindFramebuffer(
+                this._gl.READ_FRAMEBUFFER, this._msFBO.object);
+            this._gl.bindFramebuffer(
+                this._gl.DRAW_FRAMEBUFFER, this._ssFBO.object);
+            this._gl.readBuffer(this._gl.COLOR_ATTACHMENT0);
+            this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+            this._gl.blitFramebuffer(
+                0, 0, this._frameSize[0], this._frameSize[1],
+                0, 0, this._frameSize[0], this._frameSize[1],
+                this._gl.COLOR_BUFFER_BIT, this._gl.NEAREST);
+            this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, null);
+            this._gl.bindFramebuffer(this._gl.DRAW_FRAMEBUFFER, null);
+
+            this._accumulatePass.frame(frameNumber);
+        } else {
+            this._msFBO.unbind();
+        }
+    }
+
+    protected ssFrame(frameNumber: number): void {
+        this._ssFBO.bind();
+        this._gl.drawBuffers(
+            [ this._gl.COLOR_ATTACHMENT0, this._gl.COLOR_ATTACHMENT1 ]);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
         this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
         this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
-        gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
-
-        const ndcOffset = this._ndcOffsetKernel.get(frameNumber) as GLfloat2;
-        ndcOffset[0] = 2.0 * ndcOffset[0] / this._frameSize[0];
-        ndcOffset[1] = 2.0 * ndcOffset[1] / this._frameSize[1];
-
-        this._pointPass.ndcOffset = ndcOffset;
+        // this._pointPass.target = this._ssFBO;
         this._pointPass.frame(frameNumber);
 
-        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0 ]);
-        this._gridLabelPass.ndcOffset = ndcOffset;
+        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+
         this._gridLabelPass.frame();
-        this._gl.drawBuffers(both);
-
-
-        this._gridPass.ndcOffset = ndcOffset;
         this._gridPass.frame();
-
         this._clusterPass.frame();
 
-        if (this._msEnabled && this._mfEnabled) {
-            this._blitPass.framebuffer = this._msFBO;
-            this._blitPass.readBuffer = this._gl.COLOR_ATTACHMENT0;
-            this._blitPass.target = this._mfFBO;
-            this._blitPass.drawBuffer = this._gl.COLOR_ATTACHMENT0;
-            this._blitPass.frame();
-        }
+        this._ssFBO.unbind();
 
+        // trigger accumulation if necessary
         if (this._mfEnabled) {
             this._accumulatePass.frame(frameNumber);
         }
+    }
 
+    protected onFrame(frameNumber: number): void {
+        this._gl.viewport(0, 0, this._frameSize[0], this._frameSize[1]);
+
+        if(this._msEnabled) {
+            this.msFrame(frameNumber);
+        } else {
+            this.ssFrame(frameNumber);
+        }
     }
 
     protected onSwap(): void {
-        if (!this._msEnabled && !this._mfEnabled) return;
+        let fb = this._ssFBO;
+        if(this._debugMode !== DebugMode.Off) {
+            fb = this._debugPass.output;
+            this._debugPass.frame(this._debugMode);
+        } else if(this._mfEnabled) fb = this._accumulatePass.framebuffer;
+        else if(this._msEnabled) fb = this._msFBO;
 
-        const fb = this._mfEnabled ?
-            (this._accumulatePass.framebuffer ?? this._mfFBO) :
-            this._msFBO;
-        if (!fb.initialized) return;
+        if (!fb.initialized) {
+            console.log('fbo not initialized, skip blit ');
+            return;
+        }
 
         if (
             vec2.distance(fb.size, this._defaultFBO.size) ||
             !this._defaultFBO
         ) {
-            console.log('no blit');
+            console.log('size mismatch, skip blit');
             return;
         }
 
-        this._blitPass.framebuffer = fb;
-        this._blitPass.readBuffer = this._gl.COLOR_ATTACHMENT0;
-        this._blitPass.target = this._defaultFBO;
-        this._blitPass.drawBuffer = this._gl.BACK;
-        this._blitPass.frame();
+        this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, fb.object);
+        this._gl.bindFramebuffer(this._gl.DRAW_FRAMEBUFFER, null);
+        this._gl.readBuffer(this._gl.COLOR_ATTACHMENT0);
+        this._gl.drawBuffers([ this._gl.BACK ]);
+        this._gl.blitFramebuffer(
+            0, 0, this._frameSize[0], this._frameSize[1],
+            0, 0, this._frameSize[0], this._frameSize[1],
+            this._gl.COLOR_BUFFER_BIT, this._gl.NEAREST);
+        this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, null);
     }
 
     protected onDiscarded(): void {
@@ -579,6 +628,12 @@ export class TopicMapRenderer extends Renderer {
     public set msaa(value: number) {
         this._msaa = value;
         this._altered.alter('msaa');
+        this.invalidate();
+    }
+
+    public set debugMode(mode: DebugMode) {
+        this._debugMode = mode;
+        this._altered.alter('debugMode');
         this.invalidate();
     }
 }

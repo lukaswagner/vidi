@@ -39,6 +39,7 @@ import {
 } from './util/load';
 
 import { Clustering } from './clustering/clustering';
+import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
 
@@ -374,17 +375,23 @@ export class TopicMapApp extends Initializable {
         });
 
         // rendering
-        // const maxSamples = this._renderer.maxSamples;
-        // this._controls.rendering.input.numberRange({
-        //     label: 'MSAA',
-        //     value: maxSamples, min: 1, max: maxSamples, step: 1,
-        //     handler: (v) => this._renderer.msaa = v
-        // });
+        const maxSamples = this._renderer.maxSamples;
+        this._controls.rendering.input.numberRange({
+            label: 'MSAA',
+            value: maxSamples, min: 1, max: maxSamples, step: 1,
+            handler: (v) => this._renderer.msaa = v
+        });
 
         this._controls.rendering.input.numberRange({
             label: 'MFAA',
             value: 32, min: 1, max: 64, step: 1,
             handler: (v) => this._canvas.controller.multiFrameNumber = v
+        });
+
+        this._controls.rendering.input.select({
+            label: 'Debug',
+            optionTexts: Object.values(DebugMode),
+            handler: (v) => this._renderer.debugMode = v.value as DebugMode
         });
     }
 

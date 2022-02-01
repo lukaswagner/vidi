@@ -2,7 +2,6 @@ precision highp float;
 precision highp int;
 
 layout(location = 0) out vec4 f_color;
-layout(location = 1) out uvec4 f_index;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
@@ -65,5 +64,4 @@ void main()
 
     float intensity = distIntensity * grid();
     f_color = vec4(u_color, intensity);
-    f_index = uvec4(0);
 }
