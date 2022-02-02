@@ -78,6 +78,7 @@ export class PointPass extends Initializable {
     protected _uVariablePointSizeInputRange: WebGLUniformLocation;
     protected _uVariablePointSizeOutputRange: WebGLUniformLocation;
     protected _uNumClusters: WebGLUniformLocation;
+    protected _uIdOffset: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -128,6 +129,7 @@ export class PointPass extends Initializable {
         this._uVariablePointSizeOutputRange =
             this._program.uniform('u_variablePointSizeOutputRange');
         this._uNumClusters = this._program.uniform('u_numClusters');
+        this._uIdOffset = this._program.uniform('u_idOffset');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -268,7 +270,9 @@ export class PointPass extends Initializable {
 
         this._target.bind();
 
-        this._geometries.forEach((g) => {
+        this._geometries.forEach((g, i) => {
+            this._gl.uniform1ui(
+                this._uIdOffset, this._columns[0].chunks[i].offset);
             g.bind();
             g.draw();
             g.unbind();

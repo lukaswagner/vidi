@@ -91,7 +91,8 @@ export class TopicMapRenderer extends Renderer {
 
     // single sample buffers
     protected _ssColor: Texture2D;
-    protected _ssIndex: Texture2D;
+    protected _ssIndexHigh: Texture2D;
+    protected _ssIndexLow: Texture2D;
     protected _ssDepth: Texture2D;
     protected _ssFBO: Framebuffer;
 
@@ -219,16 +220,19 @@ export class TopicMapRenderer extends Renderer {
 
         if (this._ssFBO?.initialized) this._ssFBO.uninitialize();
         if (this._ssColor?.initialized) this._ssColor.uninitialize();
-        if (this._ssIndex?.initialized) this._ssIndex.uninitialize();
+        if (this._ssIndexHigh?.initialized) this._ssIndexHigh.uninitialize();
+        if (this._ssIndexLow?.initialized) this._ssIndexLow.uninitialize();
         if (this._ssDepth?.initialized) this._ssDepth.uninitialize();
 
         this._ssColor = this.createTexture(this._rgbFormat, w, h);
-        this._ssIndex = this.createTexture(this._indexFormat, w, h);
+        this._ssIndexHigh = this.createTexture(this._indexFormat, w, h);
+        this._ssIndexLow = this.createTexture(this._indexFormat, w, h);
         this._ssDepth = this.createTexture(this._depthFormat, w, h);
         this._ssFBO = new Framebuffer(this._context, 'ss fbo');
         this._ssFBO.initialize([
             [this._gl.COLOR_ATTACHMENT0, this._ssColor],
-            [this._gl.COLOR_ATTACHMENT1, this._ssIndex],
+            [this._gl.COLOR_ATTACHMENT1, this._ssIndexHigh],
+            [this._gl.COLOR_ATTACHMENT2, this._ssIndexLow],
             [this._gl.DEPTH_ATTACHMENT, this._ssDepth]
         ]);
 
@@ -241,8 +245,10 @@ export class TopicMapRenderer extends Renderer {
         this._accumulatePass.texture = this._ssColor;
 
         this._debugPass.setInputs(
-            this._msFBO, this._msColor, this._msDepth,
-            this._ssFBO, this._ssColor, this._ssIndex, this._ssDepth);
+            this._msFBO,
+            this._msColor, this._msDepth,
+            this._ssFBO,
+            this._ssColor, this._ssIndexHigh, this._ssIndexLow, this._ssDepth);
     }
 
     /**
@@ -362,7 +368,8 @@ export class TopicMapRenderer extends Renderer {
         if (this._msDepth?.initialized) this._msDepth.uninitialize();
         if (this._ssFBO?.initialized) this._ssFBO.uninitialize();
         if (this._ssColor?.initialized) this._ssColor.uninitialize();
-        if (this._ssIndex?.initialized) this._ssIndex.uninitialize();
+        if (this._ssIndexHigh?.initialized) this._ssIndexHigh.uninitialize();
+        if (this._ssIndexLow?.initialized) this._ssIndexLow.uninitialize();
         if (this._ssDepth?.initialized) this._ssDepth.uninitialize();
 
         this._defaultFBO.uninitialize();
@@ -401,7 +408,7 @@ export class TopicMapRenderer extends Renderer {
             this._pointPass.aspectRatio =
                 this._frameSize[1] / this._frameSize[0];
 
-            this._debugPass.resize(this._frameSize);
+            this._debugPass.resize(vec2.clone(this._frameSize));
         }
 
         if (this._altered.canvasSize) {
@@ -435,9 +442,13 @@ export class TopicMapRenderer extends Renderer {
         // on the first frame: render indices to ss buffer
         if(frameNumber === 0) {
             this._ssFBO.bind();
-            this._gl.drawBuffers([ this._gl.NONE, this._gl.COLOR_ATTACHMENT1 ]);
+            this._gl.drawBuffers([
+                this._gl.NONE,
+                this._gl.COLOR_ATTACHMENT1 ,
+                this._gl.COLOR_ATTACHMENT2 ]);
 
             this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
+            this._gl.clearBufferuiv(this._gl.COLOR, 2, [0, 0, 0, 0]);
             this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
             this._pointPass.target = this._ssFBO;
@@ -446,7 +457,10 @@ export class TopicMapRenderer extends Renderer {
 
         // now render the colors to ms buffer
         this._msFBO.bind();
-        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+        this._gl.drawBuffers([
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.NONE,
+            this._gl.NONE ]);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
         this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
@@ -467,7 +481,10 @@ export class TopicMapRenderer extends Renderer {
             this._gl.bindFramebuffer(
                 this._gl.DRAW_FRAMEBUFFER, this._ssFBO.object);
             this._gl.readBuffer(this._gl.COLOR_ATTACHMENT0);
-            this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+            this._gl.drawBuffers([
+                this._gl.COLOR_ATTACHMENT0,
+                this._gl.NONE,
+                this._gl.NONE ]);
             this._gl.blitFramebuffer(
                 0, 0, this._frameSize[0], this._frameSize[1],
                 0, 0, this._frameSize[0], this._frameSize[1],
@@ -483,17 +500,23 @@ export class TopicMapRenderer extends Renderer {
 
     protected ssFrame(frameNumber: number): void {
         this._ssFBO.bind();
-        this._gl.drawBuffers(
-            [ this._gl.COLOR_ATTACHMENT0, this._gl.COLOR_ATTACHMENT1 ]);
+        this._gl.drawBuffers([
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.COLOR_ATTACHMENT1,
+            this._gl.COLOR_ATTACHMENT2 ]);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
         this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
+        this._gl.clearBufferuiv(this._gl.COLOR, 2, [0, 0, 0, 0]);
         this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
         // this._pointPass.target = this._ssFBO;
         this._pointPass.frame(frameNumber);
 
-        this._gl.drawBuffers([ this._gl.COLOR_ATTACHMENT0, this._gl.NONE ]);
+        this._gl.drawBuffers([
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.NONE,
+            this._gl.NONE ]);
 
         this._gridLabelPass.frame();
         this._gridPass.frame();

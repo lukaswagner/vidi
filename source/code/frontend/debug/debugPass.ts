@@ -19,7 +19,8 @@ export enum DebugMode {
     MSC = 'MS Color',
     MSD = 'MS Depth',
     SSC = 'SS Color',
-    SSI = 'SS Index',
+    SSIH = 'SS Index High',
+    SSIL = 'SS Index Low',
     SSD = 'SS Depth',
 }
 
@@ -39,7 +40,8 @@ export class DebugPass extends Initializable {
     // single sampled inputs
     protected _ssFBO: Framebuffer;
     protected _ssColor: Texture2D;
-    protected _ssIndex: Texture2D;
+    protected _ssIndexHigh: Texture2D;
+    protected _ssIndexLow: Texture2D;
     protected _ssDepth: Texture2D;
 
     protected _outColor: Renderbuffer;
@@ -178,8 +180,11 @@ export class DebugPass extends Initializable {
             case DebugMode.SSC:
                 this.blit(this._ssFBO, this._gl.COLOR_ATTACHMENT0);
                 break;
-            case DebugMode.SSI:
-                this.drawTex(this._ssIndex, 1);
+            case DebugMode.SSIH:
+                this.drawTex(this._ssIndexHigh, 1);
+                break;
+            case DebugMode.SSIL:
+                this.drawTex(this._ssIndexLow, 1);
                 break;
             case DebugMode.SSD:
                 this.drawTex(this._ssDepth, 2);
@@ -190,15 +195,18 @@ export class DebugPass extends Initializable {
     }
 
     public setInputs(
-        ms: Framebuffer, msc: Renderbuffer, msd: Renderbuffer,
-        ss: Framebuffer, ssc: Texture2D, ssi: Texture2D, ssd: Texture2D
+        ms: Framebuffer,
+        msc: Renderbuffer, msd: Renderbuffer,
+        ss: Framebuffer,
+        ssc: Texture2D, ssih: Texture2D, ssil: Texture2D, ssd: Texture2D
     ): void {
         this._msFBO = ms;
         this._msColor = msc;
         this._msDepth = msd;
         this._ssFBO = ss;
         this._ssColor = ssc;
-        this._ssIndex = ssi;
+        this._ssIndexHigh = ssih;
+        this._ssIndexLow = ssil;
         this._ssDepth = ssd;
     }
 

@@ -37,6 +37,7 @@ out vec3 v_pos;
 out vec3 v_color;
 out vec2 v_uv;
 out vec3 v_fragPos;
+flat out int v_instanceId;
 
 @import ../clustering/clusterColor;
 #line 54
@@ -100,5 +101,6 @@ void main()
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 
     v_fragPos = (u_viewProjectionInverse * position).xyz;
+    v_instanceId = gl_InstanceID;
     gl_Position = position;
 }

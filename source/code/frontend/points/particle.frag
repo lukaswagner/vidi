@@ -2,7 +2,8 @@ precision highp float;
 precision highp int;
 
 layout(location = 0) out vec4 f_color;
-layout(location = 1) out uvec4 f_index;
+layout(location = 1) out uvec3 f_indexHigh;
+layout(location = 2) out uvec3 f_indexLow;
 
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
@@ -10,11 +11,13 @@ uniform bool u_useDiscard;
 uniform vec3 u_cameraPosition;
 uniform vec3 u_cutoffPosition;
 uniform vec3 u_cutoffPositionMask;
+uniform uint u_idOffset;
 
 in vec3 v_pos;
 in vec3 v_color;
 in vec2 v_uv;
 in vec3 v_fragPos;
+flat in int v_instanceId;
 
 void main()
 {
@@ -40,5 +43,15 @@ void main()
     vec3 color = mix(faded, v_color, fadeFactor);
 
     f_color = vec4(color, alpha);
-    f_index = uvec4(255);
+    uint id = u_idOffset + uint(v_instanceId);
+    f_indexHigh = uvec3(
+        1u << 7, // set lowest bit to mark points
+        0u,
+        (id >> 24) & 255u
+    );
+    f_indexLow = uvec3(
+        (id >> 16) & 255u,
+        (id >> 8) & 255u,
+        id & 255u
+    );
 }
