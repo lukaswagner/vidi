@@ -11,13 +11,13 @@ uniform bool u_useDiscard;
 uniform vec3 u_cameraPosition;
 uniform vec3 u_cutoffPosition;
 uniform vec3 u_cutoffPositionMask;
-uniform uint u_idOffset;
+uniform uint u_selected;
 
 in vec3 v_pos;
 in vec3 v_color;
 in vec2 v_uv;
 in vec3 v_fragPos;
-flat in int v_instanceId;
+flat in uint v_instanceId;
 
 void main()
 {
@@ -42,16 +42,17 @@ void main()
     float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
+    if(v_instanceId == u_selected)
+        color = mix(vec3(0), color, step(radius, 0.7));
     f_color = vec4(color, alpha);
-    uint id = u_idOffset + uint(v_instanceId);
     f_indexHigh = uvec3(
         1u << 7, // set lowest bit to mark points
         0u,
-        id & 255u
+        v_instanceId & 255u
     );
     f_indexLow = uvec3(
-        (id >> 8) & 255u,
-        (id >> 16) & 255u,
-        (id >> 24) & 255u
+        (v_instanceId >> 8) & 255u,
+        (v_instanceId >> 16) & 255u,
+        (v_instanceId >> 24) & 255u
     );
 }

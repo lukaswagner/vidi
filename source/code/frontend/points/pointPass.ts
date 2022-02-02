@@ -38,6 +38,7 @@ export class PointPass extends Initializable {
         variablePointSizeOutputRange: false,
         model: false,
         numClusters: false,
+        selected: false
     });
 
     protected _context: Context;
@@ -58,6 +59,7 @@ export class PointPass extends Initializable {
     protected _variablePointSizeOutputRange: GLfloat2 = [0.0, 10.0];
     protected _model: mat4;
     protected _numClusters: number;
+    protected _selected = -1;
 
     protected _program: Program;
     protected _alpha: Alpha;
@@ -79,6 +81,7 @@ export class PointPass extends Initializable {
     protected _uVariablePointSizeOutputRange: WebGLUniformLocation;
     protected _uNumClusters: WebGLUniformLocation;
     protected _uIdOffset: WebGLUniformLocation;
+    protected _uSelected: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -130,9 +133,11 @@ export class PointPass extends Initializable {
             this._program.uniform('u_variablePointSizeOutputRange');
         this._uNumClusters = this._program.uniform('u_numClusters');
         this._uIdOffset = this._program.uniform('u_idOffset');
+        this._uSelected = this._program.uniform('u_selected');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
+        this._gl.uniform1ui(this._uSelected, this._selected);
         this._program.unbind();
 
         this._alpha = new Alpha(
@@ -232,6 +237,10 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.numClusters) {
             this._gl.uniform1f(this._uNumClusters, this._numClusters);
+        }
+
+        if (override || this._altered.selected) {
+            this._gl.uniform1ui(this._uSelected, this._selected);
         }
 
         this._program.unbind();
@@ -408,6 +417,11 @@ export class PointPass extends Initializable {
     public set numClusters(numClusters: number) {
         this._numClusters = numClusters;
         this._altered.alter('numClusters');
+    }
+
+    public set selected(selected: number) {
+        this._selected = selected;
+        this._altered.alter('selected');
     }
 
     public get altered(): boolean {

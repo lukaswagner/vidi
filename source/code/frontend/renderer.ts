@@ -627,10 +627,11 @@ export class TopicMapRenderer extends Renderer {
             mouse[0], this._frameSize[1] - mouse[1], 1, 1,
             this._indexFormat[1], this._indexFormat[2], byteView, 5);
         this._ssFBO.unbind(this._gl.READ_FRAMEBUFFER);
+        let id = -1;
         if (byteView[2] === 128) {
-            const id = new Uint32Array(buf, 4, 1)[0];
-            console.log(id);
+            id = new Uint32Array(buf, 4, 1)[0];
         }
+        this._pointPass.selected = id;
     }
 
     public set columns(columns: Column[]) {

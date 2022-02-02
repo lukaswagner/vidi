@@ -29,6 +29,9 @@ const int COLOR_MAPPING_RGB_CUBE = 0;
 const int COLOR_MAPPING_HSL_CYLINDER = 1;
 uniform int u_colorMapping;
 
+uniform uint u_idOffset;
+uniform uint u_selected;
+
 const vec3 u_pointColor = vec3(1.0, 0.0, 0.0);
 
 const float TWO_PI_INV = 0.15915494309;
@@ -37,7 +40,7 @@ out vec3 v_pos;
 out vec3 v_color;
 out vec2 v_uv;
 out vec3 v_fragPos;
-flat out int v_instanceId;
+flat out uint v_instanceId;
 
 @import ../clustering/clusterColor;
 #line 54
@@ -80,6 +83,7 @@ void main()
     v_pos = pos.xyz / pos.w;
     v_color = color();
     v_uv = a_uv;
+    v_instanceId =  u_idOffset + uint(gl_InstanceID);
 
     vec4 position = u_viewProjection * pos;
 
@@ -97,10 +101,10 @@ void main()
         vec2(u_pointSize, u_pointSize / u_aspectRatio) *
         mix(1.0, variablePointSize, u_variablePointSizeStrength) /
         position.z;
+    if(v_instanceId == u_selected) pointSize *= 1.5;
     position.xy = position.xy + a_uv * pointSize * vec2(position.w);
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 
     v_fragPos = (u_viewProjectionInverse * position).xyz;
-    v_instanceId = gl_InstanceID;
     gl_Position = position;
 }
