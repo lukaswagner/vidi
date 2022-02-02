@@ -47,11 +47,11 @@ void main()
     f_indexHigh = uvec3(
         1u << 7, // set lowest bit to mark points
         0u,
-        (id >> 24) & 255u
+        id & 255u
     );
     f_indexLow = uvec3(
-        (id >> 16) & 255u,
         (id >> 8) & 255u,
-        id & 255u
+        (id >> 16) & 255u,
+        (id >> 24) & 255u
     );
 }

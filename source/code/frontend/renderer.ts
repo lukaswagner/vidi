@@ -5,6 +5,7 @@ import {
     ChangeLookup,
     Context,
     DefaultFramebuffer,
+    EventHandler,
     EventProvider,
     Framebuffer,
     Invalidate,
@@ -117,6 +118,9 @@ export class TopicMapRenderer extends Renderer {
     // debugging
     protected _debugMode: DebugMode = DebugMode.Off;
     protected _debugPass: DebugPass;
+
+    // mouse interaction
+    private _eventHandler: EventHandler;
 
     public updateUseDiscard(): void {
         this._pointPass.useDiscard = !viewer.Fullscreen.active();
@@ -347,6 +351,10 @@ export class TopicMapRenderer extends Renderer {
         // enable culling
         this._gl.enable(this._gl.CULL_FACE);
 
+        // mouse interaction
+        this._eventHandler = new EventHandler(callback, eventProvider);
+        this._eventHandler.pushMouseMoveHandler(this.onMouseMove.bind(this));
+
         return true;
     }
 
@@ -386,6 +394,7 @@ export class TopicMapRenderer extends Renderer {
      */
     protected onUpdate(): boolean {
         this._navigation.update();
+        this._eventHandler.update();
         return this._altered.any ||
             this._camera.altered ||
             this._gridOffsetHelper.altered ||
@@ -601,6 +610,27 @@ export class TopicMapRenderer extends Renderer {
 
         this._pointPass.model = model;
         this._clusterPass.model = model;
+    }
+
+    protected onMouseMove(latests: Array<MouseEvent>): void {
+        const event: MouseEvent = latests[latests.length - 1];
+        const mouse = this._eventHandler.offsets(event)[0];
+        const buf = new ArrayBuffer(9);
+        const byteView = new Uint8Array(buf);
+        this._ssFBO.bind(this._gl.READ_FRAMEBUFFER);
+        this._gl.readBuffer(this._gl.COLOR_ATTACHMENT1);
+        this._gl.readPixels(
+            mouse[0], this._frameSize[1] - mouse[1], 1, 1,
+            this._indexFormat[1], this._indexFormat[2], byteView, 2);
+        this._gl.readBuffer(this._gl.COLOR_ATTACHMENT2);
+        this._gl.readPixels(
+            mouse[0], this._frameSize[1] - mouse[1], 1, 1,
+            this._indexFormat[1], this._indexFormat[2], byteView, 5);
+        this._ssFBO.unbind(this._gl.READ_FRAMEBUFFER);
+        if (byteView[2] === 128) {
+            const id = new Uint32Array(buf, 4, 1)[0];
+            console.log(id);
+        }
     }
 
     public set columns(columns: Column[]) {
