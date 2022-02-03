@@ -10,7 +10,7 @@ import {
     vec2,
 } from 'webgl-operate';
 
-import { drawBuffer } from 'frontend/util/drawBuffer';
+import { drawBuffer, drawBuffers } from 'frontend/util/drawBuffer';
 
 type Format = [GLuint, GLuint, GLuint];
 
@@ -107,7 +107,7 @@ export class DebugPass extends Initializable {
         this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, from.object);
         this._gl.bindFramebuffer(this._gl.DRAW_FRAMEBUFFER, to.object);
         this._gl.readBuffer(read);
-        this._gl.drawBuffers(drawBuffer(this._gl, write));
+        drawBuffer(this._gl, write);
         this._gl.blitFramebuffer(
             0, 0, this._size[0], this._size[1],
             0, 0, this._size[0], this._size[1],
@@ -122,7 +122,7 @@ export class DebugPass extends Initializable {
         this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, from.object);
         this._gl.bindFramebuffer(this._gl.DRAW_FRAMEBUFFER, to.object);
         this._gl.readBuffer(this._gl.NONE);
-        this._gl.drawBuffers([this._gl.NONE]);
+        drawBuffers(this._gl, 0b0);
         this._gl.blitFramebuffer(
             0, 0, this._size[0], this._size[1],
             0, 0, this._size[0], this._size[1],
@@ -133,7 +133,7 @@ export class DebugPass extends Initializable {
 
     protected drawTex(texture: Texture2D, sampler: number): void {
         this._out.clear(this._gl.COLOR_BUFFER_BIT, true, false);
-        this._gl.drawBuffers([this._gl.COLOR_ATTACHMENT0]);
+        drawBuffers(this._gl, 0b1);
         this._program.bind();
         this._gl.uniform1i(this._uTexture, sampler);
         texture.bind(this._gl.TEXTURE0 + sampler);

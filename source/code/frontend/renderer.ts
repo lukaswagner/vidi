@@ -44,6 +44,7 @@ import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
 import { LimitPass } from './grid/limitPass';
 import { PointPass } from './points/pointPass';
+import { drawBuffer, drawBuffers } from './util/drawBuffer';
 
 const Roboto = {
     fnt: require('../../fonts/roboto/roboto.fnt'),
@@ -462,10 +463,7 @@ export class TopicMapRenderer extends Renderer {
         // on the first frame: render indices to ss buffer
         if(frameNumber === 0) {
             this._ssFBO.bind();
-            this._gl.drawBuffers([
-                this._gl.NONE,
-                this._gl.COLOR_ATTACHMENT1 ,
-                this._gl.COLOR_ATTACHMENT2 ]);
+            drawBuffers(this._gl, 0b110);
 
             this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
             this._gl.clearBufferuiv(this._gl.COLOR, 2, [0, 0, 0, 0]);
@@ -479,10 +477,7 @@ export class TopicMapRenderer extends Renderer {
 
         // now render the colors to ms buffer
         this._msFBO.bind();
-        this._gl.drawBuffers([
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.NONE,
-            this._gl.NONE ]);
+        drawBuffers(this._gl, 0b1);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
         this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
@@ -505,10 +500,7 @@ export class TopicMapRenderer extends Renderer {
             this._gl.bindFramebuffer(
                 this._gl.DRAW_FRAMEBUFFER, this._ssFBO.object);
             this._gl.readBuffer(this._gl.COLOR_ATTACHMENT0);
-            this._gl.drawBuffers([
-                this._gl.COLOR_ATTACHMENT0,
-                this._gl.NONE,
-                this._gl.NONE ]);
+            drawBuffers(this._gl, 0b1);
             this._gl.blitFramebuffer(
                 0, 0, this._frameSize[0], this._frameSize[1],
                 0, 0, this._frameSize[0], this._frameSize[1],
@@ -524,10 +516,7 @@ export class TopicMapRenderer extends Renderer {
 
     protected ssFrame(frameNumber: number): void {
         this._ssFBO.bind();
-        this._gl.drawBuffers([
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.COLOR_ATTACHMENT1,
-            this._gl.COLOR_ATTACHMENT2 ]);
+        drawBuffers(this._gl, 0b111);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
         this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
@@ -537,24 +526,15 @@ export class TopicMapRenderer extends Renderer {
         // this._pointPass.target = this._ssFBO;
         this._pointPass.frame(frameNumber);
 
-        this._gl.drawBuffers([
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.NONE,
-            this._gl.NONE ]);
+        drawBuffers(this._gl, 0b1);
 
         this._gridLabelPass.frame();
         this._gridPass.frame();
 
-        this._gl.drawBuffers([
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.COLOR_ATTACHMENT1,
-            this._gl.COLOR_ATTACHMENT2 ]);
+        drawBuffers(this._gl, 0b111);
         this._limitPass.frame();
 
-        this._gl.drawBuffers([
-            this._gl.COLOR_ATTACHMENT0,
-            this._gl.NONE,
-            this._gl.NONE ]);
+        drawBuffers(this._gl, 0b1);
         this._clusterPass.frame();
 
         this._ssFBO.unbind();
@@ -599,7 +579,7 @@ export class TopicMapRenderer extends Renderer {
         this._gl.bindFramebuffer(this._gl.READ_FRAMEBUFFER, fb.object);
         this._gl.bindFramebuffer(this._gl.DRAW_FRAMEBUFFER, null);
         this._gl.readBuffer(this._gl.COLOR_ATTACHMENT0);
-        this._gl.drawBuffers([ this._gl.BACK ]);
+        drawBuffer(this._gl, this._gl.BACK);
         this._gl.blitFramebuffer(
             0, 0, this._frameSize[0], this._frameSize[1],
             0, 0, this._frameSize[0], this._frameSize[1],
