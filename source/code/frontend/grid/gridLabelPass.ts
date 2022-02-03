@@ -140,4 +140,8 @@ export class GridLabelPass extends LabelRenderPass {
     public get altered(): boolean {
         return this._altered.any || this._labelsAltered.any;
     }
+
+    public get labelPositions(): LabelInfo[] {
+        return this._labelInfo;
+    }
 }

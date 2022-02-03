@@ -42,6 +42,7 @@ import { GridHelper } from './grid/gridHelper';
 import { GridLabelPass } from './grid/gridLabelPass';
 import { GridOffsetHelper } from './grid/offsetHelper';
 import { GridPass } from './grid/gridPass';
+import { LimitPass } from './grid/limitPass';
 import { PointPass } from './points/pointPass';
 
 const Roboto = {
@@ -108,6 +109,7 @@ export class TopicMapRenderer extends Renderer {
     protected _pointPass: PointPass;
     protected _gridPass: GridPass;
     protected _gridLabelPass: GridLabelPass;
+    protected _limitPass: LimitPass;
     protected _clusterPass: ClusterVisualization;
 
     // final output
@@ -245,6 +247,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.target = this._renderFBO;
         this._gridPass.target = this._renderFBO;
         this._gridLabelPass.target = this._renderFBO;
+        this._limitPass.target = this._renderFBO;
         this._clusterPass.target = this._renderFBO;
         this._accumulatePass.texture = this._ssColor;
 
@@ -321,6 +324,10 @@ export class TopicMapRenderer extends Renderer {
         this._gridOffsetHelper.camera = this._camera;
         this._gridOffsetHelper.initialize();
 
+        this._limitPass = new LimitPass(context);
+        this._limitPass.initialize();
+        this._limitPass.camera = this._camera;
+
         // set up cluster rendering
         this._clusterPass = new ClusterVisualization(context);
         this._clusterPass.initialize();
@@ -367,6 +374,7 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.uninitialize();
         this._gridPass.uninitialize();
         this._gridLabelPass.uninitialize();
+        this._limitPass.uninitialize();
         this._clusterPass.uninitialize();
 
         this._accumulatePass.uninitialize();
@@ -401,6 +409,7 @@ export class TopicMapRenderer extends Renderer {
             this._pointPass.altered ||
             this._gridPass.altered ||
             this._gridLabelPass.altered ||
+            this._limitPass.altered ||
             this._clusterPass.altered;
     }
     /**
@@ -439,6 +448,8 @@ export class TopicMapRenderer extends Renderer {
         this._pointPass.update();
         this._gridPass.update();
         this._gridLabelPass.update();
+        this._limitPass.labelInfo = this._gridLabelPass.labelPositions;
+        this._limitPass.update();
         this._clusterPass.update();
         if (this._mfEnabled)
             this._accumulatePass.update();
@@ -462,6 +473,8 @@ export class TopicMapRenderer extends Renderer {
 
             this._pointPass.target = this._ssFBO;
             this._pointPass.frame(frameNumber);
+            this._limitPass.target = this._ssFBO;
+            this._limitPass.frame();
         }
 
         // now render the colors to ms buffer
@@ -479,6 +492,8 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridLabelPass.frame();
         this._gridPass.frame();
+        this._limitPass.target = this._msFBO;
+        this._limitPass.frame();
         this._clusterPass.frame();
 
         // trigger accumulation if necessary
@@ -529,6 +544,17 @@ export class TopicMapRenderer extends Renderer {
 
         this._gridLabelPass.frame();
         this._gridPass.frame();
+
+        this._gl.drawBuffers([
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.COLOR_ATTACHMENT1,
+            this._gl.COLOR_ATTACHMENT2 ]);
+        this._limitPass.frame();
+
+        this._gl.drawBuffers([
+            this._gl.COLOR_ATTACHMENT0,
+            this._gl.NONE,
+            this._gl.NONE ]);
         this._clusterPass.frame();
 
         this._ssFBO.unbind();
@@ -627,11 +653,14 @@ export class TopicMapRenderer extends Renderer {
             mouse[0], this._frameSize[1] - mouse[1], 1, 1,
             this._indexFormat[1], this._indexFormat[2], byteView, 5);
         this._ssFBO.unbind(this._gl.READ_FRAMEBUFFER);
-        let id = -1;
-        if (byteView[2] === 128) {
-            id = new Uint32Array(buf, 4, 1)[0];
+        const id = new Uint32Array(buf, 4, 1)[0];
+        this._pointPass.selected = -1;
+        this._limitPass.selected = -1;
+        if (byteView[2] === 1 << 7) {
+            this._pointPass.selected = id;
+        } else if (byteView[2] === 1 << 6) {
+            this._limitPass.selected = id;
         }
-        this._pointPass.selected = id;
     }
 
     public set columns(columns: Column[]) {
