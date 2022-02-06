@@ -11,6 +11,7 @@ import {
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { HandleGeometry } from './handleGeometry';
 import { LabelInfo } from './gridLabelPass';
+import { View } from 'frontend/globals';
 
 export class LimitPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -22,7 +23,6 @@ export class LimitPass extends Initializable {
     protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _ndcOffset: GLfloat2 = [0.0, 0.0];
 
@@ -113,7 +113,7 @@ export class LimitPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, this._camera.viewProjection);
+            this._uViewProjection, false, View.camera.viewProjection);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();
@@ -144,14 +144,6 @@ export class LimitPass extends Initializable {
     public set target(target: Framebuffer) {
         this.assertInitialized();
         this._target = target;
-    }
-
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        if (this._camera === camera) {
-            return;
-        }
-        this._camera = camera;
     }
 
     public set ndcOffset(offset: GLfloat2) {

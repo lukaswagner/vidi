@@ -38,6 +38,7 @@ import {
     loadFromServer,
 } from './util/load';
 
+import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
@@ -375,7 +376,7 @@ export class TopicMapApp extends Initializable {
         });
 
         // rendering
-        const maxSamples = this._renderer.maxSamples;
+        const maxSamples = Buffers.maxSamples;
         this._controls.rendering.input.numberRange({
             label: 'MSAA',
             value: maxSamples, min: 1, max: maxSamples, step: 1,

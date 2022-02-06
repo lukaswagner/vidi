@@ -11,8 +11,7 @@ import {
 } from 'webgl-operate';
 
 import { drawBuffer, drawBuffers } from 'frontend/util/drawBuffer';
-
-type Format = [GLuint, GLuint, GLuint];
+import { Formats } from 'frontend/globals';
 
 export enum DebugMode {
     Off = 'Off',
@@ -75,9 +74,9 @@ export class DebugPass extends Initializable {
         this._program.unbind();
     }
 
-    protected setupOutput(colorFormat: Format): void {
+    protected setupOutput(): void {
         this._outColor = new Renderbuffer(this._context);
-        this._outColor.initialize(1, 1, colorFormat[0]);
+        this._outColor.initialize(1, 1, Formats.rbg[0]);
         this._out = new Framebuffer(this._context);
         this._out.initialize([[this._gl.COLOR_ATTACHMENT0, this._outColor]]);
     }
@@ -87,13 +86,13 @@ export class DebugPass extends Initializable {
         this._geom.initialize();
     }
 
-    protected setupReadHelpers(colorFormat: Format, depthFormat: Format): void {
+    protected setupReadHelpers(): void {
         this._msColorRead = new Texture2D(this._context);
-        this._msColorRead.initialize(1, 1, ...colorFormat);
+        this._msColorRead.initialize(1, 1, ...Formats.rbg);
         this._msDepthRead = new Texture2D(this._context);
-        this._msDepthRead.initialize(1, 1, ...depthFormat);
+        this._msDepthRead.initialize(1, 1, ...Formats.depth);
 
-        this._msFBORead = new Framebuffer(this._context, 'ms fbo');
+        this._msFBORead = new Framebuffer(this._context, 'debug fbo');
         this._msFBORead.initialize([
             [this._gl.COLOR_ATTACHMENT0, this._msColorRead],
             [this._gl.DEPTH_ATTACHMENT, this._msDepthRead]
@@ -148,11 +147,11 @@ export class DebugPass extends Initializable {
     }
 
     @Initializable.initialize()
-    public initialize(colorFormat: Format, depthFormat: Format): boolean {
+    public initialize(): boolean {
         this.setupProgram();
-        this.setupOutput(colorFormat);
+        this.setupOutput();
         this.setupGeometry();
-        this.setupReadHelpers(colorFormat, depthFormat);
+        this.setupReadHelpers();
 
         return true;
     }

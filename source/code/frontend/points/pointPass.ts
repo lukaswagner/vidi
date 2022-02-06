@@ -1,7 +1,6 @@
 import { Alpha, AlphaMode } from 'frontend/util/alpha';
 
 import {
-    Camera,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -20,6 +19,7 @@ import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { RefLinePass } from './refLinePass';
+import { View } from 'frontend/globals';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -45,7 +45,6 @@ export class PointPass extends Initializable {
     protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _aspectRatio: GLfloat;
     protected _cutoffPosition: number[];
@@ -269,13 +268,13 @@ export class PointPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, this._camera.viewProjection);
+            this._uViewProjection, false, View.camera.viewProjection);
         this._gl.uniformMatrix4fv(
             this._uViewProjectionInverse,
             false,
-            this._camera.viewProjectionInverse);
+            View.camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
-        this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
+        this._gl.uniform3fv(this._uCameraPosition, View.camera.eye);
 
         this._target.bind();
 
@@ -387,15 +386,6 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._variablePointSizeStrength = strength;
         this._altered.alter('variablePointSizeStrength');
-    }
-
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        if (this._camera === camera) {
-            return;
-        }
-        this._camera = camera;
-        this._refLinePass.camera = camera;
     }
 
     public set ndcOffset(offset: GLfloat2) {

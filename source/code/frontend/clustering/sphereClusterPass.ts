@@ -1,6 +1,4 @@
-
 import {
-    Camera,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -10,11 +8,10 @@ import {
     Shader,
     mat4,
 } from 'webgl-operate';
-import { ClusterInfo } from 'worker/clustering/interface';
 
-import {
-    SphereGeometry,
-} from './sphereGeometry';
+import { ClusterInfo } from 'worker/clustering/interface';
+import { SphereGeometry } from './sphereGeometry';
+import { View } from 'frontend/globals';
 
 export class SphereClusterPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -28,7 +25,6 @@ export class SphereClusterPass extends Initializable {
     protected _invalidate: Invalidate;
 
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _program: Program;
     protected _geometry: SphereGeometry;
@@ -88,7 +84,7 @@ export class SphereClusterPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, this._camera.viewProjection);
+            this._uViewProjection, false, View.camera.viewProjection);
 
         this._geometry.bind();
         this._geometry.draw();
@@ -112,11 +108,6 @@ export class SphereClusterPass extends Initializable {
     public set target(target: Framebuffer) {
         this.assertInitialized();
         this._target = target;
-    }
-
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        this._camera = camera;
     }
 
     public set model(mat: mat4) {
