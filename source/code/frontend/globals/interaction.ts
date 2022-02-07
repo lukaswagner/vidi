@@ -4,19 +4,36 @@ import {
     EventProvider,
     Invalidate,
     Navigation,
+    vec2,
     vec3,
 } from 'webgl-operate';
+import { Buffers } from './buffers';
+import { Formats } from './formats';
+
+type Callback = (id: number, pos: vec2) => void;
+type Listener = {
+    move: Callback,
+    click: Callback,
+    mask: number,
+    lastId: number
+}
 
 export class Interaction {
+    protected _gl: WebGL2RenderingContext;
     protected _camera: Camera;
     protected _navigation: Navigation;
     protected _eventHandler: EventHandler;
+    protected _listeners: Listener[] = [];
 
     protected static _instance: Interaction;
 
     protected constructor(
-        invalidate: Invalidate, eventProvider: EventProvider
+        gl: WebGL2RenderingContext,
+        invalidate: Invalidate,
+        eventProvider: EventProvider
     ) {
+        this._gl = gl;
+
         this._camera = new Camera();
         this._camera.center = vec3.fromValues(0.0, 0.0, 0.0);
         this._camera.up = vec3.fromValues(0.0, 1.0, 0.0);
@@ -30,13 +47,16 @@ export class Interaction {
         this._navigation._wheelZoom = { process: () => { } };
 
         this._eventHandler = new EventHandler(invalidate, eventProvider);
-        this._eventHandler.pushMouseMoveHandler(this.onMouseMove.bind(this));
+        this._eventHandler.pushMouseMoveHandler(this.move.bind(this));
+        this._eventHandler.pushClickHandler(this.click.bind(this));
     }
 
     public static initialize(
-        invalidate: Invalidate, eventProvider: EventProvider
+        gl: WebGL2RenderingContext,
+        invalidate: Invalidate,
+        eventProvider: EventProvider
     ): void {
-        this._instance = new Interaction(invalidate, eventProvider);
+        this._instance = new Interaction(gl, invalidate, eventProvider);
     }
 
     public static get camera(): Camera {
@@ -56,29 +76,60 @@ export class Interaction {
         this._instance._eventHandler.update();
     }
 
-    protected onMouseMove(latests: Array<MouseEvent>): void {
-        // const event: MouseEvent = latests[latests.length - 1];
-        // const mouse = this._eventHandler.offsets(event)[0];
-        // const buf = new ArrayBuffer(9);
-        // const byteView = new Uint8Array(buf);
-        // this._ssFBO.bind(this._gl.READ_FRAMEBUFFER);
-        // this._gl.readBuffer(this._gl.COLOR_ATTACHMENT1);
-        // this._gl.readPixels(
-        //     mouse[0], this._frameSize[1] - mouse[1], 1, 1,
-        //     this._indexFormat[1], this._indexFormat[2], byteView, 2);
-        // this._gl.readBuffer(this._gl.COLOR_ATTACHMENT2);
-        // this._gl.readPixels(
-        //     mouse[0], this._frameSize[1] - mouse[1], 1, 1,
-        //     this._indexFormat[1], this._indexFormat[2], byteView, 5);
-        // this._ssFBO.unbind(this._gl.READ_FRAMEBUFFER);
-        // const id = new Uint32Array(buf, 4, 1)[0];
-        // Passes.points.selected = -1;
-        // Passes.limits.selected = -1;
-        // if (byteView[2] === 1 << 7) {
-        //     Passes.points.selected = id;
-        // } else if (byteView[2] === 1 << 6) {
-        //     Passes.limits.selected = id;
-        // }
+    protected move(latests: Array<MouseEvent>): void {
+        const event: MouseEvent = latests[latests.length - 1];
+        const mouse = this._eventHandler.offsets(event)[0];
+        const pos = [mouse[0], Buffers.ssFBO.height - mouse[1]];
+        const { mask, id } = this.pick(pos);
+
+        this._listeners
+            .filter((l) => l.move)
+            .forEach((l) => {
+                const match = (l.mask & mask) !== 0;
+                const newId = match ? id : -1;
+                if(newId === l.lastId) return;
+                l.move(newId, pos);
+                l.lastId = newId;
+            });
     }
 
+    protected click(latests: Array<MouseEvent>): void {
+        const event: MouseEvent = latests[latests.length - 1];
+        const mouse = this._eventHandler.offsets(event)[0];
+        const pos = [mouse[0], Buffers.ssFBO.height - mouse[1]];
+        const { mask, id } = this.pick(pos);
+
+        this._listeners
+            .filter((l) => l.click)
+            .filter((l) => l.mask & mask)
+            .forEach((l) => l.click(id, pos));
+    }
+
+    protected pick(mouse: vec2): { mask: number, id: number } {
+        const buf = new ArrayBuffer(9);
+        const byteView = new Uint8Array(buf);
+
+        const fbo = Buffers.ssFBO;
+        fbo.bind(this._gl.READ_FRAMEBUFFER);
+        this._gl.readBuffer(this._gl.COLOR_ATTACHMENT1);
+        this._gl.readPixels(
+            mouse[0], mouse[1], 1, 1,
+            Formats.index[1], Formats.index[2], byteView, 2);
+        this._gl.readBuffer(this._gl.COLOR_ATTACHMENT2);
+        this._gl.readPixels(
+            mouse[0], mouse[1], 1, 1,
+            Formats.index[1], Formats.index[2], byteView, 5);
+        fbo.unbind(this._gl.READ_FRAMEBUFFER);
+
+        const mask = byteView[2];
+        const id = new Uint32Array(buf, 4, 1)[0];
+        return { mask, id };
+    }
+
+    public static register(
+        { mask, move, click }:
+        { mask: number, move?: Callback, click?: Callback }
+    ): void {
+        this._instance._listeners.push({ mask, move, click, lastId: -1 });
+    }
 }

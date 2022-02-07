@@ -74,6 +74,13 @@ export class LimitPass extends Initializable {
         this._gl.uniform1ui(this._uSelected, this._selected);
         this._program.unbind();
 
+        Interaction.register({
+            mask: 1 << 6,
+            move: (selected) => {
+                this._selected = selected;
+                this._altered.alter('selected');
+            }});
+
         return true;
     }
 
@@ -146,10 +153,5 @@ export class LimitPass extends Initializable {
 
     public get altered(): boolean {
         return this._altered.any;
-    }
-
-    public set selected(selected: number) {
-        this._selected = selected;
-        this._altered.alter('selected');
     }
 }

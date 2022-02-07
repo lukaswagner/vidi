@@ -136,7 +136,7 @@ export class TopicMapRenderer extends Renderer {
         this._gl = context.gl as WebGL2RenderingContext;
 
         Formats.initialize(this._gl);
-        Interaction.initialize(callback, eventProvider);
+        Interaction.initialize(this._gl, callback, eventProvider);
         Buffers.initialize(context);
         Passes.initialize(context, this.invalidate.bind(this));
 
@@ -193,7 +193,8 @@ export class TopicMapRenderer extends Renderer {
     protected onPrepare(): void {
         if (this._altered.frameSize) {
             Buffers.resize(this._frameSize[0], this._frameSize[1]);
-            Interaction.camera.viewport = [this._frameSize[0], this._frameSize[1]];
+            Interaction.camera.viewport =
+                [this._frameSize[0], this._frameSize[1]];
 
             Passes.points.aspectRatio =
                 this._frameSize[1] / this._frameSize[0];
@@ -202,7 +203,8 @@ export class TopicMapRenderer extends Renderer {
         }
 
         if (this._altered.canvasSize) {
-            Interaction.camera.aspect = this._canvasSize[0] / this._canvasSize[1];
+            Interaction.camera.aspect =
+                this._canvasSize[0] / this._canvasSize[1];
         }
 
         this._gridOffsetHelper.update();

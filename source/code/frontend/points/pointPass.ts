@@ -145,6 +145,13 @@ export class PointPass extends Initializable {
         this._refLinePass = new RefLinePass(this._context);
         this._refLinePass.initialize();
 
+        Interaction.register({
+            mask: 1 << 7,
+            move: (selected) => {
+                this._selected = selected;
+                this._altered.alter('selected');
+            }});
+
         return true;
     }
 
@@ -407,11 +414,6 @@ export class PointPass extends Initializable {
     public set numClusters(numClusters: number) {
         this._numClusters = numClusters;
         this._altered.alter('numClusters');
-    }
-
-    public set selected(selected: number) {
-        this._selected = selected;
-        this._altered.alter('selected');
     }
 
     public get altered(): boolean {
