@@ -11,7 +11,7 @@ import {
 
 import { ClusterInfo } from 'worker/clustering/interface';
 import { SphereGeometry } from './sphereGeometry';
-import { View } from 'frontend/globals';
+import { Interaction } from 'frontend/globals';
 
 export class SphereClusterPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -84,7 +84,7 @@ export class SphereClusterPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, View.camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
 
         this._geometry.bind();
         this._geometry.draw();

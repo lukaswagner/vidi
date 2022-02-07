@@ -12,7 +12,7 @@ import {
 
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
-import { View } from 'frontend/globals';
+import { Interaction } from 'frontend/globals';
 
 export class RefLinePass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -134,13 +134,13 @@ export class RefLinePass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, View.camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniformMatrix4fv(
             this._uViewProjectionInverse,
             false,
-            View.camera.viewProjectionInverse);
+            Interaction.camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
-        this._gl.uniform3fv(this._uCameraPosition, View.camera.eye);
+        this._gl.uniform3fv(this._uCameraPosition, Interaction.camera.eye);
 
         this._target.bind();
 

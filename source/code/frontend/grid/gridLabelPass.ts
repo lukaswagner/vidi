@@ -11,7 +11,7 @@ import {
     vec3
 } from 'webgl-operate';
 
-import { View } from 'frontend/globals';
+import { Interaction } from 'frontend/globals';
 
 export type LabelInfo = {
     name: string;
@@ -47,12 +47,12 @@ export class GridLabelPass extends LabelRenderPass {
         super(context);
         this._context = context;
         this._gl = context.gl;
-        this._camera = View.camera;
+        this._camera = Interaction.camera;
     }
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        if (override || this._labelsAltered.sets || View.camera.altered) {
+        if (override || this._labelsAltered.sets || Interaction.camera.altered) {
             this.updateLabels();
         }
         if (override || this._labelsAltered.labels) {
@@ -99,7 +99,7 @@ export class GridLabelPass extends LabelRenderPass {
     protected updateLabels(): void {
         const indices = this._labelSets.map((s) => {
             const distances = s.labels.map((l) => {
-                return vec3.dist(l.pos, View.camera.eye);
+                return vec3.dist(l.pos, Interaction.camera.eye);
             });
             let index: number;
             let distance: number;

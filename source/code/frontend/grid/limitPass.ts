@@ -7,7 +7,7 @@ import {
     Shader,
 } from 'webgl-operate';
 
-import { Passes, View } from 'frontend/globals';
+import { Interaction, Passes } from 'frontend/globals';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { HandleGeometry } from './handleGeometry';
 
@@ -110,7 +110,7 @@ export class LimitPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, View.camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();

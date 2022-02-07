@@ -24,7 +24,7 @@ import {
     calculateExtendedGridInfo,
 } from './grid/gridInfo';
 
-import { Formats, Passes, View } from './globals';
+import { Formats, Interaction, Passes } from './globals';
 import { drawBuffer, drawBuffers } from './util/drawBuffer';
 import { Buffers } from './globals/buffers';
 import { ClusterInfo } from 'worker/clustering/interface';
@@ -136,7 +136,7 @@ export class TopicMapRenderer extends Renderer {
         this._gl = context.gl as WebGL2RenderingContext;
 
         Formats.initialize(this._gl);
-        View.initialize(callback, eventProvider);
+        Interaction.initialize(callback, eventProvider);
         Buffers.initialize(context);
         Passes.initialize(context, this.invalidate.bind(this));
 
@@ -179,9 +179,9 @@ export class TopicMapRenderer extends Renderer {
      * @returns whether to redraw
      */
     protected onUpdate(): boolean {
-        View.update();
+        Interaction.update();
         return this._altered.any ||
-            View.altered ||
+            Interaction.altered ||
             this._gridOffsetHelper.altered ||
             Passes.altered ||
             Buffers.altered;
@@ -193,7 +193,7 @@ export class TopicMapRenderer extends Renderer {
     protected onPrepare(): void {
         if (this._altered.frameSize) {
             Buffers.resize(this._frameSize[0], this._frameSize[1]);
-            View.camera.viewport = [this._frameSize[0], this._frameSize[1]];
+            Interaction.camera.viewport = [this._frameSize[0], this._frameSize[1]];
 
             Passes.points.aspectRatio =
                 this._frameSize[1] / this._frameSize[0];
@@ -202,7 +202,7 @@ export class TopicMapRenderer extends Renderer {
         }
 
         if (this._altered.canvasSize) {
-            View.camera.aspect = this._canvasSize[0] / this._canvasSize[1];
+            Interaction.camera.aspect = this._canvasSize[0] / this._canvasSize[1];
         }
 
         this._gridOffsetHelper.update();
@@ -210,7 +210,7 @@ export class TopicMapRenderer extends Renderer {
         Buffers.update();
 
         this._altered.reset();
-        View.camera.altered = false;
+        Interaction.camera.altered = false;
     }
 
     protected msFrame(frameNumber: number): void {
@@ -390,9 +390,9 @@ export class TopicMapRenderer extends Renderer {
 
     public set scale(scale: number) {
         const temp = vec3.create();
-        vec3.normalize(temp, View.camera.eye);
+        vec3.normalize(temp, Interaction.camera.eye);
         vec3.scale(temp, temp, 10 / scale);
-        View.camera.eye = temp;
+        Interaction.camera.eye = temp;
         this.invalidate();
     }
 

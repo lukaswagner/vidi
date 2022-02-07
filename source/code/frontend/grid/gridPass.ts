@@ -10,7 +10,7 @@ import {
 import { ExtendedGridInfo } from './gridInfo';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
-import { View } from 'frontend/globals';
+import { Interaction } from 'frontend/globals';
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -102,7 +102,7 @@ export class GridPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, View.camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
 
         this._target.bind();

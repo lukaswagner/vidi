@@ -9,7 +9,7 @@ import {
     ExtendedGridInfo,
 } from './gridInfo';
 
-import { Passes, View } from 'frontend/globals';
+import { Interaction, Passes } from 'frontend/globals';
 import { LabelSet } from './gridLabelPass';
 
 export class GridOffsetHelper extends Initializable {
@@ -45,7 +45,7 @@ export class GridOffsetHelper extends Initializable {
             this.prepareOffsets();
         }
 
-        if (override || this._altered.any || View.camera.altered) {
+        if (override || this._altered.any || Interaction.camera.altered) {
             this.updateOffsets(this._altered.any);
         }
 
@@ -64,7 +64,7 @@ export class GridOffsetHelper extends Initializable {
         );
 
         const indices = centers.map((center, i) =>
-            View.camera.eye[i] > center ? 0 : 1
+            Interaction.camera.eye[i] > center ? 0 : 1
         );
 
         const changed = indices.reduce((result, newIndex, i) =>
