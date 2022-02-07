@@ -47,6 +47,7 @@ export class GridLabelPass extends LabelRenderPass {
         super(context);
         this._context = context;
         this._gl = context.gl;
+        this._camera = View.camera;
     }
 
     @Initializable.assert_initialized()

@@ -1,5 +1,4 @@
 import {
-    Camera,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -8,10 +7,9 @@ import {
     Shader,
 } from 'webgl-operate';
 
+import { Passes, View } from 'frontend/globals';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { HandleGeometry } from './handleGeometry';
-import { LabelInfo } from './gridLabelPass';
-import { View } from 'frontend/globals';
 
 export class LimitPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -39,8 +37,6 @@ export class LimitPass extends Initializable {
     protected _uSelected: WebGLUniformLocation;
 
     protected _geometry: HandleGeometry;
-
-    protected _labels: LabelInfo[];
 
     public constructor(context: Context) {
         super();
@@ -100,7 +96,8 @@ export class LimitPass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
-        if(!this._labels) return;
+        const labels = Passes.gridLabels.labelPositions;
+        if(!labels) return;
 
         const size = this._target.size;
         this._gl.viewport(0, 0, size[0], size[1]);
@@ -119,7 +116,7 @@ export class LimitPass extends Initializable {
         this._target.bind();
 
         this._geometry.bind();
-        for(const label of this._labels) {
+        for(const label of labels) {
             this._gl.uniform3fv(this._uDir, label.dir);
             this._gl.uniform3fv(this._uUp, label.up);
             this._gl.uniform3fv(this._uPos, label.pos);
@@ -135,10 +132,6 @@ export class LimitPass extends Initializable {
         this._gl.depthMask(true);
         this._gl.disable(this._gl.BLEND);
         this._gl.enable(this._gl.CULL_FACE);
-    }
-
-    public set labelInfo(info: LabelInfo[]) {
-        this._labels = info;
     }
 
     public set target(target: Framebuffer) {
