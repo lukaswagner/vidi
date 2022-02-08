@@ -39,7 +39,8 @@ export class PointPass extends Initializable {
         variablePointSizeOutputRange: false,
         model: false,
         numClusters: false,
-        selected: false
+        selected: false,
+        limits: false
     });
 
     protected _context: Context;
@@ -60,6 +61,7 @@ export class PointPass extends Initializable {
     protected _model: mat4;
     protected _numClusters: number;
     protected _selected = -1;
+    protected _limits: Float32Array;
 
     protected _program: Program;
     protected _alpha: Alpha;
@@ -82,6 +84,7 @@ export class PointPass extends Initializable {
     protected _uNumClusters: WebGLUniformLocation;
     protected _uIdOffset: WebGLUniformLocation;
     protected _uSelected: WebGLUniformLocation;
+    protected _uLimits: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -134,6 +137,7 @@ export class PointPass extends Initializable {
         this._uNumClusters = this._program.uniform('u_numClusters');
         this._uIdOffset = this._program.uniform('u_idOffset');
         this._uSelected = this._program.uniform('u_selected');
+        this._uLimits = this._program.uniform('u_limits');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -257,6 +261,10 @@ export class PointPass extends Initializable {
 
         if (override || this._altered.selected) {
             this._gl.uniform1ui(this._uSelected, this._selected);
+        }
+
+        if (override || this._altered.limits) {
+            this._gl.uniform3fv(this._uLimits, this._limits);
         }
 
         this._program.unbind();
@@ -438,5 +446,10 @@ export class PointPass extends Initializable {
 
     public get refLines(): RefLinePass {
         return this._refLinePass;
+    }
+
+    public set limits(limits: Float32Array) {
+        this._limits = limits;
+        this._altered.alter('limits');
     }
 }

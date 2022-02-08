@@ -40,8 +40,8 @@ void main()
     );
     vertex *= mat;
     vertex.xyz += u_pos;
-    uint index = uint(u_factor);
-    index += uint(dir.y) * 2u;
+    uint index = uint(u_factor) * 3u;
+    index += uint(dir.y);
     index += uint(dir.z) * 2u;
     vertex.xyz += dir * u_handlePositions[index];
 

@@ -45,7 +45,7 @@ export class LimitPass extends Initializable {
     protected _hoveredHandle = -1;
     protected _grabbedHandle = -1;
 
-    protected _handlePositions = new Float32Array([-1, 1, -1, 1, -1, 1]);
+    protected _handlePositions = new Float32Array([-1, -1, -1, 1, 1, 1]);
 
     public constructor(context: Context) {
         super();
@@ -88,7 +88,7 @@ export class LimitPass extends Initializable {
         const posOnPlane = this.getPositionOnLabelPlane(label, pos);
 
         const axis = posOnPlane.findIndex((_, i) => label.dir[i] !== 0);
-        this._handlePositions[axis * 2 + (this._grabbedHandle >> 3 & 0b1)] =
+        this._handlePositions[(this._grabbedHandle >> 3 & 0b1) * 3 + axis] =
             posOnPlane[axis];
         this._altered.alter('handlePositions');
     }
@@ -117,11 +117,6 @@ export class LimitPass extends Initializable {
         this._uSelected = this._program.uniform('u_selected');
         this._uHandlePositions = this._program.uniform('u_handlePositions');
 
-        this._program.bind();
-        this._gl.uniform1ui(this._uSelected, this._hoveredHandle);
-        this._gl.uniform1fv(this._uHandlePositions, this._handlePositions);
-        this._program.unbind();
-
         Interaction.register({
             mask: 1 << 6,
             move: (id, pos) => {
@@ -137,6 +132,9 @@ export class LimitPass extends Initializable {
                 this._grabbedHandle = -1;
                 this._altered.alter('selected');
             }});
+
+        this._altered.alter('selected');
+        this._altered.alter('handlePositions');
 
         return true;
     }
@@ -155,11 +153,16 @@ export class LimitPass extends Initializable {
         }
 
         if (override || this._altered.selected) {
-            this._gl.uniform1ui(this._uSelected, this._grabbedHandle === -1 ? this._hoveredHandle : this._grabbedHandle);
+            this._gl.uniform1ui(
+                this._uSelected,
+                this._grabbedHandle === -1 ?
+                    this._hoveredHandle :
+                    this._grabbedHandle);
         }
 
         if (override || this._altered.handlePositions) {
             this._gl.uniform1fv(this._uHandlePositions, this._handlePositions);
+            Passes.points.limits = this._handlePositions;
         }
 
         if (override || this._altered.any) {

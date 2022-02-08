@@ -109,10 +109,10 @@ export class Passes {
     }
 
     public static update(): void {
-        Passes.points.update();
         Passes.grid.update();
         Passes.gridLabels.update();
         Passes.limits.update();
+        Passes.points.update();
         Passes.clusters.update();
         Passes.accumulate.update();
     }

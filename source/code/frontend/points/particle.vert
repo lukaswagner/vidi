@@ -31,6 +31,7 @@ uniform int u_colorMapping;
 
 uniform uint u_idOffset;
 uniform uint u_selected;
+uniform vec3 u_limits[2];
 
 const vec3 u_pointColor = vec3(1.0, 0.0, 0.0);
 
@@ -89,6 +90,12 @@ void main()
 
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
+
+#line 95
+    float limited = step(3.0, dot(
+        step(u_limits[0], v_pos.xyz),
+        step(v_pos.xyz, u_limits[1])));
+    if(limited < 0.1) return;
 
     float variablePointSize =
         pow(
