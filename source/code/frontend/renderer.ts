@@ -224,8 +224,8 @@ export class TopicMapRenderer extends Renderer {
             ss.bind();
             drawBuffers(this._gl, 0b110);
 
-            this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
-            this._gl.clearBufferuiv(this._gl.COLOR, 2, [0, 0, 0, 0]);
+            this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 255, 0]);
+            this._gl.clearBufferuiv(this._gl.COLOR, 2, [255, 255, 255, 0]);
             this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
             Passes.points.target = Passes.limits.target = ss;
@@ -278,8 +278,8 @@ export class TopicMapRenderer extends Renderer {
         drawBuffers(this._gl, 0b111);
 
         this._gl.clearBufferfv(this._gl.COLOR, 0, this._clearColor);
-        this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 0, 0]);
-        this._gl.clearBufferuiv(this._gl.COLOR, 2, [0, 0, 0, 0]);
+        this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 255, 0]);
+        this._gl.clearBufferuiv(this._gl.COLOR, 2, [255, 255, 255, 0]);
         this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
         Passes.points.target =

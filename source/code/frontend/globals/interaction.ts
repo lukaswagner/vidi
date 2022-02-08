@@ -11,10 +11,15 @@ import { Buffers } from './buffers';
 import { Formats } from './formats';
 
 type Callback = (id: number, pos: vec2) => void;
-type Listener = {
-    move: Callback,
-    click: Callback,
-    mask: number,
+type ListenerConfig = {
+    move?: Callback,
+    click?: Callback,
+    down?: Callback,
+    up?: Callback,
+    mask: number
+}
+type Listener = ListenerConfig & {
+    move?: Callback,
     lastId: number
 }
 
@@ -23,7 +28,9 @@ export class Interaction {
     protected _camera: Camera;
     protected _navigation: Navigation;
     protected _eventHandler: EventHandler;
+
     protected _listeners: Listener[] = [];
+    protected _currentDownListener: Listener;
 
     protected static _instance: Interaction;
 
@@ -47,8 +54,10 @@ export class Interaction {
         this._navigation._wheelZoom = { process: () => { } };
 
         this._eventHandler = new EventHandler(invalidate, eventProvider);
-        this._eventHandler.pushMouseMoveHandler(this.move.bind(this));
-        this._eventHandler.pushClickHandler(this.click.bind(this));
+        this._eventHandler.pushMouseMoveHandler(this.mouseMove.bind(this));
+        this._eventHandler.pushClickHandler(this.mouseClick.bind(this));
+        this._eventHandler.pushMouseDownHandler(this.mouseDown.bind(this));
+        this._eventHandler.pushMouseUpHandler(this.mouseUp.bind(this));
     }
 
     public static initialize(
@@ -76,10 +85,14 @@ export class Interaction {
         this._instance._eventHandler.update();
     }
 
-    protected move(latests: Array<MouseEvent>): void {
-        const event: MouseEvent = latests[latests.length - 1];
+    protected getPos(events: Array<MouseEvent>): vec2 {
+        const event: MouseEvent = events[events.length - 1];
         const mouse = this._eventHandler.offsets(event)[0];
-        const pos = [mouse[0], Buffers.ssFBO.height - mouse[1]];
+        return [mouse[0], Buffers.ssFBO ? Buffers.ssFBO.height - mouse[1] : 0];
+    }
+
+    protected mouseMove(events: Array<MouseEvent>): void {
+        const pos = this.getPos(events);
         const { mask, id } = this.pick(pos);
 
         this._listeners
@@ -93,16 +106,35 @@ export class Interaction {
             });
     }
 
-    protected click(latests: Array<MouseEvent>): void {
-        const event: MouseEvent = latests[latests.length - 1];
-        const mouse = this._eventHandler.offsets(event)[0];
-        const pos = [mouse[0], Buffers.ssFBO.height - mouse[1]];
+    protected mouseClick(events: Array<MouseEvent>): void {
+        const pos = this.getPos(events);
         const { mask, id } = this.pick(pos);
 
         this._listeners
             .filter((l) => l.click)
             .filter((l) => l.mask & mask)
             .forEach((l) => l.click(id, pos));
+    }
+
+    protected mouseDown(events: Array<MouseEvent>): void {
+        const pos = this.getPos(events);
+        const { mask, id } = this.pick(pos);
+
+        this._listeners
+            .filter((l) => l.down)
+            .filter((l) => l.mask & mask)
+            .forEach((l) => {
+                l.down(id, pos);
+                this._currentDownListener = l;
+            });
+    }
+
+    protected mouseUp(events: Array<MouseEvent>): void {
+        const pos = this.getPos(events);
+        const { id } = this.pick(pos);
+
+        this._currentDownListener?.up?.(id, pos);
+        this._currentDownListener = undefined;
     }
 
     protected pick(mouse: vec2): { mask: number, id: number } {
@@ -122,14 +154,12 @@ export class Interaction {
         fbo.unbind(this._gl.READ_FRAMEBUFFER);
 
         const mask = byteView[2];
-        const id = new Uint32Array(buf, 4, 1)[0];
+        let id = new Uint32Array(buf, 4, 1)[0];
+        if (id === 2 ** 32 - 1) id = -1;
         return { mask, id };
     }
 
-    public static register(
-        { mask, move, click }:
-        { mask: number, move?: Callback, click?: Callback }
-    ): void {
-        this._instance._listeners.push({ mask, move, click, lastId: -1 });
+    public static register(config: ListenerConfig): void {
+        this._instance._listeners.push(Object.assign({lastId: -1 }, config));
     }
 }

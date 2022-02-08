@@ -13,13 +13,14 @@ import {
     Column,
     Float32Chunk,
     Float32Column,
+    NumberColumn,
 } from '@lukaswagner/csv-parser';
 
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
+import { Interaction } from 'frontend/globals';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { RefLinePass } from './refLinePass';
-import { Interaction } from 'frontend/globals';
 
 export class PointPass extends Initializable {
     protected static readonly DEFAULT_POINT_SIZE = 1.0 / 128.0;
@@ -147,9 +148,18 @@ export class PointPass extends Initializable {
 
         Interaction.register({
             mask: 1 << 7,
-            move: (selected) => {
-                this._selected = selected;
+            move: (id) => {
+                this._selected = id;
                 this._altered.alter('selected');
+            },
+            click: (id) => {
+                const str = (i: number): string => {
+                    return (this._columns[i] as NumberColumn)
+                        ?.get(id).toFixed(3) ?? '-';
+                };
+                console.log(
+                    'clicked on point', id,
+                    '(', str(0), '|', str(1), '|', str(2), ')');
             }});
 
         return true;

@@ -76,9 +76,15 @@ export class LimitPass extends Initializable {
 
         Interaction.register({
             mask: 1 << 6,
-            move: (selected) => {
-                this._selected = selected;
+            move: (id) => {
+                this._selected = id;
                 this._altered.alter('selected');
+            },
+            down: (id) => {
+                console.log('mouse down on', id);
+            },
+            up: (id) => {
+                console.log('mouse released on', id);
             }});
 
         return true;
