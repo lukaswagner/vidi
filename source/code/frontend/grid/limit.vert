@@ -12,6 +12,7 @@ uniform vec3 u_up;
 uniform vec3 u_pos;
 uniform float u_factor;
 uniform uint u_selected;
+uniform float u_handlePositions[6];
 
 void main()
 {
@@ -39,7 +40,10 @@ void main()
     );
     vertex *= mat;
     vertex.xyz += u_pos;
-    vertex.xyz += mix(-dir, dir, u_factor);
+    uint index = uint(u_factor);
+    index += uint(dir.y) * 2u;
+    index += uint(dir.z) * 2u;
+    vertex.xyz += dir * u_handlePositions[index];
 
     vertex = u_viewProjection * vertex;
     vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;

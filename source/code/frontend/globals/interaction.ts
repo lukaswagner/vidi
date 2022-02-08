@@ -81,8 +81,9 @@ export class Interaction {
     }
 
     public static update(): void {
-        Interaction.navigation.update();
         this._instance._eventHandler.update();
+        if(!this._instance._currentDownListener)
+            Interaction.navigation.update();
     }
 
     protected getPos(events: Array<MouseEvent>): vec2 {
@@ -95,15 +96,21 @@ export class Interaction {
         const pos = this.getPos(events);
         const { mask, id } = this.pick(pos);
 
-        this._listeners
-            .filter((l) => l.move)
-            .forEach((l) => {
-                const match = (l.mask & mask) !== 0;
-                const newId = match ? id : -1;
-                if(newId === l.lastId) return;
-                l.move(newId, pos);
-                l.lastId = newId;
-            });
+        const listeners = this._listeners
+            .filter((l) => l.move);
+
+        listeners.forEach((l) => {
+            const match = (l.mask & mask) !== 0;
+            const newId = match ? id : -1;
+            if (newId === l.lastId &&
+                newId === -1 &&
+                l !== this._currentDownListener
+            ) {
+                return;
+            }
+            l.move(newId, pos);
+            l.lastId = newId;
+        });
     }
 
     protected mouseClick(events: Array<MouseEvent>): void {
@@ -142,6 +149,7 @@ export class Interaction {
         const byteView = new Uint8Array(buf);
 
         const fbo = Buffers.ssFBO;
+        if(!fbo?.initialized) return { mask: 0, id: -1 };
         fbo.bind(this._gl.READ_FRAMEBUFFER);
         this._gl.readBuffer(this._gl.COLOR_ATTACHMENT1);
         this._gl.readPixels(

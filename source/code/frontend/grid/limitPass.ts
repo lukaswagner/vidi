@@ -5,16 +5,21 @@ import {
     Initializable,
     Program,
     Shader,
+    vec2,
+    vec3,
 } from 'webgl-operate';
 
 import { Interaction, Passes } from 'frontend/globals';
+import { clipToWorld, intersectLinePlane } from 'frontend/util/math';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { HandleGeometry } from './handleGeometry';
+import { LabelInfo } from './gridLabelPass';
 
 export class LimitPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
-        selected: false
+        selected: false,
+        handlePositions: false
     });
 
     protected _context: Context;
@@ -26,8 +31,6 @@ export class LimitPass extends Initializable {
 
     protected _program: Program;
 
-    protected _selected = -1;
-
     protected _uViewProjection: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uDir: WebGLUniformLocation;
@@ -35,8 +38,14 @@ export class LimitPass extends Initializable {
     protected _uPos: WebGLUniformLocation;
     protected _uFactor: WebGLUniformLocation;
     protected _uSelected: WebGLUniformLocation;
+    protected _uHandlePositions: WebGLUniformLocation;
 
     protected _geometry: HandleGeometry;
+
+    protected _hoveredHandle = -1;
+    protected _grabbedHandle = -1;
+
+    protected _handlePositions = new Float32Array([-1, 1, -1, 1, -1, 1]);
 
     public constructor(context: Context) {
         super();
@@ -45,6 +54,43 @@ export class LimitPass extends Initializable {
 
         this._program = new Program(this._context);
         this._geometry = new HandleGeometry(this._context);
+    }
+
+    protected getGrabbedLabel(): LabelInfo {
+        const dir = vec3.fromValues(
+            this._grabbedHandle & 0b1,
+            this._grabbedHandle >> 1 & 0b1,
+            this._grabbedHandle >> 2 & 0b1);
+
+        return Passes.gridLabels.labelPositions.filter((l) =>
+            l.dir.every((v, i) => (v === 0) === (dir[i] === 0)))[0];
+    }
+
+    protected getPositionOnLabelPlane(label: LabelInfo, pos: vec2): vec3 {
+        const cam = Interaction.camera;
+
+        const clip = vec2.clone(pos);
+        vec2.div(clip, clip, cam.viewport);
+        vec2.scaleAndAdd(clip, [-1, -1], clip, 2);
+
+        const start = clipToWorld([clip[0], clip[1], 0.5]);
+        const end = clipToWorld([clip[0], clip[1], 1]);
+        const ray = vec3.sub(vec3.create(), end, start);
+        vec3.normalize(ray, ray);
+
+        const normal = vec3.cross(vec3.create(), label.dir, label.up);
+
+        return intersectLinePlane(cam.eye, ray, label.pos, normal);
+    }
+
+    protected updateHandlePos(pos: vec2): void {
+        const label = this.getGrabbedLabel();
+        const posOnPlane = this.getPositionOnLabelPlane(label, pos);
+
+        const axis = posOnPlane.findIndex((_, i) => label.dir[i] !== 0);
+        this._handlePositions[axis * 2 + (this._grabbedHandle >> 3 & 0b1)] =
+            posOnPlane[axis];
+        this._altered.alter('handlePositions');
     }
 
     @Initializable.initialize()
@@ -69,22 +115,27 @@ export class LimitPass extends Initializable {
         this._uPos = this._program.uniform('u_pos');
         this._uFactor = this._program.uniform('u_factor');
         this._uSelected = this._program.uniform('u_selected');
+        this._uHandlePositions = this._program.uniform('u_handlePositions');
 
         this._program.bind();
-        this._gl.uniform1ui(this._uSelected, this._selected);
+        this._gl.uniform1ui(this._uSelected, this._hoveredHandle);
+        this._gl.uniform1fv(this._uHandlePositions, this._handlePositions);
         this._program.unbind();
 
         Interaction.register({
             mask: 1 << 6,
-            move: (id) => {
-                this._selected = id;
-                this._altered.alter('selected');
+            move: (id, pos) => {
+                if(id !== this._hoveredHandle) this._altered.alter('selected');
+                this._hoveredHandle = id;
+                if(this._grabbedHandle > -1) this.updateHandlePos(pos);
             },
             down: (id) => {
-                console.log('mouse down on', id);
+                this._grabbedHandle = id;
+                this._altered.alter('selected');
             },
-            up: (id) => {
-                console.log('mouse released on', id);
+            up: () => {
+                this._grabbedHandle = -1;
+                this._altered.alter('selected');
             }});
 
         return true;
@@ -98,9 +149,20 @@ export class LimitPass extends Initializable {
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        if (override || this._altered.selected) {
+
+        if (override || this._altered.any) {
             this._program.bind();
-            this._gl.uniform1ui(this._uSelected, this._selected);
+        }
+
+        if (override || this._altered.selected) {
+            this._gl.uniform1ui(this._uSelected, this._grabbedHandle === -1 ? this._hoveredHandle : this._grabbedHandle);
+        }
+
+        if (override || this._altered.handlePositions) {
+            this._gl.uniform1fv(this._uHandlePositions, this._handlePositions);
+        }
+
+        if (override || this._altered.any) {
             this._program.unbind();
         }
 
