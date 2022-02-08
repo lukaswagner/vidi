@@ -43,6 +43,7 @@ import { Clustering } from './clustering/clustering';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
+import { Passes } from './globals';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -285,6 +286,15 @@ export class TopicMapApp extends Initializable {
             }
         });
 
+        this._controls.position.input.button({
+            label: 'Reset position limits',
+            text: 'Reset',
+            handler: () => {
+                Passes.limits.reset();
+                this._renderer.invalidate();
+            }
+        });
+
         // clustering
         this._controls.cluster.input.button({
             label: 'Calculate clusters',
@@ -429,6 +439,7 @@ export class TopicMapApp extends Initializable {
                 this.getId(this._columns.selectedColumn(i));
             this._controls.axes[i].invokeHandler();
         }
+        Passes.limits.reset();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);

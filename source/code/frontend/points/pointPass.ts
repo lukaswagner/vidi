@@ -61,7 +61,7 @@ export class PointPass extends Initializable {
     protected _model: mat4;
     protected _numClusters: number;
     protected _selected = -1;
-    protected _limits: Float32Array;
+    protected _limits: number[];
 
     protected _program: Program;
     protected _alpha: Alpha;
@@ -448,7 +448,7 @@ export class PointPass extends Initializable {
         return this._refLinePass;
     }
 
-    public set limits(limits: Float32Array) {
+    public set limits(limits: number[]) {
         this._limits = limits;
         this._altered.alter('limits');
     }

@@ -45,7 +45,7 @@ export class LimitPass extends Initializable {
     protected _hoveredHandle = -1;
     protected _grabbedHandle = -1;
 
-    protected _handlePositions = new Float32Array([-1, -1, -1, 1, 1, 1]);
+    protected _handlePositions = [-1, -1, -1, 1, 1, 1];
 
     public constructor(context: Context) {
         super();
@@ -224,5 +224,10 @@ export class LimitPass extends Initializable {
 
     public get altered(): boolean {
         return this._altered.any;
+    }
+
+    public reset(): void {
+        this._handlePositions = [-1, -1, -1, 1, 1, 1];
+        this._altered.alter('handlePositions');
     }
 }
