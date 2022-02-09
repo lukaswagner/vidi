@@ -52,7 +52,9 @@ export class GridLabelPass extends LabelRenderPass {
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        if (override || this._labelsAltered.sets || Interaction.camera.altered) {
+        if (
+            override || this._labelsAltered.sets || Interaction.camera.altered
+        ) {
             this.updateLabels();
         }
         if (override || this._labelsAltered.labels) {
@@ -81,7 +83,9 @@ export class GridLabelPass extends LabelRenderPass {
         this._gl.disable(this._gl.BLEND);
     }
 
-    public loadFont(font: string, img: string, invalidate: (force?: boolean) => void): void {
+    public loadFont(
+        font: string, img: string, invalidate: (force?: boolean) => void
+    ): void {
         FontFace.fromFiles(font, new Map([[0, img]]), this._context)
             .then((fontFace) => {
                 this._fontFace = fontFace;
