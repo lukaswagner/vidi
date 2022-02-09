@@ -1,5 +1,4 @@
 import {
-    Camera,
     ChangeLookup,
     Initializable,
     vec3,
@@ -10,13 +9,8 @@ import {
     ExtendedGridInfo,
 } from './gridInfo';
 
-import {
-    GridLabelPass,
-    LabelSet
-} from './gridLabelPass';
-
-import { GridPass } from './gridPass';
-import { PointPass } from 'frontend/points/pointPass';
+import { Interaction, Passes } from 'frontend/globals';
+import { LabelSet } from './gridLabelPass';
 
 export class GridOffsetHelper extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -28,22 +22,8 @@ export class GridOffsetHelper extends Initializable {
     protected readonly labelOffset = 0.2;
 
     protected _gridInfo: ExtendedGridInfo[];
-    protected _camera: Camera;
-
-    protected _gridPass: GridPass;
-    protected _gridLabelPass: GridLabelPass;
-    protected _pointPass: PointPass;
 
     protected _lastIndices: number[];
-
-    public constructor(
-        gridPass: GridPass, gridLabelPass: GridLabelPass, pointPass: PointPass
-    ) {
-        super();
-        this._gridPass = gridPass;
-        this._gridLabelPass = gridLabelPass;
-        this._pointPass = pointPass;
-    }
 
     @Initializable.initialize()
     public initialize(): boolean {
@@ -65,7 +45,7 @@ export class GridOffsetHelper extends Initializable {
             this.prepareOffsets();
         }
 
-        if (override || this._altered.any || this._camera.altered) {
+        if (override || this._altered.any || Interaction.camera.altered) {
             this.updateOffsets(this._altered.any);
         }
 
@@ -84,7 +64,7 @@ export class GridOffsetHelper extends Initializable {
         );
 
         const indices = centers.map((center, i) =>
-            this._camera.eye[i] > center ? 0 : 1
+            Interaction.camera.eye[i] > center ? 0 : 1
         );
 
         const changed = indices.reduce((result, newIndex, i) =>
@@ -100,16 +80,16 @@ export class GridOffsetHelper extends Initializable {
             grid.enabled ? grid.offsets[indices[(i + 2) % 3]] : 0
         );
         const offsets = calcOffsets(gi, indices);
-        this._gridPass.gridOffsets = offsets;
+        Passes.grid.gridOffsets = offsets;
         const orderedByNormal = gi.map((g, i) => {
             return { g, n: g.normal?.findIndex(
                 (v: number) => v !== 0), i: indices[i] };
         }).sort((a, b) => a.n - b.n);
-        this._pointPass.refLines.baseValue = calcOffsets(
+        Passes.points.refLines.baseValue = calcOffsets(
             orderedByNormal.map((g) => g.g),
             orderedByNormal.map((g) => g.i));
 
-        this._pointPass.cutoffPosition = [1, 2, 0].map((i) => {
+        Passes.points.cutoffPosition = [1, 2, 0].map((i) => {
             return { value: offsets[i], mask: +gi[i].enabled };
         });
 
@@ -123,23 +103,23 @@ export class GridOffsetHelper extends Initializable {
 
         switch (mode) {
             case 1:
-                this._gridLabelPass.labelInfo =
+                Passes.gridLabels.labelInfo =
                     this.oneGrid(axes[0], axes[1], 0);
                 break;
             case 2:
-                this._gridLabelPass.labelInfo =
+                Passes.gridLabels.labelInfo =
                     this.oneGrid(axes[1], axes[2], 2);
                 break;
             case 4:
-                this._gridLabelPass.labelInfo =
+                Passes.gridLabels.labelInfo =
                     this.oneGrid(axes[2], axes[0], 1);
                 break;
             case 7:
-                this._gridLabelPass.labelInfo =
+                Passes.gridLabels.labelInfo =
                     this.allGrids(axes, indices, offsets);
                 break;
             default:
-                this._gridLabelPass.labelInfo = [];
+                Passes.gridLabels.labelInfo = [];
                 break;
         }
     }
@@ -271,14 +251,6 @@ export class GridOffsetHelper extends Initializable {
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {
         this._gridInfo = gridInfo;
         this._altered.alter('gridInfo');
-    }
-
-    public set camera(camera: Camera) {
-        if (this._camera === camera) {
-            return;
-        }
-        this._camera = camera;
-        this._altered.alter('camera');
     }
 
     public get altered(): boolean {

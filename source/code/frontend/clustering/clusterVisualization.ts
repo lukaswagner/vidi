@@ -1,5 +1,4 @@
 import {
-    Camera,
     Context,
     Framebuffer,
     Initializable,
@@ -53,11 +52,6 @@ export class ClusterVisualization extends Initializable {
     public set target(target: Framebuffer) {
         this.assertInitialized();
         this._spherePass.target = target;
-    }
-
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        this._spherePass.camera = camera;
     }
 
     public set model(mat: mat4) {

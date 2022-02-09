@@ -1,48 +1,35 @@
-precision lowp float;
+precision highp float;
 
-#if __VERSION__ == 100
-    attribute vec3 a_position;
-    attribute vec2 a_uv;
-    attribute mat4 a_transform;
-    attribute float a_offset;
-    attribute vec2 a_quadLowerBounds;
-    attribute vec2 a_quadUpperBounds;
-    attribute vec2 a_dataLowerBounds;
-    attribute vec2 a_dataUpperBounds;
-    attribute vec2 a_gridSubdivisions;
-#else
-    #define varying out
-    layout(location = 0) in vec3 a_position;
-    layout(location = 1) in vec2 a_uv;
-    layout(location = 2) in mat4 a_transform;
-    layout(location = 6) in float a_offset;
-    layout(location = 7) in vec2 a_quadLowerBounds;
-    layout(location = 8) in vec2 a_quadUpperBounds;
-    layout(location = 9) in vec2 a_dataLowerBounds;
-    layout(location = 10) in vec2 a_dataUpperBounds;
-    layout(location = 11) in vec2 a_gridSubdivisions;
-#endif
+layout(location = 0) in vec3 a_position;
+layout(location = 1) in vec2 a_uv;
+layout(location = 2) in mat4 a_transform;
+layout(location = 6) in float a_offset;
+layout(location = 7) in vec2 a_quadLowerBounds;
+layout(location = 8) in vec2 a_quadUpperBounds;
+layout(location = 9) in vec2 a_dataLowerBounds;
+layout(location = 10) in vec2 a_dataUpperBounds;
+layout(location = 11) in vec2 a_gridSubdivisions;
 
 uniform mat4 u_viewProjection;
 uniform vec2 u_ndcOffset;
 
-varying vec2 v_uv;
+out vec2 v_uv;
 
-varying vec2 v_quadLowerBounds;
-varying vec2 v_quadUpperBounds;
-varying vec2 v_quadRange;
-varying vec2 v_dataLowerBounds;
-varying vec2 v_dataUpperBounds;
-varying vec2 v_dataRange;
-varying vec2 v_gridSubdivisions;
+out vec2 v_quadLowerBounds;
+out vec2 v_quadUpperBounds;
+out vec2 v_quadRange;
+out vec2 v_dataLowerBounds;
+out vec2 v_dataUpperBounds;
+out vec2 v_dataRange;
+out vec2 v_gridSubdivisions;
 
-varying vec2 v_dataLowerBoundsUV;
-varying vec2 v_dataUpperBoundsUV;
-varying vec2 v_dataRangeUV;
-varying vec2 v_gridSubdivisionsUV;
-varying vec2 v_gridSubdivisionsUVInv;
+out vec2 v_dataLowerBoundsUV;
+out vec2 v_dataUpperBoundsUV;
+out vec2 v_dataRangeUV;
+out vec2 v_gridSubdivisionsUV;
+out vec2 v_gridSubdivisionsUVInv;
 
-varying vec2 v_gridSubdivisionsScaled;
+out vec2 v_gridSubdivisionsScaled;
 
 void main()
 {

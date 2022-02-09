@@ -1,23 +1,12 @@
-precision lowp float;
+precision highp float;
 
-#if __VERSION__ == 100
-    #define texture(sampler, coord) texture2D(sampler, coord)
-    attribute vec2 a_uv;
-    attribute float a_xCoord;
-    attribute float a_yCoord;
-    attribute float a_zCoord;
-    attribute vec4 a_vertexColor;
-    attribute float a_variablePointSize;
-#else
-    #define varying out
-    layout(location = 0) in vec2 a_uv;
-    layout(location = 1) in float a_xCoord;
-    layout(location = 2) in float a_yCoord;
-    layout(location = 3) in float a_zCoord;
-    layout(location = 4) in vec4 a_vertexColor;
-    layout(location = 5) in float a_variablePointSize;
-    layout(location = 6) in float a_clusterId;
-#endif
+layout(location = 0) in vec2 a_uv;
+layout(location = 1) in float a_xCoord;
+layout(location = 2) in float a_yCoord;
+layout(location = 3) in float a_zCoord;
+layout(location = 4) in vec4 a_vertexColor;
+layout(location = 5) in float a_variablePointSize;
+layout(location = 6) in float a_clusterId;
 
 uniform mat4 u_model;
 uniform mat4 u_viewProjection;
@@ -40,14 +29,19 @@ const int COLOR_MAPPING_RGB_CUBE = 0;
 const int COLOR_MAPPING_HSL_CYLINDER = 1;
 uniform int u_colorMapping;
 
+uniform uint u_idOffset;
+uniform uint u_selected;
+uniform vec3 u_limits[2];
+
 const vec3 u_pointColor = vec3(1.0, 0.0, 0.0);
 
 const float TWO_PI_INV = 0.15915494309;
 
-varying vec3 v_pos;
-varying vec3 v_color;
-varying vec2 v_uv;
-varying vec3 v_fragPos;
+out vec3 v_pos;
+out vec3 v_color;
+out vec2 v_uv;
+out vec3 v_fragPos;
+flat out uint v_instanceId;
 
 @import ../clustering/clusterColor;
 #line 54
@@ -90,11 +84,18 @@ void main()
     v_pos = pos.xyz / pos.w;
     v_color = color();
     v_uv = a_uv;
+    v_instanceId =  u_idOffset + uint(gl_InstanceID);
 
     vec4 position = u_viewProjection * pos;
 
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
+
+#line 95
+    float limited = step(3.0, dot(
+        step(u_limits[0], v_pos.xyz),
+        step(v_pos.xyz, u_limits[1])));
+    if(limited < 0.1) return;
 
     float variablePointSize =
         pow(
@@ -107,6 +108,7 @@ void main()
         vec2(u_pointSize, u_pointSize / u_aspectRatio) *
         mix(1.0, variablePointSize, u_variablePointSizeStrength) /
         position.z;
+    if(v_instanceId == u_selected) pointSize *= 1.5;
     position.xy = position.xy + a_uv * pointSize * vec2(position.w);
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 

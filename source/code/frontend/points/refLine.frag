@@ -1,7 +1,7 @@
-precision lowp float;
-precision lowp int;
+precision highp float;
+precision highp int;
 
-layout(location = 0) out vec4 fragColor;
+layout(location = 0) out vec4 f_color;
 
 const vec3 u_invisColor = vec3(248.0/255.0, 249.0/255.0, 250.0/255.0);
 
@@ -25,5 +25,5 @@ void main()
     if(u_alphaMode == ALPHA_TEMPORAL)
         mfAlpha(alpha, u_mfAlpha, c_maxAlpha * 0.5);
 
-    fragColor = vec4(vec3(0), alpha);
+    f_color = vec4(vec3(0), alpha);
 }

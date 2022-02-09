@@ -1,5 +1,4 @@
 import {
-    Camera,
     ChangeLookup,
     Context,
     FontFace,
@@ -11,6 +10,8 @@ import {
     Text,
     vec3
 } from 'webgl-operate';
+
+import { Interaction } from 'frontend/globals';
 
 export type LabelInfo = {
     name: string;
@@ -37,7 +38,6 @@ export class GridLabelPass extends LabelRenderPass {
 
     protected _fontFace: FontFace;
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _labelSets: LabelSet[] = [];
     protected _lastIndices: number[];
@@ -47,11 +47,12 @@ export class GridLabelPass extends LabelRenderPass {
         super(context);
         this._context = context;
         this._gl = context.gl;
+        this._camera = Interaction.camera;
     }
 
     @Initializable.assert_initialized()
     public update(override = false): void {
-        if (override || this._labelsAltered.sets || this._camera.altered) {
+        if (override || this._labelsAltered.sets || Interaction.camera.altered) {
             this.updateLabels();
         }
         if (override || this._labelsAltered.labels) {
@@ -98,7 +99,7 @@ export class GridLabelPass extends LabelRenderPass {
     protected updateLabels(): void {
         const indices = this._labelSets.map((s) => {
             const distances = s.labels.map((l) => {
-                return vec3.dist(l.pos, this._camera.eye);
+                return vec3.dist(l.pos, Interaction.camera.eye);
             });
             let index: number;
             let distance: number;
@@ -139,5 +140,9 @@ export class GridLabelPass extends LabelRenderPass {
 
     public get altered(): boolean {
         return this._altered.any || this._labelsAltered.any;
+    }
+
+    public get labelPositions(): LabelInfo[] {
+        return this._labelInfo;
     }
 }

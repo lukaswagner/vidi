@@ -1,7 +1,6 @@
 import { Alpha, AlphaMode } from 'frontend/util/alpha';
 
 import {
-    Camera,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -13,6 +12,7 @@ import {
 
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
+import { Interaction } from 'frontend/globals';
 
 export class RefLinePass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -27,7 +27,6 @@ export class RefLinePass extends Initializable {
     protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _aspectRatio: GLfloat;
     protected _useDiscard: boolean;
@@ -135,13 +134,13 @@ export class RefLinePass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, this._camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniformMatrix4fv(
             this._uViewProjectionInverse,
             false,
-            this._camera.viewProjectionInverse);
+            Interaction.camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
-        this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
+        this._gl.uniform3fv(this._uCameraPosition, Interaction.camera.eye);
 
         this._target.bind();
 
@@ -173,14 +172,6 @@ export class RefLinePass extends Initializable {
         this.assertInitialized();
         this._useDiscard = enabled;
         this._altered.alter('useDiscard');
-    }
-
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        if (this._camera === camera) {
-            return;
-        }
-        this._camera = camera;
     }
 
     public set ndcOffset(offset: GLfloat2) {

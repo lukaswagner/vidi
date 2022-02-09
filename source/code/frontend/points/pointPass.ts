@@ -1,7 +1,6 @@
 import { Alpha, AlphaMode } from 'frontend/util/alpha';
 
 import {
-    Camera,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -14,10 +13,12 @@ import {
     Column,
     Float32Chunk,
     Float32Column,
+    NumberColumn,
 } from '@lukaswagner/csv-parser';
 
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
+import { Interaction } from 'frontend/globals';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { RefLinePass } from './refLinePass';
 
@@ -38,13 +39,14 @@ export class PointPass extends Initializable {
         variablePointSizeOutputRange: false,
         model: false,
         numClusters: false,
+        selected: false,
+        limits: false
     });
 
     protected _context: Context;
     protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
-    protected _camera: Camera;
 
     protected _aspectRatio: GLfloat;
     protected _cutoffPosition: number[];
@@ -58,6 +60,8 @@ export class PointPass extends Initializable {
     protected _variablePointSizeOutputRange: GLfloat2 = [0.0, 10.0];
     protected _model: mat4;
     protected _numClusters: number;
+    protected _selected = -1;
+    protected _limits: number[];
 
     protected _program: Program;
     protected _alpha: Alpha;
@@ -78,6 +82,9 @@ export class PointPass extends Initializable {
     protected _uVariablePointSizeInputRange: WebGLUniformLocation;
     protected _uVariablePointSizeOutputRange: WebGLUniformLocation;
     protected _uNumClusters: WebGLUniformLocation;
+    protected _uIdOffset: WebGLUniformLocation;
+    protected _uSelected: WebGLUniformLocation;
+    protected _uLimits: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
@@ -128,9 +135,13 @@ export class PointPass extends Initializable {
         this._uVariablePointSizeOutputRange =
             this._program.uniform('u_variablePointSizeOutputRange');
         this._uNumClusters = this._program.uniform('u_numClusters');
+        this._uIdOffset = this._program.uniform('u_idOffset');
+        this._uSelected = this._program.uniform('u_selected');
+        this._uLimits = this._program.uniform('u_limits');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
+        this._gl.uniform1ui(this._uSelected, this._selected);
         this._program.unbind();
 
         this._alpha = new Alpha(
@@ -138,6 +149,22 @@ export class PointPass extends Initializable {
 
         this._refLinePass = new RefLinePass(this._context);
         this._refLinePass.initialize();
+
+        Interaction.register({
+            mask: 1 << 7,
+            move: (id) => {
+                this._selected = id;
+                this._altered.alter('selected');
+            },
+            click: (id) => {
+                const str = (i: number): string => {
+                    return (this._columns[i] as NumberColumn)
+                        ?.get(id).toFixed(3) ?? '-';
+                };
+                console.log(
+                    'clicked on point', id,
+                    '(', str(0), '|', str(1), '|', str(2), ')');
+            }});
 
         return true;
     }
@@ -232,6 +259,14 @@ export class PointPass extends Initializable {
             this._gl.uniform1f(this._uNumClusters, this._numClusters);
         }
 
+        if (override || this._altered.selected) {
+            this._gl.uniform1ui(this._uSelected, this._selected);
+        }
+
+        if (override || this._altered.limits) {
+            this._gl.uniform3fv(this._uLimits, this._limits);
+        }
+
         this._program.unbind();
 
         this._refLinePass.update();
@@ -258,17 +293,19 @@ export class PointPass extends Initializable {
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
-            this._uViewProjection, false, this._camera.viewProjection);
+            this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniformMatrix4fv(
             this._uViewProjectionInverse,
             false,
-            this._camera.viewProjectionInverse);
+            Interaction.camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
-        this._gl.uniform3fv(this._uCameraPosition, this._camera.eye);
+        this._gl.uniform3fv(this._uCameraPosition, Interaction.camera.eye);
 
         this._target.bind();
 
-        this._geometries.forEach((g) => {
+        this._geometries.forEach((g, i) => {
+            this._gl.uniform1ui(
+                this._uIdOffset, this._columns[0].chunks[i].offset);
             g.bind();
             g.draw();
             g.unbind();
@@ -376,15 +413,6 @@ export class PointPass extends Initializable {
         this._altered.alter('variablePointSizeStrength');
     }
 
-    public set camera(camera: Camera) {
-        this.assertInitialized();
-        if (this._camera === camera) {
-            return;
-        }
-        this._camera = camera;
-        this._refLinePass.camera = camera;
-    }
-
     public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
@@ -418,5 +446,10 @@ export class PointPass extends Initializable {
 
     public get refLines(): RefLinePass {
         return this._refLinePass;
+    }
+
+    public set limits(limits: number[]) {
+        this._limits = limits;
+        this._altered.alter('limits');
     }
 }

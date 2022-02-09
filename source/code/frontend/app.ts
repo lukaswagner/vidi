@@ -38,9 +38,12 @@ import {
     loadFromServer,
 } from './util/load';
 
+import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
+import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
 import { TopicMapRenderer } from './renderer';
+import { Passes } from './globals';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -283,6 +286,15 @@ export class TopicMapApp extends Initializable {
             }
         });
 
+        this._controls.position.input.button({
+            label: 'Reset position limits',
+            text: 'Reset',
+            handler: () => {
+                Passes.limits.reset();
+                this._renderer.invalidate();
+            }
+        });
+
         // clustering
         this._controls.cluster.input.button({
             label: 'Calculate clusters',
@@ -320,13 +332,12 @@ export class TopicMapApp extends Initializable {
         }, { capture: true, passive: true });
 
         // point size
-        const ps = this._controls.size.input.numberRange(Object.assign({
+        this._controls.size.input.numberRange(Object.assign({
             label: 'Point Size',
             id: 'pointSize',
             triggerHandlerOnMove: true,
             handler: (v: number) => this._renderer.pointSize = v,
         }, TopicMapApp.POINT_SIZE_CONTROL));
-        console.log(ps.value);
 
         // variable point size
         this._controls.size.input.numberRange(Object.assign({
@@ -375,7 +386,7 @@ export class TopicMapApp extends Initializable {
         });
 
         // rendering
-        const maxSamples = this._renderer.maxSamples;
+        const maxSamples = Buffers.maxSamples;
         this._controls.rendering.input.numberRange({
             label: 'MSAA',
             value: maxSamples, min: 1, max: maxSamples, step: 1,
@@ -386,6 +397,12 @@ export class TopicMapApp extends Initializable {
             label: 'MFAA',
             value: 32, min: 1, max: 64, step: 1,
             handler: (v) => this._canvas.controller.multiFrameNumber = v
+        });
+
+        this._controls.rendering.input.select({
+            label: 'Debug',
+            optionTexts: Object.values(DebugMode),
+            handler: (v) => this._renderer.debugMode = v.value as DebugMode
         });
     }
 
@@ -422,6 +439,7 @@ export class TopicMapApp extends Initializable {
                 this.getId(this._columns.selectedColumn(i));
             this._controls.axes[i].invokeHandler();
         }
+        Passes.limits.reset();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);
