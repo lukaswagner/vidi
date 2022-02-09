@@ -14,7 +14,7 @@ import { LimitPass } from '../grid/limitPass';
 import { PointPass } from '../points/pointPass';
 
 const fontApi = 'https://fonts.varg.dev/api/fonts/';
-const font = 'roboto-regular.ttf/87a1176f443b7fed535726f89aa7fd18';
+const font = 'roboto-regular.ttf/61cc7e5a56a3775a3f27899a658881e1';
 const Roboto = {
     fnt: fontApi + font +'/fontdescription',
     png: fontApi + font +'/distancefield'
