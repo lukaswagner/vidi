@@ -41,7 +41,7 @@ export class Passes {
         this._gridLabels = new GridLabelPass(context);
         this._gridLabels.initialize();
         this._gridLabels.depthMask = true;
-        this._gridLabels.loadFont(Roboto.fnt, invalidate);
+        this._gridLabels.loadFont(Roboto.fnt, Roboto.png, invalidate);
 
         this._limits = new LimitPass(context);
         this._limits.initialize();

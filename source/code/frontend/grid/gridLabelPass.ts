@@ -81,8 +81,8 @@ export class GridLabelPass extends LabelRenderPass {
         this._gl.disable(this._gl.BLEND);
     }
 
-    public loadFont(font: string, invalidate: (force?: boolean) => void): void {
-        FontFace.fromFile(font, this._context)
+    public loadFont(font: string, img: string, invalidate: (force?: boolean) => void): void {
+        FontFace.fromFiles(font, new Map([[0, img]]), this._context)
             .then((fontFace) => {
                 this._fontFace = fontFace;
                 this._labelsAltered.alter('fontFace');
