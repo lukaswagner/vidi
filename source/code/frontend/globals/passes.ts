@@ -13,9 +13,11 @@ import { GridPass } from '../grid/gridPass';
 import { LimitPass } from '../grid/limitPass';
 import { PointPass } from '../points/pointPass';
 
+const fontApi = 'https://fonts.varg.dev/api/fonts/';
+const font = 'roboto-regular.ttf/87a1176f443b7fed535726f89aa7fd18';
 const Roboto = {
-    fnt: require('../../../fonts/roboto/roboto.fnt'),
-    png: require('../../../fonts/roboto/roboto.png')
+    fnt: fontApi + font +'/fontdescription',
+    png: fontApi + font +'/distancefield'
 };
 
 export class Passes {
