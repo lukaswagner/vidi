@@ -34,16 +34,17 @@ import {
 } from './util/api';
 import {
     deductSeparator,
-    loadCustom,
-    loadFromServer,
+    load,
 } from './util/load';
 
 import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
+import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
-import { TopicMapRenderer } from './renderer';
 import { Passes } from './globals';
+import { SelectInput } from '@lukaswagner/web-ui';
+import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
 declare global {
@@ -77,6 +78,7 @@ export class TopicMapApp extends Initializable {
         step: 0.01
     };
 
+    private _isChildProcess: boolean;
     private _canvas: Canvas;
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
@@ -86,6 +88,9 @@ export class TopicMapApp extends Initializable {
     private _clustering: Clustering;
 
     public initialize(element: HTMLCanvasElement | string): boolean {
+        console.log('window.opener', window.opener ? 'set' : 'not set');
+        this._isChildProcess = !!window.opener;
+
         console.log('version:', COMMIT);
 
         this._canvas = new Canvas(element, { antialias: false });
@@ -121,6 +126,26 @@ export class TopicMapApp extends Initializable {
         window.controller = this._canvas.controller;
         window.renderer = this._renderer;
 
+        // add support for external configuration
+        if(this._isChildProcess) {
+            window.addEventListener('message', (msg) => {
+                const data = msg.data;
+                switch (data.type) {
+                    case 'preset':
+                        console.log('received preset', data.preset);
+                        this.applyPreset(data.preset as Preset);
+                        break;
+                    case 'webpackOk':
+                    case 'ready':
+                        // ignore
+                        break;
+                    default:
+                        console.log('received invalid msg:', msg);
+                        break;
+                }
+            });
+        }
+
         return true;
     }
 
@@ -133,6 +158,35 @@ export class TopicMapApp extends Initializable {
         this._renderer.updateData();
     }
 
+    protected async applyPreset(preset: Preset): Promise<void> {
+        let data: DataSource = preset.data;
+
+        if(typeof preset.data === 'string') {
+            const found = this._datasets.find((d) => d.id === preset.data);
+            if (found) {
+                (this._controls.data.elements.get('data') as SelectInput)
+                    .value = found.url;
+                data = found.url;
+            }
+        }
+
+        if(data) {
+            await load(
+                {
+                    dataSources: { data },
+                    delimiter: preset.delimiter ?? ','
+                },
+                (c) => {
+                    this.dataReady(c);
+                    this._controls.applyPreset(preset);
+                },
+                this.handleDataUpdate.bind(this)
+            );
+        } else {
+            this._controls.applyPreset(preset);
+        }
+    }
+
     protected initControls(): void {
         this._controls = new Controls();
 
@@ -142,33 +196,11 @@ export class TopicMapApp extends Initializable {
             id: 'presets'
         });
 
-        const load = (data: Dataset): Promise<Column[]> => {
-            return loadFromServer(
-                data.url,
-                data.format,
-                dataProgress,
-                this.handleDataUpdate.bind(this));
-        };
-
-        const applyPreset = (): void => {
-            const preset = this._presets
-                .find((p) => p.name === presetSelect.value);
-            if (!preset) return;
-            const data = this._datasets.find((d) => d.id === preset.data);
-            if (!preset.data || !data) {
-                this._controls.applyPreset(preset);
-            } else {
-                dataSelect.value = preset.data;
-                load(data).then((d) => {
-                    this.dataReady(d);
-                    this._controls.applyPreset(preset);
-                });
-            }
-        };
-
-        this._controls.presets.input.button({
+        const presetInput = this._controls.presets.input.button({
             text: 'Load',
-            handler: (): void => applyPreset()
+            handler: () =>
+                this.applyPreset(this._presets
+                    .find((p) => p.name === presetSelect.value))
         });
 
         // data
@@ -187,14 +219,21 @@ export class TopicMapApp extends Initializable {
                 this._presets = presets;
                 presetSelect.values = presets.map((p) => p.name);
                 presetSelect.value = presetSelect.values[0];
-                applyPreset();
+                if(this._isChildProcess)
+                    window.postMessage({ type: 'ready' });
+                else
+                    presetInput.invokeHandler();
             });
 
         this._controls.data.input.button({
             text: 'Load',
             handler: () => {
                 const data = this._datasets[dataSelect.index];
-                load(data).then((d) => this.dataReady(d));
+                load(
+                    { dataSources: { data: data.url } },
+                    this.dataReady.bind(this),
+                    this.handleDataUpdate.bind(this)
+                );
             }
         });
 
@@ -237,16 +276,17 @@ export class TopicMapApp extends Initializable {
         this._controls.customData.input.button({
             text: 'Load',
             handler: () => {
-                loadCustom(
-                    'File', // disable external url support for now
-                    customFile.value[0],
-                    '',
-                    delimSelect.value,
-                    customDelim.value,
-                    header.value,
-                    customProgress,
+                load(
+                    {
+                        dataSources: { data: customFile.value[0] },
+                        delimiter: delimSelect.value === 'custom' ?
+                            customDelim.value :
+                            delimSelect.value,
+                        includesHeader: header.value,
+                    },
+                    this.dataReady.bind(this),
                     this.handleDataUpdate.bind(this)
-                ).then((d) => this.dataReady(d));
+                );
             }
         });
 

@@ -24,3 +24,17 @@
   - Prepares a shader program
   - Can be updated by assigning to the exposed members
   - Is invoked by the Renderer using `frame()`
+
+## Usage as sub-window
+
+```ts
+const preset = {
+    data: 'https://api.varg.dev/users/topicmap/datasets/topics/data',
+    axes: ['first', 'second', 'third']
+};
+const child = window.open('http://vidi.lwgnr.dev');
+child.addEventListener('message', (msg) => {
+    if(msg.data.type === 'ready')
+        child.postMessage({ type: 'preset', preset });
+});
+```
