@@ -11,7 +11,7 @@
   "devDependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
-    "@lukaswagner/csv-parser": "^0.2.2",
+    "@lukaswagner/csv-parser": "^0.2.4",
     "@lukaswagner/web-ui": "^1.8.1",
     "@types/gl-matrix": "^3.2.0",
     "@types/webpack": "^5.28.0",

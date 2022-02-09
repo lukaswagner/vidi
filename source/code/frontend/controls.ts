@@ -1,8 +1,10 @@
 import { SelectInput, UI } from '@lukaswagner/web-ui';
+import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 
 export interface Preset {
     name: string;
-    data?: string;
+    data?: DataSource;
+    delimiter?: string;
     pointSize?: number;
     axes?: string[];
     colorMode?: number;
