@@ -24,10 +24,6 @@ import {
     Columns,
 } from './data/columns';
 import {
-    Controls,
-    Preset,
-} from './controls';
-import {
     Dataset,
     fetchAvailable,
     fetchPresets,
@@ -39,6 +35,8 @@ import {
 
 import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
+import { Controls } from './controls';
+import { Configuration, Message } from './interface';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
@@ -83,7 +81,7 @@ export class TopicMapApp extends Initializable {
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
     private _datasets: Dataset[];
-    private _presets: Preset[];
+    private _presets: Configuration[];
     private _columns: Columns;
     private _clustering: Clustering;
 
@@ -129,18 +127,18 @@ export class TopicMapApp extends Initializable {
         // add support for external configuration
         if(this._isChildProcess) {
             window.addEventListener('message', (msg) => {
-                const data = msg.data;
+                const data = msg.data as Message;
                 switch (data.type) {
-                    case 'preset':
-                        console.log('received preset', data.preset);
-                        this.applyPreset(data.preset as Preset);
+                    case 'configuration':
+                        console.log('received preset', data.data);
+                        this.applyPreset(data.data as Configuration);
                         break;
-                    case 'webpackOk':
                     case 'ready':
                         // ignore
                         break;
                     default:
-                        console.log('received invalid msg:', msg);
+                        // ignore silently
+                        // console.log('received invalid msg:', msg);
                         break;
                 }
             });
@@ -158,11 +156,11 @@ export class TopicMapApp extends Initializable {
         this._renderer.updateData();
     }
 
-    protected async applyPreset(preset: Preset): Promise<void> {
-        let data: DataSource = preset.data;
+    protected async applyPreset(preset: Configuration): Promise<void> {
+        let data: DataSource = preset.csv;
 
-        if(typeof preset.data === 'string') {
-            const found = this._datasets.find((d) => d.id === preset.data);
+        if(typeof preset.csv === 'string') {
+            const found = this._datasets.find((d) => d.id === preset.csv);
             if (found) {
                 (this._controls.data.elements.get('data') as SelectInput)
                     .value = found.url;
@@ -215,7 +213,7 @@ export class TopicMapApp extends Initializable {
                 dataSelect.values = datasets.map((d) => d.id);
                 return fetchPresets();
             })
-            .then((presets: Preset[]) => {
+            .then((presets: Configuration[]) => {
                 this._presets = presets;
                 presetSelect.values = presets.map((p) => p.name);
                 presetSelect.value = presetSelect.values[0];

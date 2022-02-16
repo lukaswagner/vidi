@@ -1,18 +1,5 @@
 import { SelectInput, UI } from '@lukaswagner/web-ui';
-import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
-
-export interface Preset {
-    name: string;
-    data?: DataSource;
-    delimiter?: string;
-    pointSize?: number;
-    axes?: string[];
-    colorMode?: number;
-    colorMapping?: number;
-    colorColumn?: string;
-    variablePointSizeStrength?: number;
-    variablePointSizeColumn?: string;
-}
+import { Configuration } from './interface';
 
 export class Controls {
     public presets: UI;
@@ -49,7 +36,7 @@ export class Controls {
         this.rendering = new UI(renderingContainer, true);
     }
 
-    public applyPreset(preset: Preset): void {
+    public applyPreset(preset: Configuration): void {
         const p = preset as unknown as Record<string, unknown>;
 
         this.data.reset();
