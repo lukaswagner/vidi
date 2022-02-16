@@ -87,4 +87,8 @@ export class Columns {
     public get selectedColumns(): Column[] {
         return this._selectedColumns.map((i) => this._columns[i]);
     }
+
+    public get columns(): Column[] {
+        return this._columns;
+    }
 }

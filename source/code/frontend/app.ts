@@ -427,6 +427,20 @@ export class TopicMapApp extends Initializable {
             optionTexts: Object.values(DebugMode),
             handler: (v) => this._renderer.debugMode = v.value as DebugMode
         });
+
+        // debug
+        this._controls.debug.input.button({
+            text: 'Spawn child',
+            handler: () => {
+                const child = window.open(window.location.href);
+                child.addEventListener('message', (msg) => {
+                    if(msg.data.type === 'ready') child.postMessage({
+                        type: 'columns',
+                        data: this._columns.columns.filter((c) => c?.length > 0)
+                    });
+                });
+            }
+        });
     }
 
     protected getId(column: Column): string {
