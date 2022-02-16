@@ -7,36 +7,17 @@ import {
     Wizard,
     viewer,
 } from 'webgl-operate';
-import {
-    ColorMapping,
-    ColorMappingDefault,
-} from './points/colorMapping';
-import {
-    ColorMode,
-    ColorModeDefault,
-} from './points/colorMode';
-import {
-    Column,
-    DataType,
-} from '@lukaswagner/csv-parser';
-import {
-    ColumnUsage,
-    Columns,
-} from './data/columns';
-import {
-    Dataset,
-    fetchAvailable,
-    fetchPresets,
-} from './util/api';
-import {
-    deductSeparator,
-    load,
-} from './util/load';
+import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
+import { ColorMode, ColorModeDefault } from './points/colorMode';
+import { Column,  DataType, rebuildColumn } from '@lukaswagner/csv-parser';
+import { ColumnUsage, Columns } from './data/columns';
+import { Configuration, Message } from './interface';
+import { Dataset, fetchAvailable, fetchPresets } from './util/api';
+import { deductSeparator, load } from './util/load';
 
 import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
 import { Controls } from './controls';
-import { Configuration, Message } from './interface';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
@@ -127,11 +108,15 @@ export class TopicMapApp extends Initializable {
         // add support for external configuration
         if(this._isChildProcess) {
             window.addEventListener('message', (msg) => {
-                const data = msg.data as Message;
-                switch (data.type) {
+                const message = msg.data as Message;
+                switch (message.type) {
                     case 'configuration':
-                        console.log('received preset', data.data);
-                        this.applyPreset(data.data as Configuration);
+                        console.log('received preset', message.data);
+                        this.applyPreset(message.data as Configuration);
+                        break;
+                    case 'columns':
+                        this.dataReady(
+                            message.data.map((c) => rebuildColumn(c)));
                         break;
                     case 'ready':
                         // ignore
