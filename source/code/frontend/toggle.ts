@@ -24,7 +24,9 @@ function toggle(
 
 const mainElements: HTMLDivElement[] = [];
 
-toggle('controls-container', 'control-toggle', mainElements, false);
+toggle(
+    'controls-container', 'control-toggle',
+    mainElements, false, window.opener);
 toggle('info-container', 'info-toggle', mainElements, false);
 
 toggle('preset-group', 'preset-header');
