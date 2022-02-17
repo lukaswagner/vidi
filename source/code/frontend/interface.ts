@@ -15,6 +15,7 @@ export interface Configuration {
     colorColumn?: string;
     variablePointSizeStrength?: number;
     variablePointSizeColumn?: string;
+    keepLimits?: boolean;
 }
 
 export type ConfigurationMessage = {

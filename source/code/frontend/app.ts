@@ -66,6 +66,8 @@ export class TopicMapApp extends Initializable {
     private _columns: Columns;
     private _clustering: Clustering;
 
+    private _keepLimitsOnDataUpdate = false;
+
     public initialize(element: HTMLCanvasElement | string): boolean {
         console.log('window.opener', window.opener ? 'set' : 'not set');
         this._isChildProcess = !!window.opener;
@@ -160,6 +162,7 @@ export class TopicMapApp extends Initializable {
                     delimiter: preset.delimiter ?? ','
                 },
                 (c) => {
+                    this._keepLimitsOnDataUpdate = preset.keepLimits ?? false;
                     this.dataReady(c);
                     this._controls.applyPreset(preset);
                 },
@@ -476,7 +479,7 @@ export class TopicMapApp extends Initializable {
                 this.getId(this._columns.selectedColumn(i));
             this._controls.axes[i].invokeHandler();
         }
-        Passes.limits.reset();
+        if (!this._keepLimitsOnDataUpdate) Passes.limits.reset();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);
