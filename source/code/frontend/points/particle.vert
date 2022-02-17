@@ -105,7 +105,7 @@ void main()
         u_variablePointSizeOutputRange.z +
         u_variablePointSizeOutputRange.x;
     vec2 pointSize =
-        vec2(u_pointSize, u_pointSize / u_aspectRatio) *
+        vec2(u_pointSize * u_aspectRatio, u_pointSize) *
         mix(1.0, variablePointSize, u_variablePointSizeStrength) /
         position.z;
     if(v_instanceId == u_selected) pointSize *= 1.5;

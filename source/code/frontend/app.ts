@@ -37,14 +37,14 @@ declare global {
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
-        value: 0.01,
+        value: 0.025,
         min: 0.001,
         max: 0.05,
         step: 0.001
     };
 
     private static readonly SCALE_CONTROL = {
-        value: 1.5,
+        value: 2.0,
         min: 0.2,
         max: 10.0,
         step: 0.01
