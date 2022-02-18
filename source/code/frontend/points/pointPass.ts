@@ -1,6 +1,7 @@
 import { Alpha, AlphaMode } from 'frontend/util/alpha';
 
 import {
+    Buffer,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -40,7 +41,8 @@ export class PointPass extends Initializable {
         model: false,
         numClusters: false,
         selected: false,
-        limits: false
+        limits: false,
+        selection: false
     });
 
     protected _context: Context;
@@ -88,6 +90,9 @@ export class PointPass extends Initializable {
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
+    protected _selectedMap: Uint8Array;
+    protected _selectedBuffer: Buffer;
+    protected _selectedLocation: number;
 
     protected _refLinePass: RefLinePass;
 
@@ -165,6 +170,10 @@ export class PointPass extends Initializable {
                     'clicked on point', id,
                     '(', str(0), '|', str(1), '|', str(2), ')');
             }});
+
+        this._selectedBuffer = new Buffer(this._context);
+        this._selectedBuffer.initialize(this._gl.ARRAY_BUFFER);
+        this._selectedLocation = this._program.attribute('a_selected');
 
         return true;
     }
@@ -269,6 +278,10 @@ export class PointPass extends Initializable {
 
         this._program.unbind();
 
+        if (this._altered.selection) {
+            this._selectedBuffer.data(this._selectedMap, this._gl.STATIC_DRAW);
+        }
+
         this._refLinePass.update();
 
         this._altered.reset();
@@ -306,8 +319,18 @@ export class PointPass extends Initializable {
         this._geometries.forEach((g, i) => {
             this._gl.uniform1ui(
                 this._uIdOffset, this._columns[0].chunks[i].offset);
+
             g.bind();
+            this._selectedBuffer.bind();
+            this._gl.vertexAttribPointer(
+                this._selectedLocation, 1, this._gl.UNSIGNED_BYTE, false, 0,
+                this._columns[0].chunks[i].offset);
+            this._gl.enableVertexAttribArray(this._selectedLocation);
+            this._gl.vertexAttribDivisor(this._selectedLocation, 1);
+
             g.draw();
+
+            this._selectedBuffer.unbind();
             g.unbind();
         });
 
@@ -451,5 +474,10 @@ export class PointPass extends Initializable {
     public set limits(limits: number[]) {
         this._limits = limits;
         this._altered.alter('limits');
+    }
+
+    public set selection(sel: Uint8Array) {
+        this._selectedMap = sel;
+        this._altered.alter('selection');
     }
 }

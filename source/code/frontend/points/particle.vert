@@ -7,6 +7,7 @@ layout(location = 3) in float a_zCoord;
 layout(location = 4) in vec4 a_vertexColor;
 layout(location = 5) in float a_variablePointSize;
 layout(location = 6) in float a_clusterId;
+layout(location = 7) in float a_selected;
 
 uniform mat4 u_model;
 uniform mat4 u_viewProjection;
@@ -91,7 +92,9 @@ void main()
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
 
-#line 95
+    v_color = mix(vec3(1, 0, 0), vec3(0, 1, 0), step(0.5, a_selected));
+
+#line 98
     float limited = step(3.0, dot(
         step(u_limits[0], v_pos.xyz),
         step(v_pos.xyz, u_limits[1])));

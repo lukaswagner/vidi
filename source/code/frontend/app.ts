@@ -6,6 +6,7 @@ import {
     Initializable,
     Wizard,
     viewer,
+    mat4,
 } from 'webgl-operate';
 import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
 import { ColorMode, ColorModeDefault } from './points/colorMode';
@@ -21,8 +22,9 @@ import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
-import { Passes } from './globals';
-import { SelectInput } from '@lukaswagner/web-ui';
+import { Lasso } from '@lukaswagner/lasso';
+import { Interaction, Passes } from './globals';
+import { Button, SelectInput } from '@lukaswagner/web-ui';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -65,10 +67,11 @@ export class TopicMapApp extends Initializable {
     private _presets: Configuration[];
     private _columns: Columns;
     private _clustering: Clustering;
+    private _lasso: Lasso;
 
     private _keepLimitsOnDataUpdate = false;
 
-    public initialize(element: HTMLCanvasElement | string): boolean {
+    public initialize(element: HTMLCanvasElement): boolean {
         console.log('window.opener', window.opener ? 'set' : 'not set');
         this._isChildProcess = !!window.opener;
 
@@ -131,6 +134,10 @@ export class TopicMapApp extends Initializable {
             });
         }
 
+        this._lasso = new Lasso({
+            target: element
+        });
+
         return true;
     }
 
@@ -141,6 +148,7 @@ export class TopicMapApp extends Initializable {
 
     protected handleDataUpdate(): void {
         this._renderer.updateData();
+        this._lasso.reset();
     }
 
     protected async applyPreset(preset: Configuration): Promise<void> {
@@ -321,6 +329,47 @@ export class TopicMapApp extends Initializable {
             }
         });
 
+        // selection
+        const selectHandler = (b: Button): void => {
+            Interaction.lassoActive = true;
+            const m = this._renderer.model;
+            const vp = Interaction.camera.viewProjection;
+            this._lasso.matrix = mat4.mul(mat4.create(), vp, m);
+            this._lasso.callback = (s) => {
+                b.elements[0].click();
+                Passes.points.selection = s as Uint8Array;
+            };
+            this._lasso.enable();
+            b.elements[0].textContent = 'Cancel';
+            b.handler = cancelHandler.bind(this, b);
+        };
+
+        const cancelHandler = (b: Button): void => {
+            this._lasso.disable();
+            this._lasso.callback = undefined;
+            Interaction.lassoActive = false;
+            b.elements[0].textContent = b === add ? 'Add' : 'Remove';
+            b.handler = selectHandler.bind(this, b);
+        };
+
+        const add = this._controls.selection.input.button({
+            text: 'Add',
+        });
+        add.handler = selectHandler.bind(this, add);
+
+        const sub = this._controls.selection.input.button({
+            text: 'Remove'
+        });
+        sub.handler = selectHandler.bind(this, sub);
+
+        this._controls.selection.input.button({
+            text: 'Reset',
+            handler: () => {
+                this._lasso.reset();
+                Passes.points.selection = this._lasso.selection as Uint8Array;
+            }
+        });
+
         // clustering
         this._controls.cluster.input.button({
             label: 'Calculate clusters',
@@ -453,6 +502,7 @@ export class TopicMapApp extends Initializable {
     protected dataReady(columns: Column[]): void {
         this._columns = new Columns(columns);
         this.initColumns();
+        this._lasso.points = this._columns.positionSource;
 
         this._controls.clusterAlg.reset();
         this._controls.colorMode.reset();

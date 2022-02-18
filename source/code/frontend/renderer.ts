@@ -427,4 +427,8 @@ export class TopicMapRenderer extends Renderer {
         this._altered.alter('debugMode');
         this.invalidate();
     }
+
+    public get model(): mat4 {
+        return this._modelMat;
+    }
 }

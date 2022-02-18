@@ -33,6 +33,7 @@ toggle('preset-group', 'preset-header');
 toggle('data-group', 'data-header', undefined, undefined, true);
 toggle('custom-data-group', 'custom-data-header', undefined, undefined, true);
 toggle('position-group', 'position-header');
+toggle('selection-group', 'selection-header');
 toggle('cluster-group', 'cluster-header', undefined, undefined, true);
 toggle('size-group', 'size-header');
 toggle('color-group', 'color-header');

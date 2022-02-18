@@ -1,7 +1,9 @@
 import {
     Column,
     DataType,
+    NumberColumn,
 } from '@lukaswagner/csv-parser';
+import { vec3 } from 'webgl-operate';
 
 export enum ColumnUsage {
     X_AXIS = 0,
@@ -10,6 +12,11 @@ export enum ColumnUsage {
     VARIABLE_POINT_SIZE = 3,
     PER_POINT_COLOR = 4,
     CLUSTER_ID = 5
+}
+
+interface Source {
+    at(index: number): vec3;
+    length: number;
 }
 
 export class Columns {
@@ -90,5 +97,30 @@ export class Columns {
 
     public get columns(): Column[] {
         return this._columns;
+    }
+
+    protected static LassoProxy = class implements Source {
+        protected _instance: Columns;
+        protected get(a: ColumnUsage, i: number): number {
+            const ci = this._instance._selectedColumns[a];
+            return (this._instance._columns[ci] as NumberColumn)?.get(i) ?? 0;
+        }
+        constructor(instance: Columns) {
+            this._instance = instance;
+        }
+        at(index: number): vec3 {
+            return vec3.fromValues(
+                this.get(ColumnUsage.X_AXIS, index),
+                this.get(ColumnUsage.Y_AXIS, index),
+                this.get(ColumnUsage.Z_AXIS, index),
+            );
+        }
+        public get length(): number {
+            return this._instance._columns[0].length;
+        }
+    }
+
+    public get positionSource(): Source {
+        return new Columns.LassoProxy(this);
     }
 }

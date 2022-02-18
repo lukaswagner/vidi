@@ -6,6 +6,7 @@ export class Controls {
     public data: UI;
     public customData: UI;
     public position: UI;
+    public selection: UI;
     public cluster: UI;
     public size: UI;
     public color: UI;
@@ -27,6 +28,8 @@ export class Controls {
         this.customData = new UI(customDataContainer, true);
         const positionContainer = document.getElementById('position-group');
         this.position = new UI(positionContainer, true);
+        const selectionContainer = document.getElementById('selection-group');
+        this.selection = new UI(selectionContainer, true);
         const clusterContainer = document.getElementById('cluster-group');
         this.cluster = new UI(clusterContainer, true);
         const sizeContainer = document.getElementById('size-group');

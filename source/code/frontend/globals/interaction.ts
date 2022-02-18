@@ -31,6 +31,7 @@ export class Interaction {
 
     protected _listeners: Listener[] = [];
     protected _currentDownListener: Listener;
+    protected _lassoActive: boolean;
 
     protected static _instance: Interaction;
 
@@ -81,6 +82,7 @@ export class Interaction {
     }
 
     public static update(): void {
+        if(this._instance._lassoActive) return;
         this._instance._eventHandler.update();
         if(!this._instance._currentDownListener)
             Interaction.navigation.update();
@@ -169,5 +171,9 @@ export class Interaction {
 
     public static register(config: ListenerConfig): void {
         this._instance._listeners.push(Object.assign({lastId: -1 }, config));
+    }
+
+    public static set lassoActive(active: boolean) {
+        this._instance._lassoActive = active;
     }
 }
