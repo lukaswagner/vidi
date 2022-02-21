@@ -179,6 +179,8 @@ export class TopicMapApp extends Initializable {
             }
         }
 
+        this._keepLimitsOnDataUpdate = preset.keepLimits ?? false;
+
         if(data) {
             await load(
                 {
@@ -186,7 +188,6 @@ export class TopicMapApp extends Initializable {
                     delimiter: preset.delimiter ?? ','
                 },
                 (c) => {
-                    this._keepLimitsOnDataUpdate = preset.keepLimits ?? false;
                     this.dataReady(c);
                     this._controls.applyPreset(preset);
                 },
