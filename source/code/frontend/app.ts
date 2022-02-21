@@ -7,6 +7,8 @@ import {
     Initializable,
     Wizard,
     mat4,
+    vec3,
+    vec4,
     viewer,
 } from 'webgl-operate';
 import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
@@ -24,7 +26,7 @@ import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
-import { Lasso } from '@lukaswagner/lasso';
+import { BitArray, Lasso, ResultType } from '@lukaswagner/lasso';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -68,6 +70,7 @@ export class TopicMapApp extends Initializable {
     private _columns: Columns;
     private _clustering: Clustering;
     private _lasso: Lasso;
+    private _selection: BitArray;
 
     private _keepLimitsOnDataUpdate = false;
 
@@ -135,7 +138,8 @@ export class TopicMapApp extends Initializable {
         }
 
         this._lasso = new Lasso({
-            target: element
+            target: element,
+            resultType: ResultType.BitArray
         });
 
         return true;
@@ -337,7 +341,7 @@ export class TopicMapApp extends Initializable {
             this._lasso.matrix = mat4.mul(mat4.create(), vp, m);
             this._lasso.callback = (s) => {
                 b.elements[0].click();
-                Passes.points.selection = s as Uint8Array;
+                this.updateSelection(s as BitArray);
             };
             this._lasso.enable();
             b.elements[0].textContent = 'Cancel';
@@ -366,10 +370,12 @@ export class TopicMapApp extends Initializable {
             text: 'Reset',
             handler: () => {
                 this._lasso.reset();
-                Passes.points.selection = this._lasso.selection as Uint8Array;
+                this.updateSelection(this._lasso.selection as BitArray);
                 this._renderer.invalidate();
             }
         });
+
+        Interaction.limitListener = this.updateSelection.bind(this);
 
         // clustering
         this._controls.cluster.input.button({
@@ -576,5 +582,35 @@ export class TopicMapApp extends Initializable {
                 .map((c) => this.getId(c)),
             extents,
             subdivisions);
+    }
+
+    protected filterLimits(sel: BitArray): boolean {
+        let changed = false;
+        const m = this._renderer.model;
+        const limits = Passes.limits.limits;
+        const source = this._columns.positionSource;
+        for (let i = 0; i < source.length; i++) {
+            let p3 = source.at(i);
+            const p4 = vec4.fromValues(p3[0], p3[1], p3[2], 1);
+            vec4.transformMat4(p4, p4, m);
+            p3 = vec3.fromValues(p4[0] / p4[3], p4[1] / p4[3], p4[2] / p4[3]);
+            for(let j = 0; j < 3; j++) {
+                if (p3[j] < limits[j] || p3[j] > limits[j+3]) {
+                    changed ||= sel.get(i);
+                    sel.set(i, false);
+                }
+            }
+        }
+        return changed;
+    }
+
+    protected updateSelection(sel: BitArray = this._selection): void {
+        this._selection = sel;
+        const changed = this.filterLimits(sel);
+        if(changed) this._lasso.setSelection(sel);
+        const result = new Uint8Array(sel.length);
+        for(let i = 0; i < sel.length; i++)
+            result[i] = +sel.get(i);
+        Passes.points.selection = result;
     }
 }

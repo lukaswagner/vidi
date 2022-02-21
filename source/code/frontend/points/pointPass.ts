@@ -20,6 +20,7 @@ import {
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
 import { Interaction } from 'frontend/globals';
+import { ListenerMask } from 'frontend/globals/interaction';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { RefLinePass } from './refLinePass';
 
@@ -159,7 +160,7 @@ export class PointPass extends Initializable {
         this._refLinePass.initialize();
 
         Interaction.register({
-            mask: 1 << 7,
+            mask: ListenerMask.Points,
             move: (id) => {
                 this._selected = id;
                 this._altered.alter('selected');

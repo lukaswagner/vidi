@@ -28,4 +28,21 @@ export type ColumnsMessage = {
     data: Column[]
 }
 
+export type FilterMessage = {
+    type: 'filter',
+    data: BitArray
+}
+
+export interface BitArray {
+    get(index: number): boolean;
+    set(index: number, value: boolean): void;
+    get length(): number;
+    clone(): BitArray;
+}
+
+export type FilteredMessage = {
+    type: 'filtered',
+    data: Column[]
+}
+
 export type Message = ReadyMessage | ConfigurationMessage | ColumnsMessage;

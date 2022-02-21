@@ -101,7 +101,7 @@ void main()
     if(position.z < 0.1) return;
 
     if(u_anySelected) {
-        v_color = saturate(v_color, a_selected > 0.5 ? 1.5 : 0.9);
+        v_color = saturate(v_color, a_selected > 0.5 ? 1.5 : 1.0);
     }
     v_selected = uint(v_instanceId == u_selected || a_selected > 0.5);
 

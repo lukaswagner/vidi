@@ -14,6 +14,7 @@ import { clipToWorld, intersectLinePlane } from 'frontend/util/math';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { HandleGeometry } from './handleGeometry';
 import { LabelInfo } from './gridLabelPass';
+import { ListenerMask } from 'frontend/globals/interaction';
 
 export class LimitPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -118,7 +119,7 @@ export class LimitPass extends Initializable {
         this._uHandlePositions = this._program.uniform('u_handlePositions');
 
         Interaction.register({
-            mask: 1 << 6,
+            mask: ListenerMask.Limits,
             move: (id, pos) => {
                 if(id !== this._hoveredHandle) this._altered.alter('selected');
                 this._hoveredHandle = id;
@@ -229,5 +230,9 @@ export class LimitPass extends Initializable {
     public reset(): void {
         this._handlePositions = [-1, -1, -1, 1, 1, 1];
         this._altered.alter('handlePositions');
+    }
+
+    public get limits(): number[] {
+        return this._handlePositions;
     }
 }
