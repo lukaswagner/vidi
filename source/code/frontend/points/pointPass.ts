@@ -381,6 +381,19 @@ export class PointPass extends Initializable {
         });
 
         this._refLinePass.geometries = this._geometries;
+
+        this._selectedBuffer.bind();
+        if(
+            this._columns[0].length !==
+            this._gl.getBufferParameter(
+                this._gl.ARRAY_BUFFER, this._gl.BUFFER_SIZE)
+        ) {
+            this._gl.bufferData(
+                this._gl.ARRAY_BUFFER,
+                this._columns[0].length,
+                this._gl.STATIC_DRAW);
+        }
+        this._selectedBuffer.unbind();
     }
 
     public set columns(columns: Column[]) {

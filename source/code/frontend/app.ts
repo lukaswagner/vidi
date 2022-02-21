@@ -367,6 +367,7 @@ export class TopicMapApp extends Initializable {
             handler: () => {
                 this._lasso.reset();
                 Passes.points.selection = this._lasso.selection as Uint8Array;
+                this._renderer.invalidate();
             }
         });
 
