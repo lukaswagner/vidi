@@ -87,12 +87,14 @@ export class PointPass extends Initializable {
     protected _uIdOffset: WebGLUniformLocation;
     protected _uSelected: WebGLUniformLocation;
     protected _uLimits: WebGLUniformLocation;
+    protected _uAnySelected: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
     protected _selectedMap: Uint8Array;
     protected _selectedBuffer: Buffer;
     protected _selectedLocation: number;
+    protected _anySelected: boolean;
 
     protected _refLinePass: RefLinePass;
 
@@ -143,6 +145,7 @@ export class PointPass extends Initializable {
         this._uIdOffset = this._program.uniform('u_idOffset');
         this._uSelected = this._program.uniform('u_selected');
         this._uLimits = this._program.uniform('u_limits');
+        this._uAnySelected = this._program.uniform('u_anySelected');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -276,11 +279,12 @@ export class PointPass extends Initializable {
             this._gl.uniform3fv(this._uLimits, this._limits);
         }
 
-        this._program.unbind();
-
         if (this._altered.selection) {
             this._selectedBuffer.data(this._selectedMap, this._gl.STATIC_DRAW);
+            this._gl.uniform1ui(this._uAnySelected, +this._anySelected);
         }
+
+        this._program.unbind();
 
         this._refLinePass.update();
 
@@ -478,6 +482,7 @@ export class PointPass extends Initializable {
 
     public set selection(sel: Uint8Array) {
         this._selectedMap = sel;
+        this._anySelected = sel.some((v) => v);
         this._altered.alter('selection');
     }
 }

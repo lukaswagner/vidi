@@ -11,13 +11,13 @@ uniform bool u_useDiscard;
 uniform vec3 u_cameraPosition;
 uniform vec3 u_cutoffPosition;
 uniform vec3 u_cutoffPositionMask;
-uniform uint u_selected;
 
 in vec3 v_pos;
 in vec3 v_color;
 in vec2 v_uv;
 in vec3 v_fragPos;
 flat in uint v_instanceId;
+flat in uint v_selected;
 
 void main()
 {
@@ -25,7 +25,7 @@ void main()
     float edge = 0.95;
     float feather = fwidth(radius) / 2.0;
     float alpha = 1.0 - smoothstep(
-        edge - feather,edge + feather, radius);
+        edge - feather, edge + feather, radius);
 
     if(u_useDiscard) {
         if(alpha < 0.5) discard;
@@ -42,8 +42,10 @@ void main()
     float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
-    if(v_instanceId == u_selected)
-        color = mix(vec3(0), color, step(radius, 0.7));
+    if(v_selected == 1u) {
+        color = mix(color, vec3(0),
+            smoothstep(edge - feather * 4.0, edge - feather * 2.0, radius));
+    }
     f_color = vec4(color, alpha);
     f_indexHigh = uvec3(
         1u << 7, // set lowest bit to mark points

@@ -1,3 +1,4 @@
+import { Button, SelectInput } from '@lukaswagner/web-ui';
 import {
     Canvas,
     Color,
@@ -5,8 +6,8 @@ import {
     Controller,
     Initializable,
     Wizard,
-    viewer,
     mat4,
+    viewer,
 } from 'webgl-operate';
 import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
 import { ColorMode, ColorModeDefault } from './points/colorMode';
@@ -14,6 +15,7 @@ import { Column,  DataType, rebuildColumn } from '@lukaswagner/csv-parser';
 import { ColumnUsage, Columns } from './data/columns';
 import { Configuration, Message } from './interface';
 import { Dataset, fetchAvailable, fetchPresets } from './util/api';
+import { Interaction, Passes } from './globals';
 import { deductSeparator, load } from './util/load';
 
 import { Buffers } from './globals/buffers';
@@ -23,8 +25,6 @@ import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
 import { Lasso } from '@lukaswagner/lasso';
-import { Interaction, Passes } from './globals';
-import { Button, SelectInput } from '@lukaswagner/web-ui';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
