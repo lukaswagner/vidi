@@ -1,3 +1,12 @@
+import {
+    AnyChunk,
+    Column,
+    DataType,
+    buildChunk,
+    buildColumn,
+    rebuildColumn
+} from '@lukaswagner/csv-parser';
+import { BitArray, Lasso, ResultType } from '@lukaswagner/lasso';
 import { Button, SelectInput } from '@lukaswagner/web-ui';
 import {
     Canvas,
@@ -13,9 +22,13 @@ import {
 } from 'webgl-operate';
 import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
 import { ColorMode, ColorModeDefault } from './points/colorMode';
-import { Column,  DataType, rebuildColumn } from '@lukaswagner/csv-parser';
 import { ColumnUsage, Columns } from './data/columns';
-import { Configuration, Message } from './interface';
+import {
+    Configuration,
+    FilterMessage,
+    FilteredMessage,
+    Message
+} from './interface';
 import { Dataset, fetchAvailable, fetchPresets } from './util/api';
 import { Interaction, Passes } from './globals';
 import { deductSeparator, load } from './util/load';
@@ -26,7 +39,6 @@ import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
-import { BitArray, Lasso, ResultType } from '@lukaswagner/lasso';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -608,9 +620,43 @@ export class TopicMapApp extends Initializable {
         this._selection = sel;
         const changed = this.filterLimits(sel);
         if(changed) this._lasso.setSelection(sel);
-        const result = new Uint8Array(sel.length);
+        const filter = new Uint8Array(sel.length);
         for(let i = 0; i < sel.length; i++)
-            result[i] = +sel.get(i);
-        Passes.points.selection = result;
+            filter[i] = +sel.get(i);
+        Passes.points.selection = filter;
+
+        if(this._isChildProcess) {
+            let num = 0;
+            for(let i = 0; i < sel.length; i++) {
+                if(sel.get(i)) num++;
+            }
+            const orig = this._columns.columns;
+            const filtered = orig.map((c) => {
+                const col = buildColumn(c.name, c.type);
+                col.push(buildChunk(c.type, num, 0) as AnyChunk);
+                return col;
+            });
+            num = 0;
+            for(let i = 0; i < sel.length; i++) {
+                if(sel.get(i)) {
+                    filtered.forEach((c, ci) => {
+                        c.set(num, orig[ci].get(i) as never);
+                    });
+                    num++;
+                }
+            }
+
+            const fM: FilterMessage = {
+                type: 'filter',
+                data: filter
+            };
+            window.postMessage(fM);
+
+            const fdM: FilteredMessage = {
+                type: 'filtered',
+                data: filtered
+            };
+            window.postMessage(fdM);
+        }
     }
 }

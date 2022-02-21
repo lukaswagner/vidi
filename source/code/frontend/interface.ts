@@ -30,14 +30,7 @@ export type ColumnsMessage = {
 
 export type FilterMessage = {
     type: 'filter',
-    data: BitArray
-}
-
-export interface BitArray {
-    get(index: number): boolean;
-    set(index: number, value: boolean): void;
-    get length(): number;
-    clone(): BitArray;
+    data: Uint8Array
 }
 
 export type FilteredMessage = {
