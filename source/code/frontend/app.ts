@@ -631,20 +631,23 @@ export class TopicMapApp extends Initializable {
                 if(sel.get(i)) num++;
             }
             const orig = this._columns.columns;
-            const filtered = orig.map((c) => {
-                const col = buildColumn(c.name, c.type);
-                col.push(buildChunk(c.type, num, 0) as AnyChunk);
-                return col;
+            const chunks = orig.map((c) => {
+                return buildChunk(c.type, num, 0) as AnyChunk;
             });
             num = 0;
             for(let i = 0; i < sel.length; i++) {
                 if(sel.get(i)) {
-                    filtered.forEach((c, ci) => {
+                    chunks.forEach((c, ci) => {
                         c.set(num, orig[ci].get(i) as never);
                     });
                     num++;
                 }
             }
+            const columns = orig.map((c, ci) => {
+                const col = buildColumn(c.name, c.type);
+                col.push(chunks[ci]);
+                return col;
+            });
 
             const fM: FilterMessage = {
                 type: 'filter',
@@ -654,7 +657,7 @@ export class TopicMapApp extends Initializable {
 
             const fdM: FilteredMessage = {
                 type: 'filtered',
-                data: filtered
+                data: columns
             };
             window.postMessage(fdM);
         }
