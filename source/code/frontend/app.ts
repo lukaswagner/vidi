@@ -617,6 +617,7 @@ export class TopicMapApp extends Initializable {
     }
 
     protected updateSelection(sel: BitArray = this._selection): void {
+        if(!sel) return;
         this._selection = sel;
         const changed = this.filterLimits(sel);
         if(changed) this._lasso.setSelection(sel);
