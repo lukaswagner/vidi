@@ -9,6 +9,7 @@ import { Formats } from './formats';
 import { Passes } from './passes';
 
 export class Buffers {
+    protected static _instance: Buffers;
     protected _context: Context;
     protected _gl: WebGL2RenderingContext;
     protected _maxSamples: number;
@@ -35,7 +36,11 @@ export class Buffers {
     protected _ssIndexLow: Texture2D;
     protected _ssDepth: Texture2D;
     protected _ssFBO: Framebuffer;
-    protected static _instance: Buffers;
+
+    // ortho buffers
+    protected static _orthoRes = 512;
+    protected _orthoTex: Texture2D;
+    protected _orthoFBO: Framebuffer;
 
     protected constructor(context: Context) {
         this._context = context;
@@ -91,11 +96,17 @@ export class Buffers {
         ]);
 
         Passes.accumulate.texture = this._ssColor;
+
+        this._orthoFBO?.uninitialize();
+        this._orthoTex?.uninitialize();
+        [this._orthoTex, this._orthoFBO] = this.createOrthoBuffer();
+
         Passes.debug.setInputs(
             this._msFBO,
             this._msColor, this._msDepth,
             this._ssFBO,
-            this._ssColor, this._ssIndexHigh, this._ssIndexLow, this._ssDepth);
+            this._ssColor, this._ssIndexHigh, this._ssIndexLow, this._ssDepth,
+            this._orthoTex);
 
         this._needRebuild = false;
     }
@@ -114,6 +125,15 @@ export class Buffers {
         const buf = new Texture2D(this._context);
         buf.initialize(width, height, ...format);
         return buf;
+    }
+
+    protected createOrthoBuffer(): [Texture2D, Framebuffer] {
+        const buf = new Texture2D(this._context);
+        buf.initialize(Buffers._orthoRes, Buffers._orthoRes,
+            this._gl.RGBA32F, this._gl.RGBA, this._gl.FLOAT);
+        const fbo = new Framebuffer(this._context);
+        fbo.initialize([[this._gl.COLOR_ATTACHMENT0, buf]]);
+        return [buf, fbo];
     }
 
     public static initialize(context: Context): void {
@@ -156,6 +176,10 @@ export class Buffers {
 
     public static get indexFBO(): Framebuffer {
         return this._instance._ssFBO;
+    }
+
+    public static get orthoFBO(): Framebuffer {
+        return this._instance._orthoFBO;
     }
 
     public static get maxSamples(): number {

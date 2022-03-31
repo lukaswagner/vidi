@@ -499,4 +499,8 @@ export class PointPass extends Initializable {
         this._anySelected = sel.some((v) => v);
         this._altered.alter('selection');
     }
+
+    public get geometries(): PointCloudGeometry[] {
+        return this._geometries;
+    }
 }

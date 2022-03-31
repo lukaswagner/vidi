@@ -137,6 +137,14 @@ export class PointCloudGeometry extends Geometry {
     }
 
     /**
+     * Draws the geometry.
+     */
+    public drawPoints(): void {
+        this._gl.drawArraysInstanced(
+            this._gl.POINTS, 0, 1, this._xCoord.length);
+    }
+
+    /**
      * Binds the vertex buffer object (VBO) to an attribute binding point of a
      * given, pre-defined index.
      */

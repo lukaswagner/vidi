@@ -219,6 +219,9 @@ export class TopicMapRenderer extends Renderer {
         const ss = Buffers.ssFBO;
         const ms = Buffers.msFBO;
 
+        // prepare ortho views
+        Passes.ortho.frame();
+
         // on the first frame: render indices to ss buffer
         if(frameNumber === 0) {
             ss.bind();
@@ -273,6 +276,9 @@ export class TopicMapRenderer extends Renderer {
 
     protected ssFrame(frameNumber: number): void {
         const ss = Buffers.ssFBO;
+
+        // prepare ortho views
+        Passes.ortho.frame();
 
         ss.bind();
         drawBuffers(this._gl, 0b111);
@@ -375,7 +381,9 @@ export class TopicMapRenderer extends Renderer {
 
         Passes.points.model = model;
         Passes.clusters.model = model;
+        Passes.ortho.model = model;
     }
+
     public set columns(columns: Column[]) {
         Passes.points.columns = columns;
         this._modelMatInfo.columns = columns;
