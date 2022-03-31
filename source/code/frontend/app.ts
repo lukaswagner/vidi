@@ -241,7 +241,11 @@ export class TopicMapApp extends Initializable {
             handler: () => {
                 const data = this._datasets[dataSelect.index];
                 load(
-                    { dataSources: { data: data.url } },
+                    {
+                        dataSources: { data: data.url },
+                        delimiter: ',',
+                        includesHeader: true,
+                    },
                     this.dataReady.bind(this),
                     this.handleDataUpdate.bind(this)
                 );
