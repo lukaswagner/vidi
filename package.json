@@ -11,7 +11,8 @@
   "devDependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.36",
     "@fortawesome/free-solid-svg-icons": "^5.15.4",
-    "@lukaswagner/csv-parser": "^0.2.4",
+    "@lukaswagner/csv-parser": "^0.2.5",
+    "@lukaswagner/lasso": "^0.2.0",
     "@lukaswagner/web-ui": "^1.8.1",
     "@types/gl-matrix": "^3.2.0",
     "@types/webpack": "^5.28.0",
@@ -42,6 +43,7 @@
     "watch": "webpack build --config webpack.prod.js --watch",
     "analyze": "webpack serve --config webpack.prod.js --env analyze",
     "lint": "eslint ./source",
-    "lint-fix": "eslint ./source --fix"
+    "lint-fix": "eslint ./source --fix",
+    "interface": "tsc --declaration --emitDeclarationOnly --declarationDir ./interface ./source/code/frontend/interface.ts"
   }
 }

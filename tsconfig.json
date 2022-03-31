@@ -31,6 +31,7 @@
         "source/code/frontend/*.ts",
         "source/code/frontend/**/*.ts",
         "source/code/typings/*.ts",
-        "source/code/shared/**/*.ts"
+        "source/code/shared/**/*.ts",
+        "source/code/interface/*.ts"
     ]
 }

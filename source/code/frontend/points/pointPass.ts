@@ -1,6 +1,7 @@
 import { Alpha, AlphaMode } from 'frontend/util/alpha';
 
 import {
+    Buffer,
     ChangeLookup,
     Context,
     Framebuffer,
@@ -19,6 +20,7 @@ import {
 import { ColumnUsage } from 'frontend/data/columns';
 import { GLfloat2 } from 'shared/types/tuples';
 import { Interaction } from 'frontend/globals';
+import { ListenerMask } from 'frontend/globals/interaction';
 import { PointCloudGeometry } from './pointCloudGeometry';
 import { RefLinePass } from './refLinePass';
 
@@ -40,7 +42,8 @@ export class PointPass extends Initializable {
         model: false,
         numClusters: false,
         selected: false,
-        limits: false
+        limits: false,
+        selection: false
     });
 
     protected _context: Context;
@@ -85,9 +88,14 @@ export class PointPass extends Initializable {
     protected _uIdOffset: WebGLUniformLocation;
     protected _uSelected: WebGLUniformLocation;
     protected _uLimits: WebGLUniformLocation;
+    protected _uAnySelected: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _columns: Column[];
+    protected _selectedMap: Uint8Array;
+    protected _selectedBuffer: Buffer;
+    protected _selectedLocation: number;
+    protected _anySelected: boolean;
 
     protected _refLinePass: RefLinePass;
 
@@ -138,6 +146,7 @@ export class PointPass extends Initializable {
         this._uIdOffset = this._program.uniform('u_idOffset');
         this._uSelected = this._program.uniform('u_selected');
         this._uLimits = this._program.uniform('u_limits');
+        this._uAnySelected = this._program.uniform('u_anySelected');
 
         this._program.bind();
         this._gl.uniform1f(this._uPointSize, this._pointSize);
@@ -151,7 +160,7 @@ export class PointPass extends Initializable {
         this._refLinePass.initialize();
 
         Interaction.register({
-            mask: 1 << 7,
+            mask: ListenerMask.Points,
             move: (id) => {
                 this._selected = id;
                 this._altered.alter('selected');
@@ -165,6 +174,10 @@ export class PointPass extends Initializable {
                     'clicked on point', id,
                     '(', str(0), '|', str(1), '|', str(2), ')');
             }});
+
+        this._selectedBuffer = new Buffer(this._context);
+        this._selectedBuffer.initialize(this._gl.ARRAY_BUFFER);
+        this._selectedLocation = this._program.attribute('a_selected');
 
         return true;
     }
@@ -267,6 +280,11 @@ export class PointPass extends Initializable {
             this._gl.uniform3fv(this._uLimits, this._limits);
         }
 
+        if (this._altered.selection) {
+            this._selectedBuffer.data(this._selectedMap, this._gl.STATIC_DRAW);
+            this._gl.uniform1ui(this._uAnySelected, +this._anySelected);
+        }
+
         this._program.unbind();
 
         this._refLinePass.update();
@@ -306,8 +324,18 @@ export class PointPass extends Initializable {
         this._geometries.forEach((g, i) => {
             this._gl.uniform1ui(
                 this._uIdOffset, this._columns[0].chunks[i].offset);
+
             g.bind();
+            this._selectedBuffer.bind();
+            this._gl.vertexAttribPointer(
+                this._selectedLocation, 1, this._gl.UNSIGNED_BYTE, false, 0,
+                this._columns[0].chunks[i].offset);
+            this._gl.enableVertexAttribArray(this._selectedLocation);
+            this._gl.vertexAttribDivisor(this._selectedLocation, 1);
+
             g.draw();
+
+            this._selectedBuffer.unbind();
             g.unbind();
         });
 
@@ -354,6 +382,19 @@ export class PointPass extends Initializable {
         });
 
         this._refLinePass.geometries = this._geometries;
+
+        this._selectedBuffer.bind();
+        if(
+            this._columns[0].length !==
+            this._gl.getBufferParameter(
+                this._gl.ARRAY_BUFFER, this._gl.BUFFER_SIZE)
+        ) {
+            this._gl.bufferData(
+                this._gl.ARRAY_BUFFER,
+                this._columns[0].length,
+                this._gl.STATIC_DRAW);
+        }
+        this._selectedBuffer.unbind();
     }
 
     public set columns(columns: Column[]) {
@@ -451,5 +492,11 @@ export class PointPass extends Initializable {
     public set limits(limits: number[]) {
         this._limits = limits;
         this._altered.alter('limits');
+    }
+
+    public set selection(sel: Uint8Array) {
+        this._selectedMap = sel;
+        this._anySelected = sel.some((v) => v);
+        this._altered.alter('selection');
     }
 }

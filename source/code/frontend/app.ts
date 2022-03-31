@@ -1,49 +1,44 @@
 import {
+    AnyChunk,
+    Column,
+    DataType,
+    buildChunk,
+    buildColumn,
+    rebuildColumn
+} from '@lukaswagner/csv-parser';
+import { BitArray, Lasso, ResultType } from '@lukaswagner/lasso';
+import { Button, SelectInput } from '@lukaswagner/web-ui';
+import {
     Canvas,
     Color,
     Context,
     Controller,
     Initializable,
     Wizard,
+    mat4,
+    vec3,
+    vec4,
     viewer,
 } from 'webgl-operate';
+import { ColorMapping, ColorMappingDefault } from './points/colorMapping';
+import { ColorMode, ColorModeDefault } from './points/colorMode';
+import { ColumnUsage, Columns } from './data/columns';
 import {
-    ColorMapping,
-    ColorMappingDefault,
-} from './points/colorMapping';
-import {
-    ColorMode,
-    ColorModeDefault,
-} from './points/colorMode';
-import {
-    Column,
-    DataType,
-} from '@lukaswagner/csv-parser';
-import {
-    ColumnUsage,
-    Columns,
-} from './data/columns';
-import {
-    Controls,
-    Preset,
-} from './controls';
-import {
-    Dataset,
-    fetchAvailable,
-    fetchPresets,
-} from './util/api';
-import {
-    deductSeparator,
-    load,
-} from './util/load';
+    Configuration,
+    FilterMessage,
+    FilteredMessage,
+    Message
+} from './interface';
+import { Dataset, fetchAvailable, fetchPresets } from './util/api';
+import { Interaction, Passes } from './globals';
+import { deductSeparator, load } from './util/load';
 
 import { Buffers } from './globals/buffers';
 import { Clustering } from './clustering/clustering';
+import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
-import { Passes } from './globals';
-import { SelectInput } from '@lukaswagner/web-ui';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -58,14 +53,14 @@ declare global {
 
 export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
-        value: 0.01,
+        value: 0.025,
         min: 0.001,
         max: 0.05,
         step: 0.001
     };
 
     private static readonly SCALE_CONTROL = {
-        value: 1.5,
+        value: 2.0,
         min: 0.2,
         max: 10.0,
         step: 0.01
@@ -83,11 +78,15 @@ export class TopicMapApp extends Initializable {
     private _renderer: TopicMapRenderer;
     private _controls: Controls;
     private _datasets: Dataset[];
-    private _presets: Preset[];
+    private _presets: Configuration[];
     private _columns: Columns;
     private _clustering: Clustering;
+    private _lasso: Lasso;
+    private _selection: BitArray;
 
-    public initialize(element: HTMLCanvasElement | string): boolean {
+    private _keepLimitsOnDataUpdate = false;
+
+    public initialize(element: HTMLCanvasElement): boolean {
         console.log('window.opener', window.opener ? 'set' : 'not set');
         this._isChildProcess = !!window.opener;
 
@@ -129,22 +128,31 @@ export class TopicMapApp extends Initializable {
         // add support for external configuration
         if(this._isChildProcess) {
             window.addEventListener('message', (msg) => {
-                const data = msg.data;
-                switch (data.type) {
-                    case 'preset':
-                        console.log('received preset', data.preset);
-                        this.applyPreset(data.preset as Preset);
+                const message = msg.data as Message;
+                switch (message.type) {
+                    case 'configuration':
+                        console.log('received preset', message.data);
+                        this.applyPreset(message.data as Configuration);
                         break;
-                    case 'webpackOk':
+                    case 'columns':
+                        this.dataReady(
+                            message.data.map((c) => rebuildColumn(c)));
+                        break;
                     case 'ready':
                         // ignore
                         break;
                     default:
-                        console.log('received invalid msg:', msg);
+                        // ignore silently
+                        // console.log('received invalid msg:', msg);
                         break;
                 }
             });
         }
+
+        this._lasso = new Lasso({
+            target: element,
+            resultType: ResultType.BitArray
+        });
 
         return true;
     }
@@ -156,19 +164,22 @@ export class TopicMapApp extends Initializable {
 
     protected handleDataUpdate(): void {
         this._renderer.updateData();
+        this._lasso.reset();
     }
 
-    protected async applyPreset(preset: Preset): Promise<void> {
-        let data: DataSource = preset.data;
+    protected async applyPreset(preset: Configuration): Promise<void> {
+        let data: DataSource = preset.csv;
 
-        if(typeof preset.data === 'string') {
-            const found = this._datasets.find((d) => d.id === preset.data);
+        if(typeof preset.csv === 'string') {
+            const found = this._datasets.find((d) => d.id === preset.csv);
             if (found) {
                 (this._controls.data.elements.get('data') as SelectInput)
                     .value = found.url;
                 data = found.url;
             }
         }
+
+        this._keepLimitsOnDataUpdate = preset.keepLimits ?? false;
 
         if(data) {
             await load(
@@ -215,7 +226,7 @@ export class TopicMapApp extends Initializable {
                 dataSelect.values = datasets.map((d) => d.id);
                 return fetchPresets();
             })
-            .then((presets: Preset[]) => {
+            .then((presets: Configuration[]) => {
                 this._presets = presets;
                 presetSelect.values = presets.map((p) => p.name);
                 presetSelect.value = presetSelect.values[0];
@@ -339,6 +350,50 @@ export class TopicMapApp extends Initializable {
             }
         });
 
+        // selection
+        const selectHandler = (b: Button): void => {
+            Interaction.lassoActive = true;
+            const m = this._renderer.model;
+            const vp = Interaction.camera.viewProjection;
+            this._lasso.matrix = mat4.mul(mat4.create(), vp, m);
+            this._lasso.callback = (s) => {
+                b.elements[0].click();
+                this.updateSelection(s as BitArray);
+            };
+            this._lasso.enable();
+            b.elements[0].textContent = 'Cancel';
+            b.handler = cancelHandler.bind(this, b);
+        };
+
+        const cancelHandler = (b: Button): void => {
+            this._lasso.disable();
+            this._lasso.callback = undefined;
+            Interaction.lassoActive = false;
+            b.elements[0].textContent = b === add ? 'Add' : 'Remove';
+            b.handler = selectHandler.bind(this, b);
+        };
+
+        const add = this._controls.selection.input.button({
+            text: 'Add',
+        });
+        add.handler = selectHandler.bind(this, add);
+
+        const sub = this._controls.selection.input.button({
+            text: 'Remove'
+        });
+        sub.handler = selectHandler.bind(this, sub);
+
+        this._controls.selection.input.button({
+            text: 'Reset',
+            handler: () => {
+                this._lasso.reset();
+                this.updateSelection(this._lasso.selection as BitArray);
+                this._renderer.invalidate();
+            }
+        });
+
+        Interaction.limitListener = this.updateSelection.bind(this);
+
         // clustering
         this._controls.cluster.input.button({
             label: 'Calculate clusters',
@@ -448,6 +503,20 @@ export class TopicMapApp extends Initializable {
             optionTexts: Object.values(DebugMode),
             handler: (v) => this._renderer.debugMode = v.value as DebugMode
         });
+
+        // debug
+        this._controls.debug.input.button({
+            text: 'Spawn child',
+            handler: () => {
+                const child = window.open(window.location.href);
+                child.addEventListener('message', (msg) => {
+                    if(msg.data.type === 'ready') child.postMessage({
+                        type: 'columns',
+                        data: this._columns.columns.filter((c) => c?.length > 0)
+                    });
+                });
+            }
+        });
     }
 
     protected getId(column: Column): string {
@@ -457,6 +526,7 @@ export class TopicMapApp extends Initializable {
     protected dataReady(columns: Column[]): void {
         this._columns = new Columns(columns);
         this.initColumns();
+        this._lasso.points = this._columns.positionSource;
 
         this._controls.clusterAlg.reset();
         this._controls.colorMode.reset();
@@ -483,7 +553,7 @@ export class TopicMapApp extends Initializable {
                 this.getId(this._columns.selectedColumn(i));
             this._controls.axes[i].invokeHandler();
         }
-        Passes.limits.reset();
+        if (!this._keepLimitsOnDataUpdate) Passes.limits.reset();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);
@@ -529,5 +599,73 @@ export class TopicMapApp extends Initializable {
                 .map((c) => this.getId(c)),
             extents,
             subdivisions);
+    }
+
+    protected filterLimits(sel: BitArray): boolean {
+        let changed = false;
+        const m = this._renderer.model;
+        const limits = Passes.limits.limits;
+        const source = this._columns.positionSource;
+        for (let i = 0; i < source.length; i++) {
+            let p3 = source.at(i);
+            const p4 = vec4.fromValues(p3[0], p3[1], p3[2], 1);
+            vec4.transformMat4(p4, p4, m);
+            p3 = vec3.fromValues(p4[0] / p4[3], p4[1] / p4[3], p4[2] / p4[3]);
+            for(let j = 0; j < 3; j++) {
+                if (p3[j] < limits[j] || p3[j] > limits[j+3]) {
+                    changed ||= sel.get(i);
+                    sel.set(i, false);
+                }
+            }
+        }
+        return changed;
+    }
+
+    protected updateSelection(sel: BitArray = this._selection): void {
+        if(!sel) return;
+        this._selection = sel;
+        const changed = this.filterLimits(sel);
+        if(changed) this._lasso.setSelection(sel);
+        const filter = new Uint8Array(sel.length);
+        for(let i = 0; i < sel.length; i++)
+            filter[i] = +sel.get(i);
+        Passes.points.selection = filter;
+
+        if(this._isChildProcess) {
+            let num = 0;
+            for(let i = 0; i < sel.length; i++) {
+                if(sel.get(i)) num++;
+            }
+            const orig = this._columns.columns;
+            const chunks = orig.map((c) => {
+                return buildChunk(c.type, num, 0) as AnyChunk;
+            });
+            num = 0;
+            for(let i = 0; i < sel.length; i++) {
+                if(sel.get(i)) {
+                    chunks.forEach((c, ci) => {
+                        c.set(num, orig[ci].get(i) as never);
+                    });
+                    num++;
+                }
+            }
+            const columns = orig.map((c, ci) => {
+                const col = buildColumn(c.name, c.type);
+                col.push(chunks[ci]);
+                return col;
+            });
+
+            const fM: FilterMessage = {
+                type: 'filter',
+                data: filter
+            };
+            window.postMessage(fM);
+
+            const fdM: FilteredMessage = {
+                type: 'filtered',
+                data: columns
+            };
+            window.postMessage(fdM);
+        }
     }
 }

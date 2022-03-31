@@ -1,7 +1,9 @@
 import {
     Column,
     DataType,
+    NumberColumn,
 } from '@lukaswagner/csv-parser';
+import { vec3 } from 'webgl-operate';
 
 export enum ColumnUsage {
     X_AXIS = 0,
@@ -12,41 +14,63 @@ export enum ColumnUsage {
     CLUSTER_ID = 5
 }
 
-export class Columns {
-    protected _columns = Array<Column>();
+interface Source {
+    at(index: number): vec3;
+    length: number;
+}
 
-    protected _selectedColumns: number[] = [];
+type SelectedColumn = {
+    raw: boolean,
+    index: number;
+}
+
+export class Columns {
+    protected _rawColumns = Array<Column>();
+    protected _processedColumns = Array<Column>();
+
+    protected _selectedColumns: SelectedColumn[] = [];
+
+    protected getColumn(sel: SelectedColumn): Column {
+        return (sel.raw ? this._rawColumns : this._processedColumns)[sel.index];
+    }
 
     public constructor(columns: Array<Column>) {
-        this._columns = columns;
+        this._rawColumns = columns;
+        this._processedColumns = [];
         this.initSelectedColumns(true);
     }
 
     public addColumns(columns: Array<Column>): void {
-        this._columns.push(...columns);
+        this._processedColumns.push(...columns);
     }
 
     public getColumnNames(type: DataType): string[] {
-        return this._columns.filter((c) => c.type === type).map((c) => c.name);
+        return [...this._rawColumns, ...this._processedColumns]
+            .filter((c) => c.type === type).map((c) => c.name);
     }
 
-    public getColumnIndex(column: string): number {
-        return this._columns.findIndex((c) => c.name === column);
+    protected getSelectedColumn(column: string): SelectedColumn {
+        let index = this._rawColumns.findIndex((c) => c.name === column);
+        if(index > -1) return { raw: true, index };
+        return {
+            raw: false,
+            index: this._processedColumns.findIndex((c) => c.name === column)
+        };
     }
 
     public selectColumn(usage: ColumnUsage, column: string): void {
-        const columnIndex = this.getColumnIndex(column);
-        this._selectedColumns[usage] = columnIndex;
+        const sel = this.getSelectedColumn(column);
+        this._selectedColumns[usage] = sel;
     }
 
     public selectedColumn(usage: ColumnUsage): Column {
-        const i = this._selectedColumns[usage];
-        return this._columns[i];
+        const sel = this._selectedColumns[usage];
+        return this.getColumn(sel);
     }
 
     protected initSelectedColumns(initZ: boolean): void {
         const strings = ['x', 'y', 'z'];
-        const columnNames = this._columns.map((c, i) => {
+        const columnNames = this._rawColumns.map((c, i) => {
             return { name: c.name.toLowerCase(), index: i };
         });
 
@@ -69,22 +93,56 @@ export class Columns {
         const match = matchMatches[0];
 
         // fallback: indices of first number columns
-        const fallback = this._columns
+        const fallback = this._rawColumns
             .map((c, i) => { return {t: c.type, i} })
             .filter((x) => x.t === DataType.Number)
             .map((x) => x.i);
 
         this._selectedColumns[ColumnUsage.X_AXIS] =
-            match?.[0] ?? fallback[0] ?? -1;
+            { raw: true, index: match?.[0] ?? fallback[0] ?? -1 };
         this._selectedColumns[ColumnUsage.Y_AXIS] =
-            match?.[1] ?? fallback[1] ?? -1;
+            { raw: true, index: match?.[1] ?? fallback[1] ?? -1 };
         this._selectedColumns[ColumnUsage.Z_AXIS] =
-            initZ ? (match?.[2] ?? fallback[2] ?? -1) : -1;
-        this._selectedColumns[ColumnUsage.VARIABLE_POINT_SIZE] = -1;
-        this._selectedColumns[ColumnUsage.PER_POINT_COLOR] = -1;
+            {
+                raw: true,
+                index: initZ ? (match?.[2] ?? fallback[2] ?? -1) : -1
+            };
+        this._selectedColumns[ColumnUsage.VARIABLE_POINT_SIZE] =
+            { raw: true, index: -1 };
+        this._selectedColumns[ColumnUsage.PER_POINT_COLOR] =
+            { raw: true, index: -1 };
     }
 
     public get selectedColumns(): Column[] {
-        return this._selectedColumns.map((i) => this._columns[i]);
+        return this._selectedColumns.map((sel) => this.getColumn(sel));
+    }
+
+    public get columns(): Column[] {
+        return this._rawColumns;
+    }
+
+    protected static LassoProxy = class implements Source {
+        protected _instance: Columns;
+        protected get(a: ColumnUsage, i: number): number {
+            const sel = this._instance._selectedColumns[a];
+            return (this._instance.getColumn(sel) as NumberColumn)?.get(i) ?? 0;
+        }
+        constructor(instance: Columns) {
+            this._instance = instance;
+        }
+        at(index: number): vec3 {
+            return vec3.fromValues(
+                this.get(ColumnUsage.X_AXIS, index),
+                this.get(ColumnUsage.Y_AXIS, index),
+                this.get(ColumnUsage.Z_AXIS, index),
+            );
+        }
+        public get length(): number {
+            return this._instance._rawColumns[0].length;
+        }
+    }
+
+    public get positionSource(): Source {
+        return new Columns.LassoProxy(this);
     }
 }

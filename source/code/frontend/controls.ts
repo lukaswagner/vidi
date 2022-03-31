@@ -1,28 +1,17 @@
 import { SelectInput, UI } from '@lukaswagner/web-ui';
-import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
-
-export interface Preset {
-    name: string;
-    data?: DataSource;
-    delimiter?: string;
-    pointSize?: number;
-    axes?: string[];
-    colorMode?: number;
-    colorMapping?: number;
-    colorColumn?: string;
-    variablePointSizeStrength?: number;
-    variablePointSizeColumn?: string;
-}
+import { Configuration } from './interface';
 
 export class Controls {
     public presets: UI;
     public data: UI;
     public customData: UI;
     public position: UI;
+    public selection: UI;
     public cluster: UI;
     public size: UI;
     public color: UI;
     public rendering: UI;
+    public debug: UI;
 
     public axes: [SelectInput, SelectInput, SelectInput];
     public clusterAlg: SelectInput;
@@ -39,6 +28,8 @@ export class Controls {
         this.customData = new UI(customDataContainer, true);
         const positionContainer = document.getElementById('position-group');
         this.position = new UI(positionContainer, true);
+        const selectionContainer = document.getElementById('selection-group');
+        this.selection = new UI(selectionContainer, true);
         const clusterContainer = document.getElementById('cluster-group');
         this.cluster = new UI(clusterContainer, true);
         const sizeContainer = document.getElementById('size-group');
@@ -47,9 +38,11 @@ export class Controls {
         this.color = new UI(colorContainer, true);
         const renderingContainer = document.getElementById('rendering-group');
         this.rendering = new UI(renderingContainer, true);
+        const debugContainer = document.getElementById('debug-group');
+        this.debug = new UI(debugContainer, true);
     }
 
-    public applyPreset(preset: Preset): void {
+    public applyPreset(preset: Configuration): void {
         const p = preset as unknown as Record<string, unknown>;
 
         this.data.reset();

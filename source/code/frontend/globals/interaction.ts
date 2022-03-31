@@ -10,6 +10,11 @@ import {
 import { Buffers } from './buffers';
 import { Formats } from './formats';
 
+export enum ListenerMask {
+    Points = 1 << 7,
+    Limits = 1 << 6
+}
+
 type Callback = (id: number, pos: vec2) => void;
 type ListenerConfig = {
     move?: Callback,
@@ -31,6 +36,9 @@ export class Interaction {
 
     protected _listeners: Listener[] = [];
     protected _currentDownListener: Listener;
+    protected _lassoActive: boolean;
+
+    protected _limitListener: () => void;
 
     protected static _instance: Interaction;
 
@@ -81,6 +89,7 @@ export class Interaction {
     }
 
     public static update(): void {
+        if(this._instance._lassoActive) return;
         this._instance._eventHandler.update();
         if(!this._instance._currentDownListener)
             Interaction.navigation.update();
@@ -141,6 +150,8 @@ export class Interaction {
         const { id } = this.pick(pos);
 
         this._currentDownListener?.up?.(id, pos);
+        if(this._currentDownListener?.mask === ListenerMask.Limits)
+            this._limitListener?.();
         this._currentDownListener = undefined;
     }
 
@@ -169,5 +180,13 @@ export class Interaction {
 
     public static register(config: ListenerConfig): void {
         this._instance._listeners.push(Object.assign({lastId: -1 }, config));
+    }
+
+    public static set lassoActive(active: boolean) {
+        this._instance._lassoActive = active;
+    }
+
+    public static set limitListener(cb: () => void) {
+        this._instance._limitListener = cb;
     }
 }

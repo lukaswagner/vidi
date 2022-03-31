@@ -7,6 +7,7 @@ layout(location = 3) in float a_zCoord;
 layout(location = 4) in vec4 a_vertexColor;
 layout(location = 5) in float a_variablePointSize;
 layout(location = 6) in float a_clusterId;
+layout(location = 7) in float a_selected;
 
 uniform mat4 u_model;
 uniform mat4 u_viewProjection;
@@ -32,6 +33,7 @@ uniform int u_colorMapping;
 uniform uint u_idOffset;
 uniform uint u_selected;
 uniform vec3 u_limits[2];
+uniform bool u_anySelected;
 
 const vec3 u_pointColor = vec3(1.0, 0.0, 0.0);
 
@@ -42,9 +44,10 @@ out vec3 v_color;
 out vec2 v_uv;
 out vec3 v_fragPos;
 flat out uint v_instanceId;
+flat out uint v_selected;
 
 @import ../clustering/clusterColor;
-#line 54
+#line 51
 
 vec3 hsl2rgb(vec3 c)
 {
@@ -78,6 +81,12 @@ vec3 color()
     }
 }
 
+vec3 saturate(vec3 color, float factor) {
+    float avg = dot(color, vec3(0.3));
+    vec3 res = avg + (color - avg) * factor;
+    return clamp(res, 0.0, 1.0);
+}
+
 void main()
 {
     vec4 pos = u_model * vec4(a_xCoord, a_yCoord, a_zCoord, 1.0);
@@ -91,7 +100,11 @@ void main()
     // manual clipping - needs optimization
     if(position.z < 0.1) return;
 
-#line 95
+    if(u_anySelected) {
+        v_color = saturate(v_color, a_selected > 0.5 ? 1.5 : 1.0);
+    }
+    v_selected = uint(v_instanceId == u_selected || a_selected > 0.5);
+
     float limited = step(3.0, dot(
         step(u_limits[0], v_pos.xyz),
         step(v_pos.xyz, u_limits[1])));
@@ -105,7 +118,7 @@ void main()
         u_variablePointSizeOutputRange.z +
         u_variablePointSizeOutputRange.x;
     vec2 pointSize =
-        vec2(u_pointSize, u_pointSize / u_aspectRatio) *
+        vec2(u_pointSize * u_aspectRatio, u_pointSize) *
         mix(1.0, variablePointSize, u_variablePointSizeStrength) /
         position.z;
     if(v_instanceId == u_selected) pointSize *= 1.5;

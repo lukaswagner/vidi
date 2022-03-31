@@ -24,14 +24,18 @@ function toggle(
 
 const mainElements: HTMLDivElement[] = [];
 
-toggle('controls-container', 'control-toggle', mainElements, false);
+toggle(
+    'controls-container', 'control-toggle',
+    mainElements, false, window.opener);
 toggle('info-container', 'info-toggle', mainElements, false);
 
-toggle('preset-group', 'preset-header',);
+toggle('preset-group', 'preset-header');
 toggle('data-group', 'data-header', undefined, undefined, true);
 toggle('custom-data-group', 'custom-data-header', undefined, undefined, true);
-toggle('position-group', 'position-header',);
+toggle('position-group', 'position-header');
+toggle('selection-group', 'selection-header');
 toggle('cluster-group', 'cluster-header', undefined, undefined, true);
-toggle('size-group', 'size-header',);
-toggle('color-group', 'color-header', );
-toggle('rendering-group', 'rendering-header',);
+toggle('size-group', 'size-header');
+toggle('color-group', 'color-header');
+toggle('rendering-group', 'rendering-header');
+toggle('debug-group', 'debug-header', undefined, undefined, true);

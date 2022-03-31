@@ -28,13 +28,15 @@
 ## Usage as sub-window
 
 ```ts
-const preset = {
+const configuration = {
     data: 'https://api.varg.dev/users/topicmap/datasets/topics/data',
     axes: ['first', 'second', 'third']
 };
 const child = window.open('http://vidi.lwgnr.dev');
 child.addEventListener('message', (msg) => {
     if(msg.data.type === 'ready')
-        child.postMessage({ type: 'preset', preset });
+        child.postMessage({ type: 'configuration', preset });
 });
 ```
+
+For more details see [interface.ts](./source/code/frontend/interface.ts).

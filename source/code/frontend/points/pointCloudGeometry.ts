@@ -113,6 +113,7 @@ export class PointCloudGeometry extends Geometry {
             xCoordLocation,
             zCoordLocation,
             vertexColorLocation,
+            variablePointSizeLocation,
             clusterIdLocation
         ]);
 
@@ -145,35 +146,47 @@ export class PointCloudGeometry extends Geometry {
             false, 2, 0, true, false);
         this._gl.vertexAttribDivisor(this._uvLocation, 0);
 
-        this._buffers[1].attribEnable(
-            this._xCoordLocation, 1, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._xCoordLocation, 1);
+        if(this._xCoord?.length > 0) {
+            this._buffers[1].attribEnable(
+                this._xCoordLocation, 1, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._xCoordLocation, 1);
+        }
 
-        this._buffers[2].attribEnable(
-            this._yCoordLocation, 1, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._yCoordLocation, 1);
+        if(this._yCoord?.length > 0) {
+            this._buffers[2].attribEnable(
+                this._yCoordLocation, 1, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._yCoordLocation, 1);
+        }
 
-        this._buffers[3].attribEnable(
-            this._zCoordLocation, 1, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._zCoordLocation, 1);
+        if(this._zCoord?.length > 0) {
+            this._buffers[3].attribEnable(
+                this._zCoordLocation, 1, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._zCoordLocation, 1);
+        }
 
-        this._buffers[4].attribEnable(
-            this._vertexColorLocation, 4, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._vertexColorLocation, 1);
+        if(this._vertexColors?.length > 0) {
+            this._buffers[4].attribEnable(
+                this._vertexColorLocation, 4, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._vertexColorLocation, 1);
+        }
 
-        this._buffers[5].attribEnable(
-            this._variablePointSizeLocation, 1, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._variablePointSizeLocation, 1);
+        if(this._variablePointSize?.length > 0) {
+            this._buffers[5].attribEnable(
+                this._variablePointSizeLocation, 1, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._variablePointSizeLocation, 1);
+        }
 
-        this._buffers[6].attribEnable(
-            this._clusterIdLocation, 1, this._gl.FLOAT,
-            false, 0, 0, true, false);
-        this._gl.vertexAttribDivisor(this._clusterIdLocation, 1);
+        if(this._clusterId?.length > 0) {
+            this._buffers[6].attribEnable(
+                this._clusterIdLocation, 1, this._gl.FLOAT,
+                false, 0, 0, true, false);
+            this._gl.vertexAttribDivisor(this._clusterIdLocation, 1);
+        }
     }
 
     /**
