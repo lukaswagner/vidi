@@ -7,6 +7,7 @@ import {
     Shader,
 } from 'webgl-operate';
 
+import { Buffers } from 'frontend/globals/buffers';
 import { ExtendedGridInfo } from './gridInfo';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
@@ -62,6 +63,10 @@ export class GridPass extends Initializable {
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
 
+        this._program.bind();
+        this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
+        this._program.unbind();
+
         return true;
     }
 
@@ -99,6 +104,8 @@ export class GridPass extends Initializable {
         this._gl.enable(this._gl.BLEND);
         this._gl.disable(this._gl.CULL_FACE);
 
+        Buffers.orthoTex.bind(this._gl.TEXTURE0);
+
         this._program.bind();
 
         this._gl.uniformMatrix4fv(
@@ -112,6 +119,8 @@ export class GridPass extends Initializable {
         this._geometry.unbind();
 
         this._program.unbind();
+
+        Buffers.orthoTex.unbind(this._gl.TEXTURE0);
 
         this._gl.depthMask(true);
         this._gl.disable(this._gl.BLEND);

@@ -34,6 +34,7 @@ export class GridGeometry extends Geometry {
 
     protected _numGrids = 0;
 
+    protected _id = new Int8Array([]);
     protected _transform = new Float32Array([]);
     protected _offset = new Float32Array([]);
 
@@ -49,9 +50,10 @@ export class GridGeometry extends Geometry {
 
     protected _vertexLocation: GLuint = 0;
     protected _uvLocation: GLuint = 1;
-    protected _transformLocation: GLuint = 2;
-    protected _offsetLocation: GLuint = 6;
-    protected _gridInfoLocation: GLuint = 7;
+    protected _idLocation: GLuint = 2;
+    protected _transformLocation: GLuint = 3;
+    protected _offsetLocation: GLuint = 7;
+    protected _gridInfoLocation: GLuint = 8;
 
     protected _gl: WebGL2RenderingContext;
 
@@ -71,6 +73,7 @@ export class GridGeometry extends Geometry {
             new Buffer(context),
             new Buffer(context),
             new Buffer(context),
+            new Buffer(context),
             new Buffer(context)
         );
     }
@@ -85,12 +88,14 @@ export class GridGeometry extends Geometry {
     public initialize(
         localPosLocation: GLuint = 0,
         uvLocation: GLuint = 1,
-        transformLocation: GLuint = 2,
-        offsetLocation: GLuint = 6,
-        gridInfoLocation: GLuint = 7
+        idLocation: GLuint = 2,
+        transformLocation: GLuint = 3,
+        offsetLocation: GLuint = 7,
+        gridInfoLocation: GLuint = 8
     ): boolean {
         this._vertexLocation = localPosLocation;
         this._uvLocation = uvLocation;
+        this._idLocation = idLocation;
         this._transformLocation = transformLocation;
         this._offsetLocation = offsetLocation;
         this._gridInfoLocation = gridInfoLocation;
@@ -101,9 +106,11 @@ export class GridGeometry extends Geometry {
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
             this._gl.ARRAY_BUFFER,
+            this._gl.ARRAY_BUFFER,
         ], [
             this._vertexLocation,
             this._uvLocation,
+            this._idLocation,
             this._transformLocation,
             this._offsetLocation,
             this._gridInfoLocation,
@@ -111,9 +118,10 @@ export class GridGeometry extends Geometry {
 
         this._buffers[0].data(this._quadVertices, this._gl.STATIC_DRAW);
         this._buffers[1].data(this._uvCoordinates, this._gl.STATIC_DRAW);
-        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
-        this._buffers[4].data(this._gridInfo, this._gl.STATIC_DRAW);
+        this._buffers[2].data(this._id, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[4].data(this._offset, this._gl.STATIC_DRAW);
+        this._buffers[5].data(this._gridInfo, this._gl.STATIC_DRAW);
 
         return valid;
     }
@@ -121,7 +129,7 @@ export class GridGeometry extends Geometry {
     @Initializable.assert_initialized()
     public update(override = false): void {
         if (override || this._altered.offsets) {
-            this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
+            this._buffers[4].data(this._offset, this._gl.STATIC_DRAW);
         }
         this._altered.reset();
     }
@@ -135,12 +143,16 @@ export class GridGeometry extends Geometry {
     }
 
     public buildGrid(gridInfo: ExtendedGridInfo[]): void {
+        const idTemp = new Int8Array(gridInfo.length);
         const transformTemp = new Float32Array(gridInfo.length * 16);
         const gridInfoTemp = new Float32Array(gridInfo.length * 10);
 
         gridInfo
-            .filter((grid) => grid.enabled)
-            .forEach((grid, i) => {
+            .map((grid, index) => {
+                return { grid, index };
+            })
+            .filter(({grid}) => grid.enabled)
+            .forEach(({grid, index}, i) => {
                 const x = grid.firstAxis;
                 const y = grid.secondAxis;
                 const xe = x.extents;
@@ -183,17 +195,20 @@ export class GridGeometry extends Geometry {
                     y.subdivisions
                 ]);
 
+                idTemp[i] = index;
                 transformTemp.set(m, i * 16);
                 gridInfoTemp.set(gridInfo, i * 10);
             });
 
         this._numGrids = gridInfo.length;
+        this._id = idTemp;
         this._transform = transformTemp;
         this._gridInfo = gridInfoTemp;
 
-        this._buffers[2].data(this._transform, this._gl.STATIC_DRAW);
-        this._buffers[3].data(this._offset, this._gl.STATIC_DRAW);
-        this._buffers[4].data(this._gridInfo, this._gl.STATIC_DRAW);
+        this._buffers[2].data(this._id, this._gl.STATIC_DRAW);
+        this._buffers[3].data(this._transform, this._gl.STATIC_DRAW);
+        this._buffers[4].data(this._offset, this._gl.STATIC_DRAW);
+        this._buffers[5].data(this._gridInfo, this._gl.STATIC_DRAW);
     }
 
     /**
@@ -215,23 +230,29 @@ export class GridGeometry extends Geometry {
         b[1].attribEnable(uvl, 2, f, false, 0, 0, true, false);
         this._gl.vertexAttribDivisor(uvl, 0);
 
-        b[2].attribEnable(tl + 0, 4, f, false, 64, 0, true, false);
-        b[2].attribEnable(tl + 1, 4, f, false, 64, 16, false, false);
-        b[2].attribEnable(tl + 2, 4, f, false, 64, 32, false, false);
-        b[2].attribEnable(tl + 3, 4, f, false, 64, 48, false, false);
+        b[2].bind();
+        this._gl.vertexAttribPointer(
+            this._idLocation, 1, this._gl.BYTE, false, 0, 0);
+        this._gl.enableVertexAttribArray(this._idLocation);
+        this._gl.vertexAttribDivisor(this._idLocation, 1);
+
+        b[3].attribEnable(tl + 0, 4, f, false, 64, 0, true, false);
+        b[3].attribEnable(tl + 1, 4, f, false, 64, 16, false, false);
+        b[3].attribEnable(tl + 2, 4, f, false, 64, 32, false, false);
+        b[3].attribEnable(tl + 3, 4, f, false, 64, 48, false, false);
         this._gl.vertexAttribDivisor(tl + 0, 1);
         this._gl.vertexAttribDivisor(tl + 1, 1);
         this._gl.vertexAttribDivisor(tl + 2, 1);
         this._gl.vertexAttribDivisor(tl + 3, 1);
 
-        b[3].attribEnable(ol, 1, f, false, 0, 0, true, false);
+        b[4].attribEnable(ol, 1, f, false, 0, 0, true, false);
         this._gl.vertexAttribDivisor(ol, 1);
 
-        b[4].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
-        b[4].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
-        b[4].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
-        b[4].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
-        b[4].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
+        b[5].attribEnable(gil + 0, 2, f, false, 40, 0, true, false);
+        b[5].attribEnable(gil + 1, 2, f, false, 40, 8, false, false);
+        b[5].attribEnable(gil + 2, 2, f, false, 40, 16, false, false);
+        b[5].attribEnable(gil + 3, 2, f, false, 40, 24, false, false);
+        b[5].attribEnable(gil + 4, 2, f, false, 40, 32, false, false);
         this._gl.vertexAttribDivisor(gil + 0, 1);
         this._gl.vertexAttribDivisor(gil + 1, 1);
         this._gl.vertexAttribDivisor(gil + 2, 1);
@@ -252,17 +273,18 @@ export class GridGeometry extends Geometry {
 
         b[0].attribDisable(vl, true, true);
         b[1].attribDisable(uvl, true, true);
-        b[2].attribDisable(tl + 0, true, false);
-        b[2].attribDisable(tl + 1, false, false);
-        b[2].attribDisable(tl + 2, false, false);
-        b[2].attribDisable(tl + 3, false, false);
-        b[2].attribDisable(tl + 4, false, true);
-        b[3].attribDisable(ol, true, true);
-        b[4].attribDisable(gil + 0, true, false);
-        b[4].attribDisable(gil + 1, false, false);
-        b[4].attribDisable(gil + 2, false, false);
-        b[4].attribDisable(gil + 3, false, false);
-        b[4].attribDisable(gil + 4, false, true);
+        b[2].attribDisable(this._idLocation, true, true);
+        b[3].attribDisable(tl + 0, true, false);
+        b[3].attribDisable(tl + 1, false, false);
+        b[3].attribDisable(tl + 2, false, false);
+        b[3].attribDisable(tl + 3, false, false);
+        b[3].attribDisable(tl + 4, false, true);
+        b[4].attribDisable(ol, true, true);
+        b[5].attribDisable(gil + 0, true, false);
+        b[5].attribDisable(gil + 1, false, false);
+        b[5].attribDisable(gil + 2, false, false);
+        b[5].attribDisable(gil + 3, false, false);
+        b[5].attribDisable(gil + 4, false, true);
     }
 
     public set offsets(offsets: number[]) {

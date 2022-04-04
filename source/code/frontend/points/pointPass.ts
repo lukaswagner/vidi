@@ -322,14 +322,14 @@ export class PointPass extends Initializable {
         this._target.bind();
 
         this._geometries.forEach((g, i) => {
-            this._gl.uniform1ui(
-                this._uIdOffset, this._columns[0].chunks[i].offset);
+            const offset = this.anyColumn()?.chunks[i].offset;
+            this._gl.uniform1ui(this._uIdOffset, offset);
 
             g.bind();
             this._selectedBuffer.bind();
             this._gl.vertexAttribPointer(
                 this._selectedLocation, 1, this._gl.UNSIGNED_BYTE, false, 0,
-                this._columns[0].chunks[i].offset);
+                offset);
             this._gl.enableVertexAttribArray(this._selectedLocation);
             this._gl.vertexAttribDivisor(this._selectedLocation, 1);
 
@@ -351,6 +351,10 @@ export class PointPass extends Initializable {
         this.assertInitialized();
         this._columns[index] = column;
         this._altered.alter('columns');
+    }
+
+    protected anyColumn(): Column {
+        return this._columns[0] ?? this._columns[1] ?? this._columns[2];
     }
 
     protected buildGeometries(): void {
@@ -383,15 +387,15 @@ export class PointPass extends Initializable {
 
         this._refLinePass.geometries = this._geometries;
 
+        const len = this.anyColumn()?.length;
         this._selectedBuffer.bind();
         if(
-            this._columns[0].length !==
-            this._gl.getBufferParameter(
+            len !== this._gl.getBufferParameter(
                 this._gl.ARRAY_BUFFER, this._gl.BUFFER_SIZE)
         ) {
             this._gl.bufferData(
                 this._gl.ARRAY_BUFFER,
-                this._columns[0].length,
+                len,
                 this._gl.STATIC_DRAW);
         }
         this._selectedBuffer.unbind();

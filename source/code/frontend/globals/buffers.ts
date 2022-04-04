@@ -182,6 +182,10 @@ export class Buffers {
         return this._instance._orthoFBO;
     }
 
+    public static get orthoTex(): Texture2D {
+        return this._instance._orthoTex;
+    }
+
     public static get maxSamples(): number {
         return this._instance._maxSamples;
     }

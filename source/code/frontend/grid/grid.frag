@@ -3,6 +3,8 @@ precision highp int;
 
 layout(location = 0) out vec4 f_color;
 
+uniform sampler2D u_orthoViews;
+
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
 const float u_innerIntensity = 1.0;
@@ -34,6 +36,8 @@ in vec2 v_gridSubdivisionsUVInv;
 
 in vec2 v_gridSubdivisionsScaled;
 
+flat in int v_index;
+
 float grid() {
     vec2 scaled = (v_uv - v_dataLowerBoundsUV) * v_gridSubdivisionsScaled;
     vec2 f = fract(scaled);
@@ -62,6 +66,10 @@ void main()
     distIntensity = mix(distIntensity, u_outerIntensity, invisOuterMix);
     distIntensity = mix(distIntensity, u_innerIntensity, outerInnerMix);
 
-    float intensity = distIntensity * grid();
+    vec2 uv = (v_uv - v_dataLowerBoundsUV) / (v_dataUpperBoundsUV - v_dataLowerBoundsUV);
+    float inside = step(0.0, uv.x) * step(0.0, uv.y) * step(uv.x, 1.0) * step(uv.y, 1.0);
+    float ortho = texture(u_orthoViews, uv)[v_index] * inside;
+
+    float intensity = max(distIntensity * grid(), ortho);
     f_color = vec4(u_color, intensity);
 }

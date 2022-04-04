@@ -61,11 +61,11 @@ export class OrthoPass extends Initializable {
         this._uLimits = this._program.uniform('u_limits');
         this._uChannel = this._program.uniform('u_channel');
 
-        const ortho = mat4.ortho(mat4.create(), -1, 1, -1, 1, -1, 1);
+        const ortho = mat4.ortho(mat4.create(), -1, 1, -1, 1, 0, 3);
         const mats = [
             mat4.lookAt(mat4.create(), [0, 0, 1], [0, 0, 0], [0, 1, 0]),
-            mat4.lookAt(mat4.create(), [1, 0, 0], [0, 0, 0], [0, 0, 1]),
-            mat4.lookAt(mat4.create(), [0, 1, 0], [0, 0, 0], [1, 0, 0]),
+            mat4.lookAt(mat4.create(), [1, 0, 0], [0, 0, 0], [0, 1, 0]),
+            mat4.lookAt(mat4.create(), [0, 1, 0], [0, 0, 0], [0, 0, -1]),
         ];
         this._views = mats.map((m) => mat4.mul(m, ortho, m));
 
