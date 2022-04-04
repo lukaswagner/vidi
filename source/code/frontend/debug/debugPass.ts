@@ -10,8 +10,8 @@ import {
     vec2,
 } from 'webgl-operate';
 
+import { Formats, Passes } from 'frontend/globals';
 import { drawBuffer, drawBuffers } from 'frontend/util/drawBuffer';
-import { Formats } from 'frontend/globals';
 
 export enum DebugMode {
     Off = 'Off',
@@ -21,7 +21,8 @@ export enum DebugMode {
     SSIH = 'SS Index High',
     SSIL = 'SS Index Low',
     SSD = 'SS Depth',
-    ORTHO = 'Ortho'
+    ORTHO = 'Ortho',
+    MM = 'Min/Max'
 }
 
 export class DebugPass extends Initializable {
@@ -195,6 +196,12 @@ export class DebugPass extends Initializable {
             case DebugMode.ORTHO:
                 this.drawTex(this._ortho, 0);
                 break;
+            case DebugMode.MM: {
+                const tex = Passes.ortho.minMax.texture;
+                if(!tex) break;
+                this.drawTex(tex, 0);
+                break;
+            }
             default:
                 break;
         }

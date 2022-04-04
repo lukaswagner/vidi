@@ -11,7 +11,7 @@ import { DebugPass } from '../debug/debugPass';
 import { GridLabelPass } from '../grid/gridLabelPass';
 import { GridPass } from '../grid/gridPass';
 import { LimitPass } from '../grid/limitPass';
-import { OrthoPass } from 'frontend/points/orthoPass';
+import { OrthoPass } from 'frontend/ortho/orthoPass';
 import { PointPass } from '../points/pointPass';
 
 const fontApi = 'https://fonts.varg.dev/api/fonts/';

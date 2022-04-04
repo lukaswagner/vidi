@@ -220,7 +220,7 @@ export class TopicMapRenderer extends Renderer {
         const ms = Buffers.msFBO;
 
         // prepare ortho views
-        Passes.ortho.frame();
+        if(frameNumber === 0) Passes.ortho.frame();
 
         // on the first frame: render indices to ss buffer
         if(frameNumber === 0) {
@@ -278,7 +278,7 @@ export class TopicMapRenderer extends Renderer {
         const ss = Buffers.ssFBO;
 
         // prepare ortho views
-        Passes.ortho.frame();
+        if(frameNumber === 0) Passes.ortho.frame();
 
         ss.bind();
         drawBuffers(this._gl, 0b111);

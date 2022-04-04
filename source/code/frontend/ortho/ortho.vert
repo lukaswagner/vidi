@@ -22,5 +22,5 @@ void main()
     // if(limited < 0.1) return;
 
     gl_Position = u_viewProjection * pos;
-    gl_PointSize = 20.;
+    gl_PointSize = 10.;
 }

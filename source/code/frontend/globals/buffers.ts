@@ -38,7 +38,7 @@ export class Buffers {
     protected _ssFBO: Framebuffer;
 
     // ortho buffers
-    protected static _orthoRes = 512;
+    protected static _orthoRes = 256;
     protected _orthoTex: Texture2D;
     protected _orthoFBO: Framebuffer;
 

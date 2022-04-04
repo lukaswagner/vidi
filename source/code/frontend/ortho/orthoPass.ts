@@ -9,27 +9,27 @@ import {
 } from 'webgl-operate';
 
 import { Buffers } from 'frontend/globals/buffers';
+import { MinMaxPass } from './minMaxPass';
 import { Passes } from 'frontend/globals';
 
 export class OrthoPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
-        model: false,
-        limits: false
+        model: false
     });
 
     protected _context: Context;
     protected _gl: WebGL2RenderingContext;
+    protected _minMaxPass: MinMaxPass;
 
-    protected _limits: number[];
     protected _model: mat4;
 
     protected _program: Program;
 
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
-    protected _uLimits: WebGLUniformLocation;
     protected _uChannel: WebGLUniformLocation;
+    protected _uFactor: WebGLUniformLocation;
 
     protected _views: mat4[];
 
@@ -58,8 +58,8 @@ export class OrthoPass extends Initializable {
 
         this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
-        this._uLimits = this._program.uniform('u_limits');
         this._uChannel = this._program.uniform('u_channel');
+        this._uFactor = this._program.uniform('u_factor');
 
         const ortho = mat4.ortho(mat4.create(), -1, 1, -1, 1, 0, 3);
         const mats = [
@@ -68,6 +68,8 @@ export class OrthoPass extends Initializable {
             mat4.lookAt(mat4.create(), [0, 1, 0], [0, 0, 0], [0, 0, -1]),
         ];
         this._views = mats.map((m) => mat4.mul(m, ortho, m));
+
+        this._minMaxPass = new MinMaxPass(this._context);
 
         return true;
     }
@@ -78,15 +80,11 @@ export class OrthoPass extends Initializable {
     }
 
     @Initializable.assert_initialized()
-    public update(override = false): void {
+    public update(): void {
         this._program.bind();
 
         if (this._altered.model) {
             this._gl.uniformMatrix4fv(this._uModel, false, this._model);
-        }
-
-        if (override || this._altered.limits) {
-            this._gl.uniform3fv(this._uLimits, this._limits);
         }
 
         this._program.unbind();
@@ -96,6 +94,9 @@ export class OrthoPass extends Initializable {
 
     @Initializable.assert_initialized()
     public frame(): void {
+        const geom = Passes.points.geometries;
+        if(geom.length === 0) return;
+
         const target = Buffers.orthoFBO;
 
         const size = target.size;
@@ -108,6 +109,7 @@ export class OrthoPass extends Initializable {
         this._gl.blendFunc(this._gl.ONE, this._gl.ONE);
 
         this._program.bind();
+        this._gl.uniform1f(this._uFactor, 1 / Passes.points.length);
 
         target.bind();
         this._gl.drawBuffers([this._gl.COLOR_ATTACHMENT0]);
@@ -117,7 +119,7 @@ export class OrthoPass extends Initializable {
                 this._uViewProjection, false, this._views[i]);
             this._gl.uniform1ui(this._uChannel, i);
 
-            Passes.points.geometries.forEach((g) => {
+            geom.forEach((g) => {
                 g.bind();
                 g.drawPoints();
                 g.unbind();
@@ -129,6 +131,10 @@ export class OrthoPass extends Initializable {
         this._gl.enable(this._gl.DEPTH_TEST);
         this._gl.disable(this._gl.BLEND);
         this._gl.blendFunc(prevSrc, prevDst);
+
+        if(!this._minMaxPass.initialized) this._minMaxPass.initialize();
+        const [min, max] = this._minMaxPass.frame();
+        console.log(min, max);
     }
 
     public set model(model: mat4) {
@@ -144,8 +150,7 @@ export class OrthoPass extends Initializable {
         return this._altered.any;
     }
 
-    public set limits(limits: number[]) {
-        this._limits = limits;
-        this._altered.alter('limits');
+    public get minMax(): MinMaxPass {
+        return this._minMaxPass;
     }
 }

@@ -507,4 +507,8 @@ export class PointPass extends Initializable {
     public get geometries(): PointCloudGeometry[] {
         return this._geometries;
     }
+
+    public get length(): number {
+        return this.anyColumn()?.length;
+    }
 }
