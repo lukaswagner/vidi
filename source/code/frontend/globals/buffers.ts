@@ -130,7 +130,8 @@ export class Buffers {
     protected createOrthoBuffer(): [Texture2D, Framebuffer] {
         const buf = new Texture2D(this._context);
         buf.initialize(Buffers._orthoRes, Buffers._orthoRes,
-            this._gl.RGBA32F, this._gl.RGBA, this._gl.FLOAT);
+            this._gl.RGBA16F, this._gl.RGBA, this._gl.FLOAT);
+        buf.filter(this._gl.LINEAR, this._gl.LINEAR);
         const fbo = new Framebuffer(this._context);
         fbo.initialize([[this._gl.COLOR_ATTACHMENT0, buf]]);
         return [buf, fbo];
