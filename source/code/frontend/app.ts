@@ -587,7 +587,7 @@ export class TopicMapApp extends Initializable {
 
         const numAxes =
             this._controls.axes.filter((v) => v.value !== '__NONE__').length;
-        const axisValue = numAxes === 2 ? 'None' : 'y';
+        const axisValue = numAxes === 2 ? 'None' : 'All';
         this._controls.map25d.axis.value = axisValue;
         this._controls.map25d.axis.default = axisValue;
         this._controls.map25d.axis.invokeHandler();
