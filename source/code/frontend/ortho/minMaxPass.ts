@@ -115,4 +115,8 @@ export class MinMaxPass extends Initializable {
     public get texture(): Texture2D {
         return this._textures[1];
     }
+
+    public reset(): void {
+        this._textures?.forEach((t) => t.resize(...t.size));
+    }
 }

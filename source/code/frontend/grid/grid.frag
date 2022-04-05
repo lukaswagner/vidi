@@ -4,6 +4,7 @@ precision highp int;
 layout(location = 0) out vec4 f_color;
 
 uniform sampler2D u_orthoViews;
+uniform vec2 u_orthoRange;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
@@ -38,7 +39,8 @@ in vec2 v_gridSubdivisionsScaled;
 
 flat in int v_index;
 
-float grid() {
+float grid()
+{
     vec2 scaled = (v_uv - v_dataLowerBoundsUV) * v_gridSubdivisionsScaled;
     vec2 f = fract(scaled);
     vec2 df = fwidth(scaled) * u_aaStepScale;
@@ -46,6 +48,12 @@ float grid() {
     vec2 upper = 1.0 - smoothstep(1.0 - df, vec2(1.0), f);
     vec2 nearest = min(lower, upper);
     return 1.0 - min(nearest.x, nearest.y);
+}
+
+float map(float v, float i0, float i1, float o0, float o1)
+{
+    float t = (v - i0) / (i1 - i0);
+    return mix(o0, o1, t);
 }
 
 void main()
@@ -68,7 +76,9 @@ void main()
 
     vec2 uv = (v_uv - v_dataLowerBoundsUV) / (v_dataUpperBoundsUV - v_dataLowerBoundsUV);
     float inside = step(0.0, uv.x) * step(0.0, uv.y) * step(uv.x, 1.0) * step(uv.y, 1.0);
-    float ortho = texture(u_orthoViews, uv)[v_index] * inside;
+    float ortho = texture(u_orthoViews, uv)[v_index];
+    ortho = map(ortho, u_orthoRange[0], u_orthoRange[1], 0., 1.);
+    ortho *= inside;
 
     float intensity = max(distIntensity * grid(), ortho);
     f_color = vec4(u_color, intensity);

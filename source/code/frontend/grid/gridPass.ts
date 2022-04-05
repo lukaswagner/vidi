@@ -7,11 +7,11 @@ import {
     Shader,
 } from 'webgl-operate';
 
+import { Interaction, Passes } from 'frontend/globals';
 import { Buffers } from 'frontend/globals/buffers';
 import { ExtendedGridInfo } from './gridInfo';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
-import { Interaction } from 'frontend/globals';
 
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -30,6 +30,7 @@ export class GridPass extends Initializable {
 
     protected _uViewProjection: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
+    protected _uOrthoRange: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
     protected _gridInfo: ExtendedGridInfo[];
@@ -62,6 +63,7 @@ export class GridPass extends Initializable {
 
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
+        this._uOrthoRange = this._program.uniform('u_orthoRange');
 
         this._program.bind();
         this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
@@ -111,6 +113,8 @@ export class GridPass extends Initializable {
         this._gl.uniformMatrix4fv(
             this._uViewProjection, false, Interaction.camera.viewProjection);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
+        const range = Passes.ortho.range;
+        if(range) this._gl.uniform2fv(this._uOrthoRange, range);
 
         this._target.bind();
 

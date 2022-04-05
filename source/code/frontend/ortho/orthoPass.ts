@@ -29,9 +29,10 @@ export class OrthoPass extends Initializable {
     protected _uModel: WebGLUniformLocation;
     protected _uViewProjection: WebGLUniformLocation;
     protected _uChannel: WebGLUniformLocation;
-    protected _uFactor: WebGLUniformLocation;
 
     protected _views: mat4[];
+
+    protected _minMax: [number, number];
 
     public constructor(context: Context) {
         super();
@@ -59,7 +60,6 @@ export class OrthoPass extends Initializable {
         this._uModel = this._program.uniform('u_model');
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uChannel = this._program.uniform('u_channel');
-        this._uFactor = this._program.uniform('u_factor');
 
         const ortho = mat4.ortho(mat4.create(), -1, 1, -1, 1, 0, 3);
         const mats = [
@@ -109,7 +109,6 @@ export class OrthoPass extends Initializable {
         this._gl.blendFunc(this._gl.ONE, this._gl.ONE);
 
         this._program.bind();
-        this._gl.uniform1f(this._uFactor, 1 / Passes.points.length);
 
         target.bind();
         this._gl.drawBuffers([this._gl.COLOR_ATTACHMENT0]);
@@ -133,8 +132,7 @@ export class OrthoPass extends Initializable {
         this._gl.blendFunc(prevSrc, prevDst);
 
         if(!this._minMaxPass.initialized) this._minMaxPass.initialize();
-        const [min, max] = this._minMaxPass.frame();
-        console.log(min, max);
+        this._minMax = this._minMaxPass.frame();
     }
 
     public set model(model: mat4) {
@@ -152,5 +150,14 @@ export class OrthoPass extends Initializable {
 
     public get minMax(): MinMaxPass {
         return this._minMaxPass;
+    }
+
+    public get range(): [number, number] {
+        return this._minMax;
+    }
+
+    public reset(): void {
+        this._minMax = undefined;
+        this._minMaxPass.reset();
     }
 }
