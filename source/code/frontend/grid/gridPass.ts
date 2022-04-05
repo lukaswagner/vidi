@@ -16,7 +16,8 @@ import { GridGeometry } from './gridGeometry';
 export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
-        gridInfo: false
+        gridInfo: false,
+        orthoFactor: false
     });
 
     protected _context: Context;
@@ -31,9 +32,11 @@ export class GridPass extends Initializable {
     protected _uViewProjection: WebGLUniformLocation;
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uOrthoRange: WebGLUniformLocation;
+    protected _uOrthoFactor: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
     protected _gridInfo: ExtendedGridInfo[];
+    protected _orthoFactor = 1;
 
     public constructor(context: Context) {
         super();
@@ -64,6 +67,7 @@ export class GridPass extends Initializable {
         this._uViewProjection = this._program.uniform('u_viewProjection');
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uOrthoRange = this._program.uniform('u_orthoRange');
+        this._uOrthoFactor = this._program.uniform('u_orthoFactor');
 
         this._program.bind();
         this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
@@ -88,6 +92,12 @@ export class GridPass extends Initializable {
         }
 
         this._geometry.update();
+
+        if(override || this._altered.orthoFactor) {
+            this._program.bind();
+            this._gl.uniform1f(this._uOrthoFactor, this._orthoFactor);
+            this._program.unbind();
+        }
 
         this._altered.reset();
     }
@@ -150,6 +160,11 @@ export class GridPass extends Initializable {
     public set ndcOffset(offset: GLfloat2) {
         this.assertInitialized();
         this._ndcOffset = offset;
+    }
+
+    public set orthoFactor(factor: number) {
+        this._orthoFactor = factor;
+        this._altered.alter('orthoFactor');
     }
 
     public get altered(): boolean {

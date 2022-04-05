@@ -340,6 +340,17 @@ export class TopicMapApp extends Initializable {
             handler: (v: number) => this._renderer.gridOffsetScale = v
         });
 
+        this._controls.position.input.numberRange({
+            label: 'Ortho. proj. strength',
+            id: 'offsetScale',
+            min: 0, max: 3, step: 0.1, value: 0.5,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoFactor = v;
+                this._renderer.invalidate();
+            }
+        });
+
         const map25dAxis = this._controls.position.input.select({
             label: 'Axis for 2.5D',
             optionTexts: ['None', 'x', 'y', 'z', 'All'],

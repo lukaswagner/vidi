@@ -5,6 +5,7 @@ layout(location = 0) out vec4 f_color;
 
 uniform sampler2D u_orthoViews;
 uniform vec2 u_orthoRange;
+uniform float u_orthoFactor;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
@@ -77,9 +78,9 @@ void main()
     vec2 uv = (v_uv - v_dataLowerBoundsUV) / (v_dataUpperBoundsUV - v_dataLowerBoundsUV);
     float inside = step(0.0, uv.x) * step(0.0, uv.y) * step(uv.x, 1.0) * step(uv.y, 1.0);
     float ortho = texture(u_orthoViews, uv)[v_index];
-    ortho = map(ortho, u_orthoRange[0], u_orthoRange[1], 0., 1.);
+    ortho = map(ortho, u_orthoRange[0], u_orthoRange[1], 0., u_orthoFactor);
     ortho *= inside;
 
-    float intensity = max(distIntensity * grid(), ortho);
+    float intensity = distIntensity * grid() + ortho;
     f_color = vec4(u_color, intensity);
 }
