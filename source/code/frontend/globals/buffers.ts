@@ -97,9 +97,8 @@ export class Buffers {
 
         Passes.accumulate.texture = this._ssColor;
 
-        this._orthoFBO?.uninitialize();
-        this._orthoTex?.uninitialize();
-        [this._orthoTex, this._orthoFBO] = this.createOrthoBuffer();
+        if(!this._orthoFBO || !this._orthoTex)
+            [this._orthoTex, this._orthoFBO] = this.createOrthoBuffer();
 
         Passes.debug.setInputs(
             this._msFBO,
