@@ -8,8 +8,8 @@ uniform vec2 u_orthoRange;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
-const float u_innerIntensity = 0.4;
-const float u_outerIntensity = 0.15;
+const float u_innerIntensity = 0.35;
+const float u_outerIntensity = 0.1;
 const float u_invisIntensity = 0.0;
 
 const float u_innerFeather = 0.1;
@@ -17,7 +17,7 @@ const float u_outerFeather = 1.1;
 
 const float u_gridWidth = 0.02;
 
-const float u_aaStepScale = 0.7;
+const float u_aaStepScale = 1.2;
 
 in vec2 v_uv;
 
