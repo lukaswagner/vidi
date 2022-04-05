@@ -163,6 +163,7 @@ export class PointPass extends Initializable {
             mask: ListenerMask.Points,
             move: (id) => {
                 this._selected = id;
+                this._refLinePass.selected = id;
                 this._altered.alter('selected');
             },
             click: (id) => {
@@ -326,16 +327,11 @@ export class PointPass extends Initializable {
             this._gl.uniform1ui(this._uIdOffset, offset);
 
             g.bind();
-            this._selectedBuffer.bind();
-            this._gl.vertexAttribPointer(
-                this._selectedLocation, 1, this._gl.UNSIGNED_BYTE, false, 0,
-                offset);
-            this._gl.enableVertexAttribArray(this._selectedLocation);
-            this._gl.vertexAttribDivisor(this._selectedLocation, 1);
+            this.bindSelection(this._selectedLocation, offset);
 
             g.draw();
 
-            this._selectedBuffer.unbind();
+            this.unbindSelection();
             g.unbind();
         });
 
@@ -347,13 +343,25 @@ export class PointPass extends Initializable {
 
     }
 
+    public bindSelection(location: number, offset: number): void {
+        this._selectedBuffer.bind();
+        this._gl.vertexAttribPointer(
+            location, 1, this._gl.UNSIGNED_BYTE, false, 0, offset);
+        this._gl.enableVertexAttribArray(location);
+        this._gl.vertexAttribDivisor(location, 1);
+    }
+
+    public unbindSelection(): void {
+        this._selectedBuffer.unbind();
+    }
+
     public setColumn(index: number, column: Column): void {
         this.assertInitialized();
         this._columns[index] = column;
         this._altered.alter('columns');
     }
 
-    protected anyColumn(): Column {
+    public anyColumn(): Column {
         return this._columns[0] ?? this._columns[1] ?? this._columns[2];
     }
 
@@ -375,10 +383,9 @@ export class PointPass extends Initializable {
                 (c: Float32Chunk, i) => c ? c.data : new SharedArrayBuffer(
                     len * 4 * (i === ColumnUsage.PER_POINT_COLOR ? 4 : 1)));
 
-            this._geometries.push(PointCloudGeometry.fromColumns(
-                this._context,
-                data
-            ));
+            const geom = PointCloudGeometry.fromColumns(this._context, data);
+            geom.offset = chunks[0].offset;
+            this._geometries.push(geom);
         }
 
         this._columns.forEach((c) => {

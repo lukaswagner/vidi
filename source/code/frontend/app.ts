@@ -337,17 +337,28 @@ export class TopicMapApp extends Initializable {
             id: 'offsetScale',
             min: 0.1, max: 3, step: 0.1, value: 1,
             triggerHandlerOnMove: true,
-            handler: (v: number) => this._renderer.gridOffsetScale = v,
+            handler: (v: number) => this._renderer.gridOffsetScale = v
         });
 
-        this._controls.position.input.select({
+        const map25dAxis = this._controls.position.input.select({
             label: 'Axis for 2.5D',
-            optionTexts: ['None', 'x', 'y', 'z'],
+            optionTexts: ['None', 'x', 'y', 'z', 'All'],
             handler: (v) => {
                 this._renderer.points.refLines.baseAxis = v.index - 1;
                 this._renderer.invalidate();
+            },
+            handleOnInit: true
+        });
+
+        const map25dMode = this._controls.position.input.select({
+            label: 'Show 2.5D mapping',
+            optionTexts: ['Selected', 'All'],
+            handler: (v) => {
+                this._renderer.points.refLines.drawAll = v.index === 1;
+                this._renderer.invalidate();
             }
         });
+        this._controls.map25d = { axis: map25dAxis, mode: map25dMode };
 
         this._controls.position.input.button({
             label: 'Reset position limits',
@@ -562,6 +573,13 @@ export class TopicMapApp extends Initializable {
             this._controls.axes[i].invokeHandler();
         }
         if (!this._keepLimitsOnDataUpdate) Passes.limits.reset();
+
+        const numAxes =
+            this._controls.axes.filter((v) => v.value !== '__NONE__').length;
+        const axisValue = numAxes === 2 ? 'None' : 'y';
+        this._controls.map25d.axis.value = axisValue;
+        this._controls.map25d.axis.default = axisValue;
+        this._controls.map25d.axis.invokeHandler();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);

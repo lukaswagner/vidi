@@ -93,7 +93,7 @@ void main()
     v_pos = pos.xyz / pos.w;
     v_color = color();
     v_uv = a_uv;
-    v_instanceId =  u_idOffset + uint(gl_InstanceID);
+    v_instanceId = u_idOffset + uint(gl_InstanceID);
 
     vec4 position = u_viewProjection * pos;
 

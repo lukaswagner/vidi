@@ -4,6 +4,7 @@ layout(location = 0) in vec2 a_uv;
 layout(location = 1) in float a_xCoord;
 layout(location = 2) in float a_yCoord;
 layout(location = 3) in float a_zCoord;
+layout(location = 4) in float a_selected;
 
 uniform mat4 u_model;
 uniform mat4 u_viewProjection;
@@ -34,8 +35,8 @@ void main()
 
     vec4 position = mix(viewBasePos, viewPointPos, (a_uv.y * 0.5 + 0.5));
 
-    float width = 0.001;
-    vec2 offset = ortho * width * a_uv.x;
+    float width = 0.005;
+    vec2 offset = ortho * width * (a_uv.x - 0.5);
     position.xy += offset;
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 

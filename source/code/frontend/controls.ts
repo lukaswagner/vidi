@@ -18,6 +18,7 @@ export class Controls {
     public colorMode: SelectInput;
     public colorColumn: SelectInput;
     public variablePointSizeColumn: SelectInput;
+    public map25d: { axis: SelectInput, mode: SelectInput };
     public constructor() {
         const presetContainer = document.getElementById('preset-group');
         this.presets = new UI(presetContainer, true);

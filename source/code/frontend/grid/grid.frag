@@ -8,7 +8,7 @@ uniform vec2 u_orthoRange;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
-const float u_innerIntensity = 1.0;
+const float u_innerIntensity = 0.4;
 const float u_outerIntensity = 0.15;
 const float u_invisIntensity = 0.0;
 

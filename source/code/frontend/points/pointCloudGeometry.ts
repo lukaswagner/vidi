@@ -2,13 +2,12 @@ import {
     Buffer,
     ChangeLookup,
     Context,
-    Geometry,
     Initializable,
 } from 'webgl-operate';
 
 import { ColumnUsage } from 'frontend/data/columns';
 
-export class PointCloudGeometry extends Geometry {
+export class PointCloudGeometry extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         positions: false,
@@ -36,6 +35,10 @@ export class PointCloudGeometry extends Geometry {
     protected _clusterIdLocation: GLuint = 6;
 
     protected _gl: WebGL2RenderingContext;
+    protected _object: WebGLVertexArrayObject;
+    protected _buffers = new Array<Buffer>();
+    protected _offset = 0;
+    protected _instanceOffset = 0;
 
     /**
      * Object constructor, requires a context and an identifier.
@@ -43,10 +46,11 @@ export class PointCloudGeometry extends Geometry {
      * @param identifier - Meaningful name for identification of this instance.
      * vertices).
      */
-    public constructor(context: Context, identifier?: string) {
-        super(context, identifier);
+    public constructor(context: Context) {
+        super();
 
         this._gl = context.gl as WebGL2RenderingContext;
+        this._object = this._gl.createVertexArray();
 
         this._buffers.push(
             new Buffer(context),
@@ -99,23 +103,9 @@ export class PointCloudGeometry extends Geometry {
         this._variablePointSizeLocation = variablePointSizeLocation;
         this._clusterIdLocation = clusterIdLocation;
 
-        const valid = super.initialize([
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER,
-            this._gl.ARRAY_BUFFER
-        ], [
-            uvLocation,
-            xCoordLocation,
-            xCoordLocation,
-            zCoordLocation,
-            vertexColorLocation,
-            variablePointSizeLocation,
-            clusterIdLocation
-        ]);
+        let valid = true;
+        this._buffers.forEach((b) =>
+            valid = b.initialize(this._gl.ARRAY_BUFFER) && valid);
 
         this._buffers[0].data(this._uv, this._gl.STATIC_DRAW);
         this._buffers[1].data(this._xCoord, this._gl.STATIC_DRAW);
@@ -128,71 +118,75 @@ export class PointCloudGeometry extends Geometry {
         return valid;
     }
 
-    /**
-     * Draws the geometry.
-     */
-    public draw(): void {
-        this._gl.drawArraysInstanced(
-            this._gl.TRIANGLE_STRIP, 0, 4, this._xCoord.length);
+    public uninitialize(): void {
     }
 
     /**
      * Draws the geometry.
      */
-    public drawPoints(): void {
+    public draw(numInstances?: number): void {
         this._gl.drawArraysInstanced(
-            this._gl.POINTS, 0, 1, this._xCoord.length);
+            this._gl.TRIANGLE_STRIP, 0, 4, numInstances ?? this._xCoord.length);
+    }
+
+    /**
+     * Draws the geometry.
+     */
+    public drawPoints(numInstances?: number): void {
+        this._gl.drawArraysInstanced(
+            this._gl.POINTS, 0, 1, numInstances ?? this._xCoord.length);
     }
 
     /**
      * Binds the vertex buffer object (VBO) to an attribute binding point of a
      * given, pre-defined index.
      */
-    protected bindBuffers(/*indices: Array<GLuint>*/): void {
+    public bind(): void {
+        this._gl.bindVertexArray(this._object);
         this._buffers[0].attribEnable(
             this._uvLocation, 2, this._gl.BYTE,
-            false, 2, 0, true, false);
+            false, 0, 0, true, false);
         this._gl.vertexAttribDivisor(this._uvLocation, 0);
 
         if(this._xCoord?.length > 0) {
             this._buffers[1].attribEnable(
                 this._xCoordLocation, 1, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._xCoordLocation, 1);
         }
 
         if(this._yCoord?.length > 0) {
             this._buffers[2].attribEnable(
                 this._yCoordLocation, 1, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._yCoordLocation, 1);
         }
 
         if(this._zCoord?.length > 0) {
             this._buffers[3].attribEnable(
                 this._zCoordLocation, 1, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._zCoordLocation, 1);
         }
 
         if(this._vertexColors?.length > 0) {
             this._buffers[4].attribEnable(
                 this._vertexColorLocation, 4, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._vertexColorLocation, 1);
         }
 
         if(this._variablePointSize?.length > 0) {
             this._buffers[5].attribEnable(
                 this._variablePointSizeLocation, 1, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._variablePointSizeLocation, 1);
         }
 
         if(this._clusterId?.length > 0) {
             this._buffers[6].attribEnable(
                 this._clusterIdLocation, 1, this._gl.FLOAT,
-                false, 0, 0, true, false);
+                false, 0, 4 * this._instanceOffset, true, false);
             this._gl.vertexAttribDivisor(this._clusterIdLocation, 1);
         }
     }
@@ -200,7 +194,7 @@ export class PointCloudGeometry extends Geometry {
     /**
      * Unbinds the vertex buffer object (VBO) and disables the binding point.
      */
-    protected unbindBuffers(): void {
+    public unbind(): void {
         this._buffers[0].attribDisable(this._uvLocation, true, true);
         this._buffers[1].attribDisable(this._xCoordLocation, true, true);
         this._buffers[2].attribDisable(this._yCoordLocation, true, true);
@@ -209,5 +203,18 @@ export class PointCloudGeometry extends Geometry {
         this._buffers[5].attribDisable(
             this._variablePointSizeLocation, true, true);
         this._buffers[6].attribDisable(this._clusterIdLocation, true, true);
+        this._gl.bindVertexArray(undefined);
+    }
+
+    public set instanceOffset(offset: number) {
+        this._instanceOffset = offset;
+    }
+
+    public set offset(offset: number) {
+        this._offset = offset;
+    }
+
+    public get offset(): number {
+        return this._offset;
     }
 }
