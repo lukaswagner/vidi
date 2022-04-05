@@ -151,7 +151,8 @@ export class TopicMapApp extends Initializable {
 
         this._lasso = new Lasso({
             target: element,
-            resultType: ResultType.BitArray
+            resultType: ResultType.BitArray,
+            drawPath: { width: 2, style: 'gray' }
         });
 
         return true;
