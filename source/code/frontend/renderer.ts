@@ -437,6 +437,11 @@ export class TopicMapRenderer extends Renderer {
         this.invalidate();
     }
 
+    public set gridOffsetScale(scale: number) {
+        this._gridOffsetHelper.scale = scale;
+        this.invalidate();
+    }
+
     public get model(): mat4 {
         return this._modelMat;
     }
