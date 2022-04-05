@@ -234,6 +234,7 @@ export class TopicMapRenderer extends Renderer {
 
             Passes.points.target = Passes.limits.target = ss;
             Passes.points.frame(frameNumber);
+            drawBuffers(this._gl, 0b110);
             Passes.limits.frame();
             Passes.points.target = Passes.limits.target = ms;
         }
@@ -296,6 +297,7 @@ export class TopicMapRenderer extends Renderer {
             Passes.clusters.target = ss;
 
         Passes.points.frame(frameNumber);
+        drawBuffers(this._gl, 0b111);
         Passes.limits.frame();
 
         drawBuffers(this._gl, 0b1);
