@@ -42,6 +42,9 @@ void main()
     float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
+    float lightness = (v_uv.x + v_uv.y) * 0.1;
+    color += lightness;
+
     if(v_selected == 1u) {
         color = mix(color, vec3(0),
             smoothstep(edge - feather * 4.0, edge - feather * 2.0, radius));

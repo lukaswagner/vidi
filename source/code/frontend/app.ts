@@ -117,6 +117,10 @@ export class TopicMapApp extends Initializable {
             viewer.Fullscreen.toggle(this._canvas.element);
         });
 
+        document.addEventListener('keydown', (ev) => {
+            if(ev.key === 'p') Buffers.exportPng();
+        });
+
         this.initControls();
 
         // expose canvas, context, and renderer for console access
@@ -336,7 +340,7 @@ export class TopicMapApp extends Initializable {
         this._controls.position.input.numberRange({
             label: 'Grid offset',
             id: 'offsetScale',
-            min: 0.1, max: 3, step: 0.1, value: 1,
+            min: -3, max: 3, step: 0.1, value: 1,
             triggerHandlerOnMove: true,
             handler: (v: number) => this._renderer.gridOffsetScale = v
         });
@@ -533,6 +537,12 @@ export class TopicMapApp extends Initializable {
             label: 'Debug',
             optionTexts: Object.values(DebugMode),
             handler: (v) => this._renderer.debugMode = v.value as DebugMode
+        });
+
+        this._controls.rendering.input.button({
+            label: 'Export screenshot [p]',
+            text: 'Download',
+            handler: () => Buffers.exportPng()
         });
 
         // debug

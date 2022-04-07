@@ -20,7 +20,7 @@ uniform float u_maxAlpha;
 
 void main()
 {
-    float alpha = aa(0.5, v_uv.x, 2.0) * u_maxAlpha;
+    float alpha = aa(0.5, v_uv.x, .3) * u_maxAlpha;
 
     if(u_alphaMode == ALPHA_TEMPORAL)
         mfAlpha(alpha, u_mfAlpha, u_maxAlpha * 0.5);
