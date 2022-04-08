@@ -18,7 +18,8 @@ export class GridPass extends Initializable {
         any: false,
         gridInfo: false,
         orthoFactor: false,
-        orthoGamma: false
+        orthoGamma: false,
+        heatmap: false
     });
 
     protected _context: Context;
@@ -35,11 +36,13 @@ export class GridPass extends Initializable {
     protected _uOrthoRange: WebGLUniformLocation;
     protected _uOrthoFactor: WebGLUniformLocation;
     protected _uOrthoGamma: WebGLUniformLocation;
+    protected _uHeatmap: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
     protected _gridInfo: ExtendedGridInfo[];
     protected _orthoFactor = 1;
     protected _orthoGamma = 1;
+    protected _heatmap = false;
 
     public constructor(context: Context) {
         super();
@@ -72,6 +75,7 @@ export class GridPass extends Initializable {
         this._uOrthoRange = this._program.uniform('u_orthoRange');
         this._uOrthoFactor = this._program.uniform('u_orthoFactor');
         this._uOrthoGamma = this._program.uniform('u_orthoGamma');
+        this._uHeatmap = this._program.uniform('u_orthoHeatmap');
 
         this._program.bind();
         this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
@@ -97,15 +101,24 @@ export class GridPass extends Initializable {
 
         this._geometry.update();
 
-        if(override || this._altered.orthoFactor) {
+        if(override || this._altered.any) {
             this._program.bind();
+        }
+
+        if(override || this._altered.orthoFactor) {
             this._gl.uniform1f(this._uOrthoFactor, this._orthoFactor);
-            this._program.unbind();
         }
 
         if(override || this._altered.orthoGamma) {
-            this._program.bind();
             this._gl.uniform1f(this._uOrthoGamma, this._orthoGamma);
+        }
+
+
+        if(override || this._altered.heatmap) {
+            this._gl.uniform1i(this._uHeatmap, +this._heatmap);
+        }
+
+        if(override || this._altered.any) {
             this._program.unbind();
         }
 
@@ -180,6 +193,11 @@ export class GridPass extends Initializable {
     public set orthoGamma(factor: number) {
         this._orthoGamma = factor;
         this._altered.alter('orthoGamma');
+    }
+
+    public set heatmap(factor: boolean) {
+        this._heatmap = factor;
+        this._altered.alter('heatmap');
     }
 
     public get altered(): boolean {

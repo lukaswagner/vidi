@@ -367,6 +367,16 @@ export class TopicMapApp extends Initializable {
             }
         });
 
+        this._controls.position.input.checkbox({
+            label: 'Ortho. proj. heatmap',
+            id: 'offsetScale',
+            value: false,
+            handler: (v: boolean) => {
+                Passes.grid.heatmap = v;
+                this._renderer.invalidate();
+            }
+        });
+
         const map25dAxis = this._controls.position.input.select({
             label: 'Axis for 2.5D',
             optionTexts: ['None', 'x', 'y', 'z', 'All'],
