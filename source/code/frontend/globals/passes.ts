@@ -44,6 +44,7 @@ export class Passes {
 
         this._grid = new GridPass(context);
         this._grid.initialize();
+        this._grid.invalidate = invalidate;
 
         this._gridLabels = new GridLabelPass(context);
         this._gridLabels.initialize();

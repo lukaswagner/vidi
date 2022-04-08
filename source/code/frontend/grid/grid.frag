@@ -8,6 +8,7 @@ uniform vec2 u_orthoRange;
 uniform float u_orthoFactor;
 uniform float u_orthoGamma;
 uniform bool u_orthoHeatmap;
+uniform sampler2D u_colorScheme;
 
 const vec3 u_color = vec3(0.0, 0.0, 0.0);
 
@@ -94,9 +95,12 @@ void main()
     ortho *= inside;
 
     if(u_orthoHeatmap) {
-        vec4 orthoColor = vec4(hsv2rgb(vec3(ortho, 1., 1.)), step(0.01, ortho));
-        float intensity = distIntensity * grid();
-        f_color = mix(orthoColor, vec4(u_color, intensity), intensity);
+        vec3 g_rgb = u_color;
+        float g_a = distIntensity * grid();
+        vec3 o_rgb = texture(u_colorScheme, vec2(ortho, 0.5)).rgb;
+        float o_a = smoothstep(0.01, 0.011, ortho);
+        float t = smoothstep(0.01, 0.011, g_a);
+        f_color = mix(vec4(o_rgb, o_a), vec4(g_rgb, g_a), t);
     } else {
         float intensity = distIntensity * grid() + ortho;
         f_color = vec4(u_color, intensity);

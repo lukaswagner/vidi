@@ -39,6 +39,7 @@ import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
+import { GridPass } from './grid/gridPass';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -376,9 +377,9 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.grid.input.numberRange({
-            label: 'Ortho. proj. strength',
-            id: 'offsetScale',
-            min: 0, max: 5, step: 0.1, value: 0.5,
+            label: 'Density strength',
+            id: 'orthoStrength',
+            min: 0, max: 15, step: 0.1, value: 0.5,
             triggerHandlerOnMove: true,
             handler: (v: number) => {
                 Passes.grid.orthoFactor = v;
@@ -387,8 +388,8 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.grid.input.numberRange({
-            label: 'Ortho. proj. gamma',
-            id: 'offsetScale',
+            label: 'Density gamma',
+            id: 'orthoGamma',
             min: 0.1, max: 5, step: 0.1, value: 1,
             triggerHandlerOnMove: true,
             handler: (v: number) => {
@@ -398,13 +399,28 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.grid.input.checkbox({
-            label: 'Ortho. proj. heatmap',
-            id: 'offsetScale',
+            label: 'Use color scheme',
+            id: 'orthoHeatmap',
             value: false,
             handler: (v: boolean) => {
                 Passes.grid.heatmap = v;
                 this._renderer.invalidate();
             }
+        });
+
+        this._controls.grid.input.select({
+            label: 'Color scheme',
+            id: 'orthoScheme',
+            optionTexts: [...GridPass.ColorSchemes.keys()],
+            handler: (v) => Passes.grid.colorScheme = v.value
+        });
+
+        this._controls.grid.input.select({
+            label: 'Color scheme steps',
+            id: 'orthoSteps',
+            optionTexts: ['7', '16', '64'],
+            handler: (v) => Passes.grid.colorSchemeSteps =
+                Number.parseInt(v.value)
         });
 
         // selection

@@ -1,10 +1,13 @@
 import {
     ChangeLookup,
+    Color,
+    ColorScale,
     Context,
     Framebuffer,
     Initializable,
     Program,
     Shader,
+    Texture2D,
 } from 'webgl-operate';
 
 import { Interaction, Passes } from 'frontend/globals';
@@ -13,19 +16,45 @@ import { ExtendedGridInfo } from './gridInfo';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
 
+type ColorScheme = {
+    source: string,
+    preset: string
+}
+
 export class GridPass extends Initializable {
+    public static ColorSchemes = new Map<string, ColorScheme>([
+        ['Red', {
+            source: require('data/colorbrewer.json'),
+            preset: 'OrRd'
+        }],
+        ['Spectral', {
+            source: require('data/colorbrewer.json'),
+            preset: 'Spectral'
+        }],
+        ['Viridis', {
+            source: require('data/smithwalt.json'),
+            preset: 'viridis'
+        }],
+        ['Inferno', {
+            source: require('data/smithwalt.json'),
+            preset: 'inferno'
+        }],
+    ]);
+
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         gridInfo: false,
         orthoFactor: false,
         orthoGamma: false,
-        heatmap: false
+        heatmap: false,
+        colorScheme: false
     });
 
     protected _context: Context;
     protected _gl: WebGL2RenderingContext;
 
     protected _target: Framebuffer;
+    protected _invalidate: (force: boolean) => void;
 
     protected _ndcOffset: GLfloat2 = [0.0, 0.0];
 
@@ -43,6 +72,9 @@ export class GridPass extends Initializable {
     protected _orthoFactor = 1;
     protected _orthoGamma = 1;
     protected _heatmap = false;
+    protected _colorScheme = GridPass.ColorSchemes.get('Spectral');
+    protected _colorSchemeSteps = 7;
+    protected _colorSchemeTex: Texture2D;
 
     public constructor(context: Context) {
         super();
@@ -79,7 +111,12 @@ export class GridPass extends Initializable {
 
         this._program.bind();
         this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
+        this._gl.uniform1i(this._program.uniform('u_colorScheme'), 1);
         this._program.unbind();
+
+        this._colorSchemeTex = new Texture2D(this._context);
+        this._colorSchemeTex.initialize(
+            1, 1, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE);
 
         return true;
     }
@@ -113,7 +150,6 @@ export class GridPass extends Initializable {
             this._gl.uniform1f(this._uOrthoGamma, this._orthoGamma);
         }
 
-
         if(override || this._altered.heatmap) {
             this._gl.uniform1i(this._uHeatmap, +this._heatmap);
         }
@@ -140,6 +176,7 @@ export class GridPass extends Initializable {
         this._gl.disable(this._gl.CULL_FACE);
 
         Buffers.orthoTex.bind(this._gl.TEXTURE0);
+        this._colorSchemeTex.bind(this._gl.TEXTURE1);
 
         this._program.bind();
 
@@ -162,6 +199,10 @@ export class GridPass extends Initializable {
         this._gl.depthMask(true);
         this._gl.disable(this._gl.BLEND);
         this._gl.enable(this._gl.CULL_FACE);
+    }
+
+    public set invalidate(invalidate: (force: boolean) => void) {
+        this._invalidate = invalidate;
     }
 
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {
@@ -198,6 +239,30 @@ export class GridPass extends Initializable {
     public set heatmap(factor: boolean) {
         this._heatmap = factor;
         this._altered.alter('heatmap');
+    }
+
+    public set colorScheme(scheme: string) {
+        this._colorScheme = GridPass.ColorSchemes.get(scheme);
+        this.updateColorScheme();
+    }
+
+    public set colorSchemeSteps(steps: number) {
+        this._colorSchemeSteps = steps;
+        this.updateColorScheme();
+    }
+
+    protected updateColorScheme(): void {
+        ColorScale.fromPreset(
+            this._colorScheme.source,
+            this._colorScheme.preset,
+            this._colorSchemeSteps
+        ).then((scale: ColorScale) => {
+            const data = scale.bitsUI8(Color.Space.RGB, false);
+            this._colorSchemeTex.resize(this._colorSchemeSteps, 1);
+            this._colorSchemeTex.data(data);
+            this._altered.alter('colorScheme');
+            this._invalidate(false);
+        });
     }
 
     public get altered(): boolean {

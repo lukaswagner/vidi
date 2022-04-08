@@ -82,6 +82,13 @@ module.exports = function (env) {
                         filename: 'fonts/[name][ext][query]'
                     }
                 },
+                {
+                    test: /\.json$/,
+                    type: 'asset/resource',
+                    generator: {
+                        filename: 'data/[name][ext][query]'
+                    }
+                },
             ],
         },
         resolve: {
@@ -91,6 +98,7 @@ module.exports = function (env) {
                 frontend: path.resolve(__dirname, 'source/code/frontend'),
                 worker: path.resolve(__dirname, 'source/code/worker'),
                 loader: path.resolve(__dirname, 'source/code/worker/loader'),
+                data: path.resolve(__dirname, 'data'),
             }
         },
         output: {
