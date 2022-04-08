@@ -52,6 +52,7 @@ export class RefLinePass extends Initializable {
     protected _uBaseAxis: WebGLUniformLocation;
     protected _uBaseValue: WebGLUniformLocation;
     protected _uMaxAlpha: WebGLUniformLocation;
+    protected _uAspect: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
     protected _selectedLocation = 4;
@@ -89,6 +90,7 @@ export class RefLinePass extends Initializable {
         this._uBaseAxis = this._program.uniform('u_baseAxis');
         this._uBaseValue = this._program.uniform('u_baseValue');
         this._uMaxAlpha = this._program.uniform('u_maxAlpha');
+        this._uAspect = this._program.uniform('u_aspect');
 
         this._alpha = new Alpha(
             this._gl, this._program, AlphaMode.AlphaToCoverage);
@@ -150,6 +152,8 @@ export class RefLinePass extends Initializable {
             Interaction.camera.viewProjectionInverse);
         this._gl.uniform2fv(this._uNdcOffset, this._ndcOffset);
         this._gl.uniform3fv(this._uCameraPosition, Interaction.camera.eye);
+        this._gl.uniform1f(
+            this._uAspect, this._target.height / this._target.width);
 
         this._target.bind();
         this._gl.drawBuffers([this._gl.COLOR_ATTACHMENT0]);

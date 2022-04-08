@@ -12,6 +12,7 @@ uniform mat4 u_viewProjectionInverse;
 uniform vec2 u_ndcOffset;
 uniform int u_baseAxis;
 uniform float u_baseValue;
+uniform float u_aspect;
 
 out vec2 v_uv;
 
@@ -37,6 +38,7 @@ void main()
 
     float width = 0.005;
     vec2 offset = ortho * width * (a_uv.x - 0.5);
+    offset.x *= u_aspect;
     position.xy += offset;
     position.xy = position.xy + u_ndcOffset * vec2(position.w);
 
