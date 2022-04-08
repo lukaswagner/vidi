@@ -337,46 +337,6 @@ export class TopicMapApp extends Initializable {
         });
         this._controls.axes = [xAxis, yAxis, zAxis];
 
-        this._controls.position.input.numberRange({
-            label: 'Grid offset',
-            id: 'offsetScale',
-            min: -3, max: 3, step: 0.1, value: 1,
-            triggerHandlerOnMove: true,
-            handler: (v: number) => this._renderer.gridOffsetScale = v
-        });
-
-        this._controls.position.input.numberRange({
-            label: 'Ortho. proj. strength',
-            id: 'offsetScale',
-            min: 0, max: 5, step: 0.1, value: 0.5,
-            triggerHandlerOnMove: true,
-            handler: (v: number) => {
-                Passes.grid.orthoFactor = v;
-                this._renderer.invalidate();
-            }
-        });
-
-        this._controls.position.input.numberRange({
-            label: 'Ortho. proj. gamma',
-            id: 'offsetScale',
-            min: 0.1, max: 5, step: 0.1, value: 1,
-            triggerHandlerOnMove: true,
-            handler: (v: number) => {
-                Passes.grid.orthoGamma = v;
-                this._renderer.invalidate();
-            }
-        });
-
-        this._controls.position.input.checkbox({
-            label: 'Ortho. proj. heatmap',
-            id: 'offsetScale',
-            value: false,
-            handler: (v: boolean) => {
-                Passes.grid.heatmap = v;
-                this._renderer.invalidate();
-            }
-        });
-
         const map25dAxis = this._controls.position.input.select({
             label: 'Axis for 2.5D',
             optionTexts: ['None', 'x', 'y', 'z', 'All'],
@@ -402,6 +362,47 @@ export class TopicMapApp extends Initializable {
             text: 'Reset',
             handler: () => {
                 Passes.limits.reset();
+                this._renderer.invalidate();
+            }
+        });
+
+        // grid
+        this._controls.grid.input.numberRange({
+            label: 'Grid offset',
+            id: 'offsetScale',
+            min: -3, max: 3, step: 0.1, value: 1,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => this._renderer.gridOffsetScale = v
+        });
+
+        this._controls.grid.input.numberRange({
+            label: 'Ortho. proj. strength',
+            id: 'offsetScale',
+            min: 0, max: 5, step: 0.1, value: 0.5,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoFactor = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.grid.input.numberRange({
+            label: 'Ortho. proj. gamma',
+            id: 'offsetScale',
+            min: 0.1, max: 5, step: 0.1, value: 1,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoGamma = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.grid.input.checkbox({
+            label: 'Ortho. proj. heatmap',
+            id: 'offsetScale',
+            value: false,
+            handler: (v: boolean) => {
+                Passes.grid.heatmap = v;
                 this._renderer.invalidate();
             }
         });
