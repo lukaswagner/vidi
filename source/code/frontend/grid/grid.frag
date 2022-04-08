@@ -98,7 +98,7 @@ void main()
         vec3 g_rgb = u_color;
         float g_a = distIntensity * grid();
         vec3 o_rgb = texture(u_colorScheme, vec2(ortho, 0.5)).rgb;
-        float o_a = smoothstep(0.01, 0.011, ortho);
+        float o_a = smoothstep(0.01, 0.01 + fwidth(ortho), ortho);
         float t = smoothstep(0.01, 0.011, g_a);
         f_color = mix(vec4(o_rgb, o_a), vec4(g_rgb, g_a), t);
     } else {
