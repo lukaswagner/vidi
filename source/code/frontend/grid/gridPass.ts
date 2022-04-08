@@ -17,7 +17,8 @@ export class GridPass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         gridInfo: false,
-        orthoFactor: false
+        orthoFactor: false,
+        orthoGamma: false
     });
 
     protected _context: Context;
@@ -33,10 +34,12 @@ export class GridPass extends Initializable {
     protected _uNdcOffset: WebGLUniformLocation;
     protected _uOrthoRange: WebGLUniformLocation;
     protected _uOrthoFactor: WebGLUniformLocation;
+    protected _uOrthoGamma: WebGLUniformLocation;
 
     protected _geometry: GridGeometry;
     protected _gridInfo: ExtendedGridInfo[];
     protected _orthoFactor = 1;
+    protected _orthoGamma = 1;
 
     public constructor(context: Context) {
         super();
@@ -68,6 +71,7 @@ export class GridPass extends Initializable {
         this._uNdcOffset = this._program.uniform('u_ndcOffset');
         this._uOrthoRange = this._program.uniform('u_orthoRange');
         this._uOrthoFactor = this._program.uniform('u_orthoFactor');
+        this._uOrthoGamma = this._program.uniform('u_orthoGamma');
 
         this._program.bind();
         this._gl.uniform1i(this._program.uniform('u_orthoViews'), 0);
@@ -96,6 +100,12 @@ export class GridPass extends Initializable {
         if(override || this._altered.orthoFactor) {
             this._program.bind();
             this._gl.uniform1f(this._uOrthoFactor, this._orthoFactor);
+            this._program.unbind();
+        }
+
+        if(override || this._altered.orthoGamma) {
+            this._program.bind();
+            this._gl.uniform1f(this._uOrthoGamma, this._orthoGamma);
             this._program.unbind();
         }
 
@@ -165,6 +175,11 @@ export class GridPass extends Initializable {
     public set orthoFactor(factor: number) {
         this._orthoFactor = factor;
         this._altered.alter('orthoFactor');
+    }
+
+    public set orthoGamma(factor: number) {
+        this._orthoGamma = factor;
+        this._altered.alter('orthoGamma');
     }
 
     public get altered(): boolean {

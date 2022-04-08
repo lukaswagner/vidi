@@ -348,10 +348,21 @@ export class TopicMapApp extends Initializable {
         this._controls.position.input.numberRange({
             label: 'Ortho. proj. strength',
             id: 'offsetScale',
-            min: 0, max: 3, step: 0.1, value: 0.5,
+            min: 0, max: 5, step: 0.1, value: 0.5,
             triggerHandlerOnMove: true,
             handler: (v: number) => {
                 Passes.grid.orthoFactor = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.position.input.numberRange({
+            label: 'Ortho. proj. gamma',
+            id: 'offsetScale',
+            min: 0.1, max: 5, step: 0.1, value: 1,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoGamma = v;
                 this._renderer.invalidate();
             }
         });

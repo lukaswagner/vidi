@@ -42,7 +42,7 @@ void main()
     float fadeFactor = step(3.0, dot(fadeMask, vec3(1.0)));
     vec3 color = mix(faded, v_color, fadeFactor);
 
-    float lightness = (v_uv.x + v_uv.y) * 0.1;
+    float lightness = (v_uv.x + v_uv.y) * 0.2;
     color += lightness;
 
     if(v_selected == 1u) {
