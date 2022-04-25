@@ -10,8 +10,9 @@ export enum ColumnUsage {
     Y_AXIS = 1,
     Z_AXIS = 2,
     VARIABLE_POINT_SIZE = 3,
-    PER_POINT_COLOR = 4,
-    CLUSTER_ID = 5
+    COLOR_SCALAR = 4,
+    COLOR_COLOR = 5,
+    CLUSTER_ID = 6
 }
 
 interface Source {
@@ -109,7 +110,9 @@ export class Columns {
             };
         this._selectedColumns[ColumnUsage.VARIABLE_POINT_SIZE] =
             { raw: true, index: -1 };
-        this._selectedColumns[ColumnUsage.PER_POINT_COLOR] =
+        this._selectedColumns[ColumnUsage.COLOR_SCALAR] =
+            { raw: true, index: -1 };
+        this._selectedColumns[ColumnUsage.COLOR_COLOR] =
             { raw: true, index: -1 };
     }
 

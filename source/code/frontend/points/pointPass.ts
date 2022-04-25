@@ -381,7 +381,7 @@ export class PointPass extends Initializable {
                 (c) => c ? c.length : Number.POSITIVE_INFINITY));
             const data = chunks.map(
                 (c: Float32Chunk, i) => c ? c.data : new SharedArrayBuffer(
-                    len * 4 * (i === ColumnUsage.PER_POINT_COLOR ? 4 : 1)));
+                    len * 4 * (i === ColumnUsage.COLOR_COLOR ? 4 : 1)));
 
             const geom = PointCloudGeometry.fromColumns(this._context, data);
             geom.offset = chunks[0].offset;

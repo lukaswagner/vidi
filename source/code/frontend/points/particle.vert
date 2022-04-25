@@ -20,10 +20,11 @@ uniform vec3 u_variablePointSizeInputRange;
 uniform vec3 u_variablePointSizeOutputRange;
 uniform float u_numClusters;
 
-const int COLOR_MODE_SINGLE_COLOR = 0;
-const int COLOR_MODE_POSITION_BASED = 1;
-const int COLOR_MODE_VERTEX_COLOR = 2;
+const int COLOR_MODE_VERTEX_VALUE = 0;
+const int COLOR_MODE_VERTEX_COLOR = 1;
+const int COLOR_MODE_POSITION_BASED = 2;
 const int COLOR_MODE_CLUSTER_COLOR = 3;
+const int COLOR_MODE_SINGLE_COLOR = 4;
 uniform int u_colorMode;
 
 const int COLOR_MAPPING_RGB_CUBE = 0;

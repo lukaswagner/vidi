@@ -56,7 +56,7 @@ export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
         value: 0.025,
         min: 0.001,
-        max: 0.05,
+        max: 0.1,
         step: 0.001
     };
 
@@ -540,21 +540,41 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.color.input.select({
-            label: 'Position-based mapping',
+            label: 'Scalar column',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+            handler: (v) =>
+                this.updateColumn(ColumnUsage.COLOR_SCALAR, v.value)
+        });
+
+        this._controls.color.input.select({
+            label: 'Scalar color scheme',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+        });
+
+        this._controls.color.input.select({
+            label: 'Scalar color scheme steps',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+        });
+
+        this._controls.colorColumn = this._controls.color.input.select({
+            label: 'Color column',
+            id: 'colorColumn',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+            handler: (v) =>
+                this.updateColumn(ColumnUsage.COLOR_COLOR, v.value)
+        });
+
+        this._controls.color.input.select({
+            label: 'Position mapping',
             id: 'colorMapping',
             optionTexts: [...ColorMapping.values()].map((e) => e[1]),
             optionValues: [...ColorMapping.keys()].map((k) => k.toString()),
             handler: (v) => this._renderer.colorMapping = Number(v.value),
             value: ColorMappingDefault.toString()
-        });
-
-        this._controls.colorColumn = this._controls.color.input.select({
-            label: 'Per-point column',
-            id: 'colorColumn',
-            optionTexts: ['None'],
-            optionValues: ['__NONE__'],
-            handler: (v) =>
-                this.updateColumn(ColumnUsage.PER_POINT_COLOR, v.value)
         });
 
         // rendering

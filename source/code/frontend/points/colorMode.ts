@@ -1,8 +1,9 @@
 import { Dict } from 'frontend/util/dict';
 export const ColorMode: Dict<number, string> = [
-    [0, 'Single color'],
-    [1, 'Position-based'],
-    [2, 'Vertex color'],
-    [3, 'Aggregation-based']
+    [0, 'Scalar value'],
+    [1, 'Color value'],
+    [2, 'Position'],
+    [3, 'Aggregation'],
+    [4, 'Uniform color'],
 ];
-export const ColorModeDefault = 1;
+export const ColorModeDefault = 2;
