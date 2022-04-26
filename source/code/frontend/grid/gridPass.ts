@@ -15,11 +15,19 @@ import { Buffers } from 'frontend/globals/buffers';
 import { ExtendedGridInfo } from './gridInfo';
 import { GLfloat2 } from 'shared/types/tuples' ;
 import { GridGeometry } from './gridGeometry';
+import { ListenerMask } from 'frontend/globals/interaction';
 
 type ColorScheme = {
     source: string,
     preset: string
 }
+
+type PickInfo = {
+    inside: boolean,
+    grid: number,
+    x: number,
+    y: number
+};
 
 export class GridPass extends Initializable {
     public static ColorSchemes = new Map<string, ColorScheme>([
@@ -75,6 +83,7 @@ export class GridPass extends Initializable {
     protected _colorScheme = GridPass.ColorSchemes.get('Spectral');
     protected _colorSchemeSteps = 7;
     protected _colorSchemeTex: Texture2D;
+    protected _fixedPick: PickInfo;
 
     public constructor(context: Context) {
         super();
@@ -117,6 +126,55 @@ export class GridPass extends Initializable {
         this._colorSchemeTex = new Texture2D(this._context);
         this._colorSchemeTex.initialize(
             1, 1, this._gl.RGB, this._gl.RGB, this._gl.UNSIGNED_BYTE);
+
+
+
+        const getPickInfo = (id: number): PickInfo  => {
+            // note: byte order inverse to fragment shader
+            const byte = (i: number): number => id >> i * 8 & 255;
+            const inside = (id & (1 << 7)) > 0;
+            const grid = id & 3;
+            const xLower = byte(1);
+            const yLower = byte(2);
+            const upper = byte(3);
+            const xUpper = upper >> 4;
+            const yUpper = upper & 15;
+            const x = (xUpper << 8 | xLower) / 4095;
+            const y = (yUpper << 8 | yLower) / 4095;
+            return { inside, grid, x, y };
+        };
+
+        const setSel = (i: PickInfo): void => {
+            Passes.points.refLines.gridSelected =
+                (i ? { pos: [i.x, i.y], id: i.grid } : undefined);
+        };
+
+        Interaction.register({
+            mask: ListenerMask.Grids,
+            move: (id) => {
+                const info = getPickInfo(id);
+                const valid = id !== -1 && info.inside;
+                setSel(this._fixedPick ?? (valid ? info : undefined));
+            },
+            click: (id) => {
+                if(id === -1) return;
+                const bin = id.toString(2).padStart(32, '0');
+                const info = getPickInfo(id);
+
+                console.log(
+                    'clicked on grid\n' +
+                    bin + '\n' +
+                    'grid ' + info.grid + '\n' +
+                    'pos (' + info.x.toFixed(4) + '|' +
+                    info.y.toFixed(4) + ')\n' +
+                    (info.inside ? 'inside' : 'not inside'));
+
+                const valid = id !== -1 && info.inside;
+                if(valid) {
+                    this._fixedPick = info;
+                    setSel(this._fixedPick);
+                }
+            }});
 
         return true;
     }
@@ -170,7 +228,7 @@ export class GridPass extends Initializable {
         const size = this._target.size;
         this._gl.viewport(0, 0, size[0], size[1]);
 
-        this._gl.depthMask(false);
+        this._gl.depthMask(true);
         this._gl.depthFunc(this._gl.LESS);
         this._gl.enable(this._gl.BLEND);
         this._gl.disable(this._gl.CULL_FACE);

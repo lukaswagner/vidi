@@ -167,6 +167,7 @@ export class PointPass extends Initializable {
                 this._altered.alter('selected');
             },
             click: (id) => {
+                if(id === -1) return;
                 const str = (i: number): string => {
                     return (this._columns[i] as NumberColumn)
                         ?.get(id).toFixed(3) ?? '-';
@@ -363,6 +364,12 @@ export class PointPass extends Initializable {
 
     public anyColumn(): Column {
         return this._columns[0] ?? this._columns[1] ?? this._columns[2];
+    }
+
+    public minMax(): [number, number][] {
+        return [0, 1, 2]
+            .map((i) => this._columns[i] as NumberColumn)
+            .map((c) => [c?.min, c?.max]);
     }
 
     protected buildGeometries(): void {

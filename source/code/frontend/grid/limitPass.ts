@@ -181,6 +181,7 @@ export class LimitPass extends Initializable {
         const size = this._target.size;
         this._gl.viewport(0, 0, size[0], size[1]);
 
+        this._gl.disable(this._gl.DEPTH_TEST);
         this._gl.depthMask(false);
         this._gl.depthFunc(this._gl.LESS);
         this._gl.enable(this._gl.BLEND);
@@ -211,6 +212,7 @@ export class LimitPass extends Initializable {
         this._gl.depthMask(true);
         this._gl.disable(this._gl.BLEND);
         this._gl.enable(this._gl.CULL_FACE);
+        this._gl.enable(this._gl.DEPTH_TEST);
     }
 
     public set target(target: Framebuffer) {

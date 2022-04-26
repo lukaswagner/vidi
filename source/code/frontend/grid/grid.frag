@@ -2,6 +2,8 @@ precision highp float;
 precision highp int;
 
 layout(location = 0) out vec4 f_color;
+layout(location = 1) out uvec3 f_indexHigh;
+layout(location = 2) out uvec3 f_indexLow;
 
 uniform sampler2D u_orthoViews;
 uniform vec2 u_orthoRange;
@@ -105,4 +107,19 @@ void main()
         float intensity = distIntensity * grid() + ortho;
         f_color = vec4(u_color, intensity);
     }
+
+    uint unsignedIndex = uint(v_index) & 255u; // 0 to 2
+    uint unsignedInside = uint(inside) << 7;
+    f_indexHigh = uvec3(
+        1u << 5, // set third-lowest bit to mark grids
+        0u,
+        unsignedIndex | unsignedInside
+    );
+    uvec2 unsignedUv = uvec2(clamp(uv, 0., 1.) * 4095.) & 4095u;
+    uvec2 unsignedUvTop = (unsignedUv >> 8) & 15u; // top 4 bits
+    f_indexLow = uvec3(
+        unsignedUv.x & 255u,
+        unsignedUv.y & 255u,
+        unsignedUvTop.x << 4 | unsignedUvTop.y
+    );
 }

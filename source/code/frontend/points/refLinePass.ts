@@ -8,11 +8,15 @@ import {
     Program,
     Shader,
     mat4,
+    vec2,
 } from 'webgl-operate';
 
 import { Interaction, Passes } from 'frontend/globals';
 import { GLfloat2 } from 'shared/types/tuples';
 import { PointCloudGeometry } from './pointCloudGeometry';
+import { SingleLineGeometry } from './singleLineGeometry';
+
+type GridSelect = { pos: vec2, id: number };
 
 export class RefLinePass extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
@@ -22,7 +26,8 @@ export class RefLinePass extends Initializable {
         baseAxis: false,
         baseValue: false,
         selected: false,
-        drawAll: false
+        drawAll: false,
+        gridSelected: false,
     });
 
     protected _context: Context;
@@ -36,6 +41,7 @@ export class RefLinePass extends Initializable {
     protected _model: mat4;
     protected _selected = -1;
     protected _drawAll: boolean;
+    protected _gridSelected: GridSelect;
 
     protected _program: Program;
     protected _alpha: Alpha;
@@ -55,6 +61,7 @@ export class RefLinePass extends Initializable {
     protected _uAspect: WebGLUniformLocation;
 
     protected _geometries: PointCloudGeometry[] = [];
+    protected _singleLineGeometry: SingleLineGeometry;
     protected _selectedLocation = 4;
 
     public constructor(context: Context) {
@@ -95,6 +102,9 @@ export class RefLinePass extends Initializable {
         this._alpha = new Alpha(
             this._gl, this._program, AlphaMode.AlphaToCoverage);
 
+        this._singleLineGeometry = new SingleLineGeometry(this._context);
+        this._singleLineGeometry.initialize();
+
         return true;
     }
 
@@ -133,6 +143,14 @@ export class RefLinePass extends Initializable {
 
         this._program.unbind();
 
+        if (this._altered.gridSelected && this._gridSelected) {
+            this._singleLineGeometry.set(
+                this._gridSelected.pos,
+                this._gridSelected.id,
+                Passes.points.minMax());
+        }
+
+
         this._altered.reset();
     }
 
@@ -161,39 +179,59 @@ export class RefLinePass extends Initializable {
         this._gl.disable(this._gl.CULL_FACE);
         this._alpha.enable(frameNumber);
 
-        const draw = (): void => {
-            if(this._drawAll) {
-                this._geometries.forEach((g, i) => {
-                    this._gl.uniform1f(this._uMaxAlpha, 0.6);
-                    g.bind();
-                    const offset = Passes.points.anyColumn()?.chunks[i].offset;
-                    Passes.points.bindSelection(this._selectedLocation, offset);
-                    g.draw();
-                    Passes.points.unbindSelection();
-                    g.unbind();
-                });
-            } else if(this._selected > -1) {
-                this._gl.uniform1f(this._uMaxAlpha, 0.9);
-                let i = this._geometries
-                    .findIndex((v) => v.offset > this._selected);
-                if(i === -1) i = this._geometries.length - 1;
-                else i--;
-                const g = this._geometries[i];
-                const chunkOffset = g.offset;
-                const instanceOffset = this._selected - chunkOffset;
-
-                g.instanceOffset = instanceOffset;
+        const drawAllPoints = (): void => {
+            this._geometries.forEach((g, i) => {
+                this._gl.uniform1f(this._uMaxAlpha, 0.6);
                 g.bind();
-                Passes.points.bindSelection(
-                    this._selectedLocation, instanceOffset);
-                g.draw(1);
+                const offset = Passes.points.anyColumn()?.chunks[i].offset;
+                Passes.points.bindSelection(this._selectedLocation, offset);
+                g.draw();
                 Passes.points.unbindSelection();
                 g.unbind();
-                g.instanceOffset = 0;
-            }
+            });
         };
 
-        if(this._baseAxis < 3) {
+
+        const drawSelectedPoint = (): void => {
+            this._gl.uniform1f(this._uMaxAlpha, 0.9);
+            let i = this._geometries
+                .findIndex((v) => v.offset > this._selected);
+            if(i === -1) i = this._geometries.length - 1;
+            else i--;
+            const g = this._geometries[i];
+            const chunkOffset = g.offset;
+            const instanceOffset = this._selected - chunkOffset;
+
+            g.instanceOffset = instanceOffset;
+            g.bind();
+            Passes.points.bindSelection(
+                this._selectedLocation, instanceOffset);
+            g.draw(1);
+            Passes.points.unbindSelection();
+            g.unbind();
+            g.instanceOffset = 0;
+        };
+
+
+        const drawSelectedLine = (): void => {
+            this._gl.uniform1f(this._uMaxAlpha, 0.9);
+            this._singleLineGeometry.bind();
+            this._singleLineGeometry.draw();
+            this._singleLineGeometry.unbind();
+        };
+
+        let draw: () => void;
+        if(this._drawAll) draw = drawAllPoints;
+        else if(this._selected > -1) draw = drawSelectedPoint;
+        else if(this._gridSelected) draw = drawSelectedLine;
+        else draw = () => {};
+
+        if(draw === drawSelectedLine) {
+            const i = (this._gridSelected.id + 2) % 3;
+            this._gl.uniform1i(this._uBaseAxis, i);
+            this._gl.uniform1f(this._uBaseValue, this._baseValue?.[i]);
+            draw();
+        } else if(this._baseAxis < 3) {
             draw();
         } else {
             for(let i = 0; i < 3; i++) {
@@ -268,5 +306,10 @@ export class RefLinePass extends Initializable {
     public set drawAll(drawAll: boolean) {
         this._drawAll = drawAll;
         this._altered.alter('drawAll');
+    }
+
+    public set gridSelected(selected: GridSelect) {
+        this._gridSelected = selected;
+        this._altered.alter('gridSelected');
     }
 }

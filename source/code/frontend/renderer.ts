@@ -227,16 +227,22 @@ export class TopicMapRenderer extends Renderer {
         if(frameNumber === 0) {
             ss.bind();
             drawBuffers(this._gl, 0b110);
-
             this._gl.clearBufferuiv(this._gl.COLOR, 1, [0, 0, 255, 0]);
             this._gl.clearBufferuiv(this._gl.COLOR, 2, [255, 255, 255, 0]);
             this._gl.clearBufferfi(this._gl.DEPTH_STENCIL, 0, 1, 0);
 
-            Passes.points.target = Passes.limits.target = ss;
+            Passes.points.target = ss;
             Passes.points.frame(frameNumber);
+            Passes.points.target = ms;
+
             drawBuffers(this._gl, 0b110);
+            Passes.grid.target = ss;
+            Passes.grid.frame();
+            Passes.grid.target = ms;
+
+            Passes.limits.target = ss;
             Passes.limits.frame();
-            Passes.points.target = Passes.limits.target = ms;
+            Passes.limits.target = ms;
         }
 
         // now render the colors to ms buffer
@@ -298,12 +304,11 @@ export class TopicMapRenderer extends Renderer {
 
         Passes.points.frame(frameNumber);
         drawBuffers(this._gl, 0b111);
+        Passes.grid.frame();
         Passes.limits.frame();
 
         drawBuffers(this._gl, 0b1);
-
         Passes.gridLabels.frame();
-        Passes.grid.frame();
         Passes.clusters.frame();
 
         ss.unbind();
