@@ -130,6 +130,7 @@ export class Buffers {
 
     protected createOrthoBuffer(): [Texture2D, Framebuffer] {
         const buf = new Texture2D(this._context);
+        // use either 32 bit and no filtering or 16 bit and linear filtering
         buf.initialize(Buffers._orthoRes, Buffers._orthoRes,
             this._gl.RGBA16F, this._gl.RGBA, this._gl.FLOAT);
         buf.filter(this._gl.LINEAR, this._gl.LINEAR);
