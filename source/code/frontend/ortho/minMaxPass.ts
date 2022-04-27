@@ -88,7 +88,7 @@ export class MinMaxPass extends Initializable {
             this._gl.clearBufferfv(this._gl.COLOR, 0, [0, 0, 0, 0]);
 
             const tex = i > 0 ? this._textures[i - 1] : Buffers.orthoTex;
-            tex.bind();
+            tex.bind(this._gl.TEXTURE0);
             this._program.bind();
             this._gl.uniform1i(this._uLevel, i);
             this._gl.uniform1f(this._uRes, tex.size[0]);
@@ -98,7 +98,7 @@ export class MinMaxPass extends Initializable {
             this._geom.unbind();
 
             this._program.unbind();
-            tex.unbind();
+            tex.unbind(this._gl.TEXTURE0);
             fbo.unbind();
         }
 

@@ -18,17 +18,13 @@ const float c_uintMax = 255.0;
 void main()
 {
     vec3 result;
-    switch (u_texture) {
-    case 0:
+    if(u_texture == 0) {
         result = texture(u_color, v_uv).rgb;
-        break;
-    case 1:
+    } else if(u_texture == 1) {
         result = vec3(texture(u_index, v_uv).rgb) / c_uintMax;
-        break;
-    case 2:
+    } else if(u_texture == 2) {
         result = vec3(texture(u_depth, v_uv).r);
         result = pow(result, vec3(10.0));
-        break;
     }
 
     if(u_channel > 0) result = vec3(result[u_channel - 1]);

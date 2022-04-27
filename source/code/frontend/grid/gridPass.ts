@@ -253,6 +253,7 @@ export class GridPass extends Initializable {
         this._program.unbind();
 
         Buffers.orthoTex.unbind(this._gl.TEXTURE0);
+        this._colorSchemeTex.unbind(this._gl.TEXTURE1);
 
         this._gl.depthMask(true);
         this._gl.disable(this._gl.BLEND);
