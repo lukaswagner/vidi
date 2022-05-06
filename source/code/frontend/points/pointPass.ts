@@ -385,7 +385,7 @@ export class PointPass extends Initializable {
         for (let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc?.[i]);
             const len = Math.min(...chunks.map(
-                (c) => c ? c.length : Number.POSITIVE_INFINITY));
+                (c) => c?.length ?? Number.POSITIVE_INFINITY));
             const data = chunks.map(
                 (c: Float32Chunk, i) => c ? c.data : new SharedArrayBuffer(
                     len * 4 * (i === ColumnUsage.COLOR_COLOR ? 4 : 1)));

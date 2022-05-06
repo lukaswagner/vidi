@@ -104,6 +104,7 @@ export class TopicMapRenderer extends Renderer {
     public setColumn(index: number, column: Column): void {
         Passes.points.setColumn(index, column);
         if (this.initialized) {
+            Passes.ortho.reset();
             this.invalidate();
         }
     }
