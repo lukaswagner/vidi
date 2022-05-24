@@ -106,7 +106,7 @@ module.exports = function (env) {
             path: path.resolve(__dirname, 'build'),
             library: undefined,
             libraryTarget: 'umd',
-            publicPath: '/',
+            publicPath: './',
             clean: true
         },
         plugins,
