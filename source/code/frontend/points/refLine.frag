@@ -16,14 +16,14 @@ in vec2 v_uv;
 @import ../util/aa;
 @import ../util/mfAlpha;
 
-const float c_maxAlpha = 0.6;
+uniform float u_maxAlpha;
 
 void main()
 {
-    float alpha = aa(0.5, v_uv.x, 1.0) * c_maxAlpha;
+    float alpha = aa(0.5, v_uv.x, .3) * u_maxAlpha;
 
     if(u_alphaMode == ALPHA_TEMPORAL)
-        mfAlpha(alpha, u_mfAlpha, c_maxAlpha * 0.5);
+        mfAlpha(alpha, u_mfAlpha, u_maxAlpha * 0.5);
 
     f_color = vec4(vec3(0), alpha);
 }

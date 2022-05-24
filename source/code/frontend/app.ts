@@ -39,6 +39,7 @@ import { Controls } from './controls';
 import { DataSource } from '@lukaswagner/csv-parser/lib/types/types/dataSource';
 import { DebugMode } from './debug/debugPass';
 import { GridExtents } from './grid/gridInfo';
+import { GridPass } from './grid/gridPass';
 import { TopicMapRenderer } from './renderer';
 
 // for exposing canvas, controller, context, and renderer
@@ -55,7 +56,7 @@ export class TopicMapApp extends Initializable {
     private static readonly POINT_SIZE_CONTROL = {
         value: 0.025,
         min: 0.001,
-        max: 0.05,
+        max: 0.1,
         step: 0.001
     };
 
@@ -117,6 +118,10 @@ export class TopicMapApp extends Initializable {
             viewer.Fullscreen.toggle(this._canvas.element);
         });
 
+        document.addEventListener('keydown', (ev) => {
+            if(ev.key === 'p') Buffers.exportPng();
+        });
+
         this.initControls();
 
         // expose canvas, context, and renderer for console access
@@ -151,7 +156,8 @@ export class TopicMapApp extends Initializable {
 
         this._lasso = new Lasso({
             target: element,
-            resultType: ResultType.BitArray
+            resultType: ResultType.BitArray,
+            drawPath: { width: 2, style: 'gray' }
         });
 
         return true;
@@ -332,14 +338,25 @@ export class TopicMapApp extends Initializable {
         });
         this._controls.axes = [xAxis, yAxis, zAxis];
 
-        this._controls.position.input.select({
+        const map25dAxis = this._controls.position.input.select({
             label: 'Axis for 2.5D',
-            optionTexts: ['None', 'x', 'y', 'z'],
+            optionTexts: ['None', 'x', 'y', 'z', 'All'],
             handler: (v) => {
                 this._renderer.points.refLines.baseAxis = v.index - 1;
                 this._renderer.invalidate();
+            },
+            handleOnInit: true
+        });
+
+        const map25dMode = this._controls.position.input.select({
+            label: 'Show 2.5D mapping',
+            optionTexts: ['Selected', 'All'],
+            handler: (v) => {
+                this._renderer.points.refLines.drawAll = v.index === 1;
+                this._renderer.invalidate();
             }
         });
+        this._controls.map25d = { axis: map25dAxis, mode: map25dMode };
 
         this._controls.position.input.button({
             label: 'Reset position limits',
@@ -348,6 +365,62 @@ export class TopicMapApp extends Initializable {
                 Passes.limits.reset();
                 this._renderer.invalidate();
             }
+        });
+
+        // grid
+        this._controls.grid.input.numberRange({
+            label: 'Grid offset',
+            id: 'offsetScale',
+            min: -3, max: 3, step: 0.1, value: 1,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => this._renderer.gridOffsetScale = v
+        });
+
+        this._controls.grid.input.numberRange({
+            label: 'Density strength',
+            id: 'orthoStrength',
+            min: 0, max: 15, step: 0.1, value: 0.5,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoFactor = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.grid.input.numberRange({
+            label: 'Density gamma',
+            id: 'orthoGamma',
+            min: 0.1, max: 5, step: 0.1, value: 1,
+            triggerHandlerOnMove: true,
+            handler: (v: number) => {
+                Passes.grid.orthoGamma = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.grid.input.checkbox({
+            label: 'Use color scheme',
+            id: 'orthoHeatmap',
+            value: false,
+            handler: (v: boolean) => {
+                Passes.grid.heatmap = v;
+                this._renderer.invalidate();
+            }
+        });
+
+        this._controls.grid.input.select({
+            label: 'Color scheme',
+            id: 'orthoScheme',
+            optionTexts: [...GridPass.ColorSchemes.keys()],
+            handler: (v) => Passes.grid.colorScheme = v.value
+        });
+
+        this._controls.grid.input.select({
+            label: 'Color scheme steps',
+            id: 'orthoSteps',
+            optionTexts: ['7', '16', '64'],
+            handler: (v) => Passes.grid.colorSchemeSteps =
+                Number.parseInt(v.value)
         });
 
         // selection
@@ -467,21 +540,41 @@ export class TopicMapApp extends Initializable {
         });
 
         this._controls.color.input.select({
-            label: 'Position-based mapping',
+            label: 'Scalar column',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+            handler: (v) =>
+                this.updateColumn(ColumnUsage.COLOR_SCALAR, v.value)
+        });
+
+        this._controls.color.input.select({
+            label: 'Scalar color scheme',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+        });
+
+        this._controls.color.input.select({
+            label: 'Scalar color scheme steps',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+        });
+
+        this._controls.colorColumn = this._controls.color.input.select({
+            label: 'Color column',
+            id: 'colorColumn',
+            optionTexts: ['None'],
+            optionValues: ['__NONE__'],
+            handler: (v) =>
+                this.updateColumn(ColumnUsage.COLOR_COLOR, v.value)
+        });
+
+        this._controls.color.input.select({
+            label: 'Position mapping',
             id: 'colorMapping',
             optionTexts: [...ColorMapping.values()].map((e) => e[1]),
             optionValues: [...ColorMapping.keys()].map((k) => k.toString()),
             handler: (v) => this._renderer.colorMapping = Number(v.value),
             value: ColorMappingDefault.toString()
-        });
-
-        this._controls.colorColumn = this._controls.color.input.select({
-            label: 'Per-point column',
-            id: 'colorColumn',
-            optionTexts: ['None'],
-            optionValues: ['__NONE__'],
-            handler: (v) =>
-                this.updateColumn(ColumnUsage.PER_POINT_COLOR, v.value)
         });
 
         // rendering
@@ -502,6 +595,12 @@ export class TopicMapApp extends Initializable {
             label: 'Debug',
             optionTexts: Object.values(DebugMode),
             handler: (v) => this._renderer.debugMode = v.value as DebugMode
+        });
+
+        this._controls.rendering.input.button({
+            label: 'Export screenshot [p]',
+            text: 'Download',
+            handler: () => Buffers.exportPng()
         });
 
         // debug
@@ -554,6 +653,13 @@ export class TopicMapApp extends Initializable {
             this._controls.axes[i].invokeHandler();
         }
         if (!this._keepLimitsOnDataUpdate) Passes.limits.reset();
+
+        const numAxes =
+            this._controls.axes.filter((v) => v.value !== '__NONE__').length;
+        const axisValue = numAxes === 2 ? 'None' : 'All';
+        this._controls.map25d.axis.value = axisValue;
+        this._controls.map25d.axis.default = axisValue;
+        this._controls.map25d.axis.invokeHandler();
 
         // set up vertex color controls
         const colorColumnNames = this._columns.getColumnNames(DataType.Color);

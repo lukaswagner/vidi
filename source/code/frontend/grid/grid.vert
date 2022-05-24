@@ -2,13 +2,14 @@ precision highp float;
 
 layout(location = 0) in vec3 a_position;
 layout(location = 1) in vec2 a_uv;
-layout(location = 2) in mat4 a_transform;
-layout(location = 6) in float a_offset;
-layout(location = 7) in vec2 a_quadLowerBounds;
-layout(location = 8) in vec2 a_quadUpperBounds;
-layout(location = 9) in vec2 a_dataLowerBounds;
-layout(location = 10) in vec2 a_dataUpperBounds;
-layout(location = 11) in vec2 a_gridSubdivisions;
+layout(location = 2) in float a_index;
+layout(location = 3) in mat4 a_transform;
+layout(location = 7) in float a_offset;
+layout(location = 8) in vec2 a_quadLowerBounds;
+layout(location = 9) in vec2 a_quadUpperBounds;
+layout(location = 10) in vec2 a_dataLowerBounds;
+layout(location = 11) in vec2 a_dataUpperBounds;
+layout(location = 12) in vec2 a_gridSubdivisions;
 
 uniform mat4 u_viewProjection;
 uniform vec2 u_ndcOffset;
@@ -30,6 +31,8 @@ out vec2 v_gridSubdivisionsUV;
 out vec2 v_gridSubdivisionsUVInv;
 
 out vec2 v_gridSubdivisionsScaled;
+
+flat out int v_index;
 
 void main()
 {
@@ -54,4 +57,6 @@ void main()
     vec4 vertex = u_viewProjection * a_transform * offsetted;
     vertex.xy = u_ndcOffset * vec2(vertex.w) + vertex.xy;
     gl_Position = vertex;
+
+    v_index = int(a_index);
 }

@@ -12,7 +12,8 @@ import { Formats } from './formats';
 
 export enum ListenerMask {
     Points = 1 << 7,
-    Limits = 1 << 6
+    Limits = 1 << 6,
+    Grids = 1 << 5
 }
 
 type Callback = (id: number, pos: vec2) => void;
@@ -41,6 +42,9 @@ export class Interaction {
     protected _limitListener: () => void;
 
     protected static _instance: Interaction;
+
+    protected _mouseDownTime: number;
+    protected _clickLimit = 100;
 
     protected constructor(
         gl: WebGL2RenderingContext,
@@ -123,6 +127,7 @@ export class Interaction {
     }
 
     protected mouseClick(events: Array<MouseEvent>): void {
+        if(Date.now() - this._mouseDownTime > this._clickLimit) return;
         const pos = this.getPos(events);
         const { mask, id } = this.pick(pos);
 
@@ -133,6 +138,7 @@ export class Interaction {
     }
 
     protected mouseDown(events: Array<MouseEvent>): void {
+        this._mouseDownTime = Date.now();
         const pos = this.getPos(events);
         const { mask, id } = this.pick(pos);
 
@@ -140,6 +146,7 @@ export class Interaction {
             .filter((l) => l.down)
             .filter((l) => l.mask & mask)
             .forEach((l) => {
+                console.log(mask, l);
                 l.down(id, pos);
                 this._currentDownListener = l;
             });
@@ -156,6 +163,12 @@ export class Interaction {
     }
 
     protected pick(mouse: vec2): { mask: number, id: number } {
+        // 9 bytes
+        // first read fills 2-5
+        // second read fills 5-8
+        // 2 contains mask
+        // 4-7 contain id (must align to 4)
+
         const buf = new ArrayBuffer(9);
         const byteView = new Uint8Array(buf);
 
@@ -179,7 +192,7 @@ export class Interaction {
     }
 
     public static register(config: ListenerConfig): void {
-        this._instance._listeners.push(Object.assign({lastId: -1 }, config));
+        this._instance._listeners.push(Object.assign({ lastId: -1 }, config));
     }
 
     public static set lassoActive(active: boolean) {

@@ -10,8 +10,8 @@ import {
     vec2,
 } from 'webgl-operate';
 
+import { Formats, Passes } from 'frontend/globals';
 import { drawBuffer, drawBuffers } from 'frontend/util/drawBuffer';
-import { Formats } from 'frontend/globals';
 
 export enum DebugMode {
     Off = 'Off',
@@ -21,6 +21,8 @@ export enum DebugMode {
     SSIH = 'SS Index High',
     SSIL = 'SS Index Low',
     SSD = 'SS Depth',
+    ORTHO = 'Ortho',
+    MM = 'Min/Max'
 }
 
 export class DebugPass extends Initializable {
@@ -42,6 +44,9 @@ export class DebugPass extends Initializable {
     protected _ssIndexHigh: Texture2D;
     protected _ssIndexLow: Texture2D;
     protected _ssDepth: Texture2D;
+
+    // ortho views
+    protected _ortho: Texture2D;
 
     protected _outColor: Renderbuffer;
     protected _out: Framebuffer;
@@ -188,6 +193,15 @@ export class DebugPass extends Initializable {
             case DebugMode.SSD:
                 this.drawTex(this._ssDepth, 2);
                 break;
+            case DebugMode.ORTHO:
+                this.drawTex(this._ortho, 0);
+                break;
+            case DebugMode.MM: {
+                const tex = Passes.ortho.minMax.texture;
+                if(!tex) break;
+                this.drawTex(tex, 0);
+                break;
+            }
             default:
                 break;
         }
@@ -197,7 +211,8 @@ export class DebugPass extends Initializable {
         ms: Framebuffer,
         msc: Renderbuffer, msd: Renderbuffer,
         ss: Framebuffer,
-        ssc: Texture2D, ssih: Texture2D, ssil: Texture2D, ssd: Texture2D
+        ssc: Texture2D, ssih: Texture2D, ssil: Texture2D, ssd: Texture2D,
+        ortho: Texture2D
     ): void {
         this._msFBO = ms;
         this._msColor = msc;
@@ -207,6 +222,7 @@ export class DebugPass extends Initializable {
         this._ssIndexHigh = ssih;
         this._ssIndexLow = ssil;
         this._ssDepth = ssd;
+        this._ortho = ortho;
     }
 
     public get output(): Framebuffer {

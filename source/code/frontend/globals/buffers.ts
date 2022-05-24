@@ -6,9 +6,12 @@ import {
 } from 'webgl-operate';
 
 import { Formats } from './formats';
+// @ts-expect-error: @types/pngjs does not provide typings for /browser
+import { PNG } from 'pngjs/browser';
 import { Passes } from './passes';
 
 export class Buffers {
+    protected static _instance: Buffers;
     protected _context: Context;
     protected _gl: WebGL2RenderingContext;
     protected _maxSamples: number;
@@ -35,7 +38,11 @@ export class Buffers {
     protected _ssIndexLow: Texture2D;
     protected _ssDepth: Texture2D;
     protected _ssFBO: Framebuffer;
-    protected static _instance: Buffers;
+
+    // ortho buffers
+    protected static _orthoRes = 256;
+    protected _orthoTex: Texture2D;
+    protected _orthoFBO: Framebuffer;
 
     protected constructor(context: Context) {
         this._context = context;
@@ -91,11 +98,16 @@ export class Buffers {
         ]);
 
         Passes.accumulate.texture = this._ssColor;
+
+        if(!this._orthoFBO || !this._orthoTex)
+            [this._orthoTex, this._orthoFBO] = this.createOrthoBuffer();
+
         Passes.debug.setInputs(
             this._msFBO,
             this._msColor, this._msDepth,
             this._ssFBO,
-            this._ssColor, this._ssIndexHigh, this._ssIndexLow, this._ssDepth);
+            this._ssColor, this._ssIndexHigh, this._ssIndexLow, this._ssDepth,
+            this._orthoTex);
 
         this._needRebuild = false;
     }
@@ -114,6 +126,17 @@ export class Buffers {
         const buf = new Texture2D(this._context);
         buf.initialize(width, height, ...format);
         return buf;
+    }
+
+    protected createOrthoBuffer(): [Texture2D, Framebuffer] {
+        const buf = new Texture2D(this._context);
+        // use either 32 bit and no filtering or 16 bit and linear filtering
+        buf.initialize(Buffers._orthoRes, Buffers._orthoRes,
+            this._gl.RGBA16F, this._gl.RGBA, this._gl.FLOAT);
+        buf.filter(this._gl.LINEAR, this._gl.LINEAR);
+        const fbo = new Framebuffer(this._context);
+        fbo.initialize([[this._gl.COLOR_ATTACHMENT0, buf]]);
+        return [buf, fbo];
     }
 
     public static initialize(context: Context): void {
@@ -158,6 +181,14 @@ export class Buffers {
         return this._instance._ssFBO;
     }
 
+    public static get orthoFBO(): Framebuffer {
+        return this._instance._orthoFBO;
+    }
+
+    public static get orthoTex(): Texture2D {
+        return this._instance._orthoTex;
+    }
+
     public static get maxSamples(): number {
         return this._instance._maxSamples;
     }
@@ -175,5 +206,73 @@ export class Buffers {
 
     public static update(): void {
         if(this._instance._needRebuild) this._instance.setupFBOs();
+    }
+
+    public static exportPng(): void {
+        let fb = Buffers.renderFBO;
+        if(Buffers.mfEnabled) fb = Passes.accumulate.framebuffer;
+
+        const gl = this._instance._gl;
+
+        let obj = fb.object;
+        let tex: WebGLTexture;
+        // can't call readPixels on multi sampled FB, have to blit first
+        if(Buffers.msEnabled) {
+            tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8,
+                fb.width, fb.height, 0,
+                gl.RGBA, gl.UNSIGNED_BYTE, undefined);
+            obj = gl.createFramebuffer();
+            gl.bindFramebuffer(gl.FRAMEBUFFER, obj);
+            gl.framebufferTexture2D(
+                gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, undefined);
+
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fb.object);
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, obj);
+            gl.readBuffer(gl.COLOR_ATTACHMENT0);
+            gl.drawBuffers([gl.COLOR_ATTACHMENT0]);
+            gl.blitFramebuffer(
+                0, 0, fb.width, fb.height,
+                0, 0, fb.width, fb.height,
+                gl.COLOR_BUFFER_BIT, gl.LINEAR);
+            gl.bindFramebuffer(gl.READ_FRAMEBUFFER, undefined);
+            gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, undefined);
+        }
+
+        const buf = new Uint8Array(fb.width * fb.height * 4);
+
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, obj);
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        gl.readPixels(
+            0, 0, fb.width, fb.height, gl.RGBA, gl.UNSIGNED_BYTE, buf);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+
+        if(Buffers.msEnabled) {
+            gl.deleteFramebuffer(obj);
+            gl.deleteTexture(tex);
+        }
+
+        const png = new PNG({
+            width: fb.width, height: fb.height,
+            bgColor:{ red: 238, green: 238, blue: 238 },
+            colorType: 2
+        });
+        const bytesPerRow = 4 * fb.width;
+        buf.forEach((v, i) => {
+            const row = Math.floor(i / bytesPerRow);
+            const newRow = fb.height - 1 - row;
+            const byteInRow = i - row * bytesPerRow;
+            if(byteInRow % 4 === 3) v = 255;
+            png.data[newRow * bytesPerRow + byteInRow] = v;
+        });
+        const out: Buffer = PNG.sync.write(png);
+        const blob = new Blob([out]);
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'screenshot.png';
+        link.click();
+        link.remove();
     }
 }

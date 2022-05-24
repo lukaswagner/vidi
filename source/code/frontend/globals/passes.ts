@@ -11,6 +11,7 @@ import { DebugPass } from '../debug/debugPass';
 import { GridLabelPass } from '../grid/gridLabelPass';
 import { GridPass } from '../grid/gridPass';
 import { LimitPass } from '../grid/limitPass';
+import { OrthoPass } from 'frontend/ortho/orthoPass';
 import { PointPass } from '../points/pointPass';
 
 const fontApi = 'https://fonts.varg.dev/api/fonts/';
@@ -22,6 +23,7 @@ const Roboto = {
 
 export class Passes {
     protected _points: PointPass;
+    protected _ortho: OrthoPass;
     protected _grid: GridPass;
     protected _gridLabels: GridLabelPass;
     protected _limits: LimitPass;
@@ -37,8 +39,12 @@ export class Passes {
         this._points = new PointPass(context);
         this._points.initialize();
 
+        this._ortho = new OrthoPass(context);
+        this._ortho.initialize();
+
         this._grid = new GridPass(context);
         this._grid.initialize();
+        this._grid.invalidate = invalidate;
 
         this._gridLabels = new GridLabelPass(context);
         this._gridLabels.initialize();
@@ -68,6 +74,10 @@ export class Passes {
 
     public static get points(): PointPass {
         return this._instance._points;
+    }
+
+    public static get ortho(): OrthoPass {
+        return this._instance._ortho;
     }
 
     public static get grid(): GridPass {
@@ -104,6 +114,7 @@ export class Passes {
 
     public static get altered(): boolean {
         return Passes.points.altered ||
+            Passes.ortho.altered ||
             Passes.grid.altered ||
             Passes.gridLabels.altered ||
             Passes.limits.altered ||
@@ -115,6 +126,7 @@ export class Passes {
         Passes.gridLabels.update();
         Passes.limits.update();
         Passes.points.update();
+        Passes.ortho.update();
         Passes.clusters.update();
         Passes.accumulate.update();
     }

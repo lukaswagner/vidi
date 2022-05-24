@@ -163,9 +163,11 @@ export class PointPass extends Initializable {
             mask: ListenerMask.Points,
             move: (id) => {
                 this._selected = id;
+                this._refLinePass.selected = id;
                 this._altered.alter('selected');
             },
             click: (id) => {
+                if(id === -1) return;
                 const str = (i: number): string => {
                     return (this._columns[i] as NumberColumn)
                         ?.get(id).toFixed(3) ?? '-';
@@ -322,20 +324,15 @@ export class PointPass extends Initializable {
         this._target.bind();
 
         this._geometries.forEach((g, i) => {
-            this._gl.uniform1ui(
-                this._uIdOffset, this._columns[0].chunks[i].offset);
+            const offset = this.anyColumn()?.chunks[i].offset;
+            this._gl.uniform1ui(this._uIdOffset, offset);
 
             g.bind();
-            this._selectedBuffer.bind();
-            this._gl.vertexAttribPointer(
-                this._selectedLocation, 1, this._gl.UNSIGNED_BYTE, false, 0,
-                this._columns[0].chunks[i].offset);
-            this._gl.enableVertexAttribArray(this._selectedLocation);
-            this._gl.vertexAttribDivisor(this._selectedLocation, 1);
+            this.bindSelection(this._selectedLocation, offset);
 
             g.draw();
 
-            this._selectedBuffer.unbind();
+            this.unbindSelection();
             g.unbind();
         });
 
@@ -347,10 +344,32 @@ export class PointPass extends Initializable {
 
     }
 
+    public bindSelection(location: number, offset: number): void {
+        this._selectedBuffer.bind();
+        this._gl.vertexAttribPointer(
+            location, 1, this._gl.UNSIGNED_BYTE, false, 0, offset);
+        this._gl.enableVertexAttribArray(location);
+        this._gl.vertexAttribDivisor(location, 1);
+    }
+
+    public unbindSelection(): void {
+        this._selectedBuffer.unbind();
+    }
+
     public setColumn(index: number, column: Column): void {
         this.assertInitialized();
         this._columns[index] = column;
         this._altered.alter('columns');
+    }
+
+    public anyColumn(): Column {
+        return this._columns[0] ?? this._columns[1] ?? this._columns[2];
+    }
+
+    public minMax(): [number, number][] {
+        return [0, 1, 2]
+            .map((i) => this._columns[i] as NumberColumn)
+            .map((c) => [c?.min, c?.max]);
     }
 
     protected buildGeometries(): void {
@@ -366,15 +385,14 @@ export class PointPass extends Initializable {
         for (let i = 0; i < end - start; i++) {
             const chunks = newChunks.map((nc) => nc?.[i]);
             const len = Math.min(...chunks.map(
-                (c) => c ? c.length : Number.POSITIVE_INFINITY));
+                (c) => c?.length ?? Number.POSITIVE_INFINITY));
             const data = chunks.map(
                 (c: Float32Chunk, i) => c ? c.data : new SharedArrayBuffer(
-                    len * 4 * (i === ColumnUsage.PER_POINT_COLOR ? 4 : 1)));
+                    len * 4 * (i === ColumnUsage.COLOR_COLOR ? 4 : 1)));
 
-            this._geometries.push(PointCloudGeometry.fromColumns(
-                this._context,
-                data
-            ));
+            const geom = PointCloudGeometry.fromColumns(this._context, data);
+            geom.offset = chunks[0].offset;
+            this._geometries.push(geom);
         }
 
         this._columns.forEach((c) => {
@@ -383,15 +401,15 @@ export class PointPass extends Initializable {
 
         this._refLinePass.geometries = this._geometries;
 
+        const len = this.anyColumn()?.length;
         this._selectedBuffer.bind();
         if(
-            this._columns[0].length !==
-            this._gl.getBufferParameter(
+            len !== this._gl.getBufferParameter(
                 this._gl.ARRAY_BUFFER, this._gl.BUFFER_SIZE)
         ) {
             this._gl.bufferData(
                 this._gl.ARRAY_BUFFER,
-                this._columns[0].length,
+                len,
                 this._gl.STATIC_DRAW);
         }
         this._selectedBuffer.unbind();
@@ -498,5 +516,13 @@ export class PointPass extends Initializable {
         this._selectedMap = sel;
         this._anySelected = sel.some((v) => v);
         this._altered.alter('selection');
+    }
+
+    public get geometries(): PointCloudGeometry[] {
+        return this._geometries;
+    }
+
+    public get length(): number {
+        return this.anyColumn()?.length;
     }
 }

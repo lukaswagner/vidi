@@ -16,14 +16,15 @@ export class GridOffsetHelper extends Initializable {
     protected readonly _altered = Object.assign(new ChangeLookup(), {
         any: false,
         gridInfo: false,
-        camera: false
+        camera: false,
+        scale: false
     });
 
     protected readonly labelOffset = 0.2;
 
     protected _gridInfo: ExtendedGridInfo[];
-
     protected _lastIndices: number[];
+    protected _scale = 1.5;
 
     @Initializable.initialize()
     public initialize(): boolean {
@@ -69,7 +70,7 @@ export class GridOffsetHelper extends Initializable {
 
         const changed = indices.reduce((result, newIndex, i) =>
             result || newIndex !== this._lastIndices[i], false
-        );
+        ) || this._altered.scale;
         if (!changed && !override) return;
 
         this._lastIndices = indices;
@@ -77,7 +78,8 @@ export class GridOffsetHelper extends Initializable {
         const calcOffsets = (
             info: ExtendedGridInfo[], indices: number[]
         ): number[] => info.map((grid, i) =>
-            grid.enabled ? grid.offsets[indices[(i + 2) % 3]] : 0
+            (grid.enabled ? grid.offsets[indices[(i + 2) % 3]] : 0) *
+                this._scale
         );
         const offsets = calcOffsets(gi, indices);
         Passes.grid.gridOffsets = offsets;
@@ -251,6 +253,11 @@ export class GridOffsetHelper extends Initializable {
     public set gridInfo(gridInfo: ExtendedGridInfo[]) {
         this._gridInfo = gridInfo;
         this._altered.alter('gridInfo');
+    }
+
+    public set scale(scale: number) {
+        this._scale = scale;
+        this._altered.alter('scale');
     }
 
     public get altered(): boolean {
